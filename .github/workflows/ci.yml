@@ -1,0 +1,14 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  frontend-ci:
+    uses: RexiAI/my-engineering-standards/.github/workflows/ci-react.yml@main
+    with:
+      deploy-on-main: false
