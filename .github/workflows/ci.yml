@@ -7,6 +7,15 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# The reusable workflow (ci-react.yml) declares `packages: write` at its top
+# level. A caller must grant at least what the callee requests — the callee can
+# never escalate beyond the caller's grant, and this repo's default
+# GITHUB_TOKEN permissions are read-only. Without this block every run dies as a
+# startup_failure before any job is created.
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   frontend-ci:
     uses: RexiAI/my-engineering-standards/.github/workflows/ci-react.yml@main

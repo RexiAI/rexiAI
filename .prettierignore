@@ -1,2 +1,4 @@
 .standards
 dist
+package-lock.json
+.playwright-mcp
