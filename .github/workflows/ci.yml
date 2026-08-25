@@ -11,4 +11,5 @@ jobs:
   frontend-ci:
     uses: RexiAI/my-engineering-standards/.github/workflows/ci-react.yml@main
     with:
+      node-version-file: .nvmrc
       deploy-on-main: false
