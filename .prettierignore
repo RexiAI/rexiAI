@@ -2,3 +2,4 @@
 dist
 package-lock.json
 .playwright-mcp
+CHANGELOG.md
