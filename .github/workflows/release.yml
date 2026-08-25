@@ -1,0 +1,11 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    uses: RexiAI/my-engineering-standards/.github/workflows/ci-release.yml@main
+    secrets:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
