@@ -1,32 +1,30 @@
-# React + TypeScript + Vite
+# RexiAI — Landing + Booking
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + Vite + TypeScript SPA on Vercel with serverless booking APIs.
 
-Currently, two official plugins are available:
+## Env setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Copy `.env.example` to `.env` and fill values.
+2. Required vars:
+   - `STRIPE_SECRET_KEY` — Stripe test/live secret
+   - `STRIPE_WEBHOOK_SECRET` — from Stripe Dashboard → Developers → Webhooks → endpoint `https://<your-domain>/api/stripe-webhook`
+   - `GOOGLE_CALENDAR_ID` — target calendar (share with service account email)
+   - `GOOGLE_SERVICE_ACCOUNT_JSON` — JSON string of service account key
+   - `RESEND_API_KEY` — Resend API key for operator emails
+   - `EMAIL_FROM` — sender address
+   - `EMAIL_TO` — operator inbox (danielbueno76@gmail.com)
 
-## React Compiler
+3. Add same vars to Vercel project env (Dashboard → Settings → Environment Variables).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Availability
 
-## Expanding the Oxlint configuration
+Edit `config/availability.yaml` — weekly windows + per-date exceptions. Redeploy after edits. Timezone must remain `Europe/Madrid`.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Local dev
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+APIs run as Vercel functions under `api/` (GET /api/availability, POST /api/bookings, POST /api/stripe-webhook).
