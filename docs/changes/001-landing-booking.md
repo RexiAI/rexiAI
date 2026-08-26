@@ -981,4 +981,5 @@ Carried forward from 25-verification.md attempt entry and Verifier's telemetry r
 
 Recorded via .standards/scripts/record-gate-run.sh if present — see command below.
 
-PR:
+PR: https://github.com/RexiAI/rexiAI/pull/16
+Commits: 3
