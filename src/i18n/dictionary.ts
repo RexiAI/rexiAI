@@ -47,7 +47,8 @@ export const es = {
   },
   booking: {
     title: 'Reserva tu sesión',
-    narrative: 'Elige fecha y hora. Primera hora gratis para clientes nuevos, después 30 EUR por hora.',
+    narrative:
+      'Elige fecha y hora. Primera hora gratis para clientes nuevos, después 30 EUR por hora.',
     steps: [
       'Elige fecha y hueco disponible',
       'Indica duración y tu email',
@@ -78,7 +79,8 @@ export const es = {
   },
   result: {
     successTitle: 'Reserva recibida',
-    successBody: 'Tu reserva ha sido confirmada. Recibirás la confirmación por email y en tu calendario.',
+    successBody:
+      'Tu reserva ha sido confirmada. Recibirás la confirmación por email y en tu calendario.',
     successAction: 'Volver al inicio',
     cancelTitle: 'Reserva cancelada',
     cancelBody: 'Has cancelado el proceso de pago. Puedes volver a intentarlo cuando quieras.',
@@ -167,7 +169,8 @@ export const en = {
   },
   result: {
     successTitle: 'Booking received',
-    successBody: 'Your booking has been confirmed. You will receive confirmation by email and calendar.',
+    successBody:
+      'Your booking has been confirmed. You will receive confirmation by email and calendar.',
     successAction: 'Back to home',
     cancelTitle: 'Booking cancelled',
     cancelBody: 'You cancelled the payment process. You can try again whenever you like.',

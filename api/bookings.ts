@@ -3,7 +3,11 @@ import path from 'path'
 
 import { google } from 'googleapis'
 
-import { computeSlotsForDate, isPastDate, parseAvailabilityYaml } from '../src/domain/availability.js'
+import {
+  computeSlotsForDate,
+  isPastDate,
+  parseAvailabilityYaml,
+} from '../src/domain/availability.js'
 import { isFreeHourAvailable } from '../src/domain/freeHour.js'
 import { createCalendarAuth } from '../src/domain/googleAuth.js'
 import { priceCents } from '../src/domain/pricing.js'
@@ -33,7 +37,11 @@ function loadConfigOrError(res: any) {
 async function queryFreeBusy(calendarId: string, slotStart: Date, slotEnd: Date, auth: any) {
   const cal = google.calendar({ version: 'v3', auth } as any)
   const res: any = await (cal.freebusy as any).query({
-    requestBody: { timeMin: slotStart.toISOString(), timeMax: slotEnd.toISOString(), items: [{ id: calendarId }] },
+    requestBody: {
+      timeMin: slotStart.toISOString(),
+      timeMax: slotEnd.toISOString(),
+      items: [{ id: calendarId }],
+    },
   })
   return (res.data.calendars?.[calendarId]?.busy ?? []) as { start: string; end: string }[]
 }
@@ -47,14 +55,24 @@ function getCalendarEnv(): { calendarId: string; serviceJson: string } | null {
   return { calendarId, serviceJson }
 }
 
-async function fetchConflictBusy(calendarId: string, serviceJson: string, date: string, startTime: string, hours: number) {
+async function fetchConflictBusy(
+  calendarId: string,
+  serviceJson: string,
+  date: string,
+  startTime: string,
+  hours: number
+) {
   const auth = createCalendarAuth(serviceJson)
   const slotStart = madridToUtc(date, startTime)
   const slotEnd = new Date(slotStart.getTime() + hours * 3600000)
   return { slotStart, slotEnd, busy: await queryFreeBusy(calendarId, slotStart, slotEnd, auth) }
 }
 
-function isOverlapping(slotStart: Date, slotEnd: Date, busy: { start: string; end: string }[]): boolean {
+function isOverlapping(
+  slotStart: Date,
+  slotEnd: Date,
+  busy: { start: string; end: string }[]
+): boolean {
   for (const b of busy) {
     if (slotStart < new Date(b.end) && slotEnd > new Date(b.start)) return true
   }
@@ -65,7 +83,13 @@ async function hasConflict(date: string, startTime: string, hours: number): Prom
   const env = getCalendarEnv()
   if (!env) return false
   try {
-    const { slotStart, slotEnd, busy } = await fetchConflictBusy(env.calendarId, env.serviceJson, date, startTime, hours)
+    const { slotStart, slotEnd, busy } = await fetchConflictBusy(
+      env.calendarId,
+      env.serviceJson,
+      date,
+      startTime,
+      hours
+    )
     return isOverlapping(slotStart, slotEnd, busy)
   } catch {
     return false
@@ -78,7 +102,9 @@ function getDowForDate(date: string): string {
     const fmt = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'Europe/Madrid' })
     return fmt.format(d).toLowerCase()
   } catch {
-    return ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][d.getUTCDay()]
+    return ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][
+      d.getUTCDay()
+    ]
   }
 }
 
@@ -88,7 +114,11 @@ function getWindowsForDate(config: any, date: string) {
   return (config.weekly[dow] ?? []) as { start: string; end: string }[]
 }
 
-function isCovered(startMin: number, endMin: number, windows: { start: string; end: string }[]): boolean {
+function isCovered(
+  startMin: number,
+  endMin: number,
+  windows: { start: string; end: string }[]
+): boolean {
   for (const w of windows) {
     const s = parseInt(w.start.split(':')[0], 10) * 60 + parseInt(w.start.split(':')[1], 10)
     const e = parseInt(w.end.split(':')[0], 10) * 60 + parseInt(w.end.split(':')[1], 10)
@@ -138,10 +168,14 @@ function validateHours(raw: unknown, res: any): number | null {
   if (typeof raw !== 'number' || !Number.isInteger(raw)) {
     const priceCheck = priceCents(Number(raw), true)
     if (!priceCheck.ok) {
-      res.status(400).json({ error: { code: 'INVALID_DURATION', message: priceCheck.error.message } })
+      res
+        .status(400)
+        .json({ error: { code: 'INVALID_DURATION', message: priceCheck.error.message } })
       return null
     }
-    res.status(400).json({ error: { code: 'INVALID_DURATION', message: 'durations must be whole hours' } })
+    res
+      .status(400)
+      .json({ error: { code: 'INVALID_DURATION', message: 'durations must be whole hours' } })
     return null
   }
   const hours = Number(raw)
@@ -153,17 +187,28 @@ function validateHours(raw: unknown, res: any): number | null {
   return hours
 }
 
-function validateSlotCoverage(config: any, date: string, startTime: string, hours: number, res: any): boolean {
+function validateSlotCoverage(
+  config: any,
+  date: string,
+  startTime: string,
+  hours: number,
+  res: any
+): boolean {
   const slots = computeSlotsForDate(config, date)
   if (!slots.includes(startTime)) {
-    res.status(400).json({ error: { code: 'SLOT_UNAVAILABLE', message: 'Start time not in available slots' } })
+    res
+      .status(400)
+      .json({ error: { code: 'SLOT_UNAVAILABLE', message: 'Start time not in available slots' } })
     return false
   }
-  const startMin = parseInt(startTime.split(':')[0], 10) * 60 + parseInt(startTime.split(':')[1], 10)
+  const startMin =
+    parseInt(startTime.split(':')[0], 10) * 60 + parseInt(startTime.split(':')[1], 10)
   const endMin = startMin + hours * 60
   const windows = getWindowsForDate(config, date)
   if (!isCovered(startMin, endMin, windows)) {
-    res.status(400).json({ error: { code: 'SLOT_UNAVAILABLE', message: 'Booking exceeds availability window' } })
+    res
+      .status(400)
+      .json({ error: { code: 'SLOT_UNAVAILABLE', message: 'Booking exceeds availability window' } })
     return false
   }
   return true
@@ -175,14 +220,22 @@ function loadAndValidateSlot(date: string, startTime: string, hours: number, res
   return validateSlotCoverage(config, date, startTime, hours, res)
 }
 
-function extractBookingFields(body: any): { email: string; date: string; startTime: string; hoursRaw: unknown } {
+function extractBookingFields(body: any): {
+  email: string
+  date: string
+  startTime: string
+  hoursRaw: unknown
+} {
   const email = typeof body.email === 'string' ? body.email.trim() : ''
   const date = typeof body.date === 'string' ? body.date : ''
   const startTime = typeof body.startTime === 'string' ? body.startTime : ''
   return { email, date, startTime, hoursRaw: body.hours }
 }
 
-function validateInput(body: any, res: any): { email: string; date: string; startTime: string; hours: number } | null {
+function validateInput(
+  body: any,
+  res: any
+): { email: string; date: string; startTime: string; hours: number } | null {
   const { email, date, startTime, hoursRaw } = extractBookingFields(body)
   if (!validateEmail(email, res)) return null
   if (!validateDate(date, res)) return null
@@ -201,14 +254,25 @@ function prepareBookingInput(req: any, res: any) {
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
+    return res
+      .status(405)
+      .json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
   }
   const input = prepareBookingInput(req, res)
   if (!input) return
   if (await hasConflict(input.date, input.startTime, input.hours)) {
-    return res.status(409).json({ error: { code: 'SLOT_CONFLICT', message: 'Slot already booked' } })
+    return res
+      .status(409)
+      .json({ error: { code: 'SLOT_CONFLICT', message: 'Slot already booked' } })
   }
-  const checkout = await createCheckout(input.email, input.date, input.startTime, input.hours, req, res)
+  const checkout = await createCheckout(
+    input.email,
+    input.date,
+    input.startTime,
+    input.hours,
+    req,
+    res
+  )
   if (!checkout) return
   return res.status(200).json({ checkoutUrl: checkout.url })
 }
@@ -230,7 +294,16 @@ function getBaseUrl(req: any): string {
   return `${p}://${h}`
 }
 
-type SessionOpts = { email: string; date: string; startTime: string; hours: number; freeAvailable: boolean; cents: number; req: any; res: any }
+type SessionOpts = {
+  email: string
+  date: string
+  startTime: string
+  hours: number
+  freeAvailable: boolean
+  cents: number
+  req: any
+  res: any
+}
 
 async function createSession(opts: SessionOpts) {
   try {
@@ -239,9 +312,24 @@ async function createSession(opts: SessionOpts) {
     return await stripe.checkout.sessions.create({
       mode: 'payment',
       currency: 'eur',
-      line_items: [{ price_data: { currency: 'eur', product_data: { name: `Booking ${opts.date} ${opts.startTime} (${opts.hours}h)` }, unit_amount: opts.cents }, quantity: 1 }],
+      line_items: [
+        {
+          price_data: {
+            currency: 'eur',
+            product_data: { name: `Booking ${opts.date} ${opts.startTime} (${opts.hours}h)` },
+            unit_amount: opts.cents,
+          },
+          quantity: 1,
+        },
+      ],
       customer_email: opts.email,
-      metadata: { email: opts.email, date: opts.date, start_time: opts.startTime, hours: String(opts.hours), free_hour_applied: String(opts.freeAvailable) },
+      metadata: {
+        email: opts.email,
+        date: opts.date,
+        start_time: opts.startTime,
+        hours: String(opts.hours),
+        free_hour_applied: String(opts.freeAvailable),
+      },
       success_url: `${baseUrl}/booking/success`,
       cancel_url: `${baseUrl}/booking/cancel`,
     })
@@ -251,7 +339,14 @@ async function createSession(opts: SessionOpts) {
   }
 }
 
-async function createCheckout(email: string, date: string, startTime: string, hours: number, req: any, res: any) {
+async function createCheckout(
+  email: string,
+  date: string,
+  startTime: string,
+  hours: number,
+  req: any,
+  res: any
+) {
   const freeAvailable = await getFreeAvailable(email, res)
   if (freeAvailable === null) return null
   const priceRes = priceCents(hours, freeAvailable)
@@ -259,5 +354,14 @@ async function createCheckout(email: string, date: string, startTime: string, ho
     res.status(400).json({ error: { code: 'INVALID_DURATION', message: priceRes.error.message } })
     return null
   }
-  return createSession({ email, date, startTime, hours, freeAvailable, cents: priceRes.cents, req, res })
+  return createSession({
+    email,
+    date,
+    startTime,
+    hours,
+    freeAvailable,
+    cents: priceRes.cents,
+    req,
+    res,
+  })
 }

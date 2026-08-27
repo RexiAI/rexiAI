@@ -12,8 +12,14 @@ describe('AC-010', () => {
   it('AC-010-01: Operator receives a complete booking summary', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '' } as any)
     await sendOperatorEmail(
-      { clientEmail: 'client@example.com', date: '2027-03-01', startTime: '10:00', hours: 2, amountCents: 3000 },
-      fetchMock as any,
+      {
+        clientEmail: 'client@example.com',
+        date: '2027-03-01',
+        startTime: '10:00',
+        hours: 2,
+        amountCents: 3000,
+      },
+      fetchMock as any
     )
     expect(fetchMock).toHaveBeenCalled()
     const [, opts] = fetchMock.mock.calls[0]
@@ -31,17 +37,25 @@ describe('AC-010', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '' } as any)
     await sendOperatorEmail(
       { clientEmail: 'a@a.com', date: '2027-03-01', startTime: '10:00', hours: 1, amountCents: 0 },
-      fetchMock as any,
+      fetchMock as any
     )
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
   it('AC-010-03: Provider failure propagates as retryable error', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => 'fail' } as any)
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: false, status: 500, text: async () => 'fail' } as any)
     await expect(
       sendOperatorEmail(
-        { clientEmail: 'a@a.com', date: '2027-03-01', startTime: '10:00', hours: 1, amountCents: 0 },
-        fetchMock as any,
-      ),
+        {
+          clientEmail: 'a@a.com',
+          date: '2027-03-01',
+          startTime: '10:00',
+          hours: 1,
+          amountCents: 0,
+        },
+        fetchMock as any
+      )
     ).rejects.toThrow(/Resend failed/)
   })
 })

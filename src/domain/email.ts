@@ -18,7 +18,7 @@ function getEmailConfig() {
 
 export async function sendOperatorEmail(
   input: OperatorEmailInput,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: typeof fetch = fetch
 ): Promise<void> {
   const { apiKey, from, to } = getEmailConfig()
   const amountEuro = (input.amountCents / 100).toFixed(0)

@@ -17,10 +17,7 @@ function getDurationError(hours: number): string | null {
   return null
 }
 
-export function priceCents(
-  hours: number,
-  freeHourAvailable: boolean,
-): PriceResult {
+export function priceCents(hours: number, freeHourAvailable: boolean): PriceResult {
   const msg = getDurationError(hours)
   if (msg) return invalidDuration(msg)
   const cents = freeHourAvailable ? (hours - 1) * PRICE_PER_HOUR : hours * PRICE_PER_HOUR

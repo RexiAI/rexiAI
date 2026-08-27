@@ -31,7 +31,7 @@ function getCalendarClient() {
 
 export async function findEventByBookingId(
   bookingId: string,
-  client?: ReturnType<typeof getCalendarClient>,
+  client?: ReturnType<typeof getCalendarClient>
 ): Promise<boolean> {
   const cal = client ?? getCalendarClient()
   const { calendarId } = getCalendarConfig()
@@ -48,7 +48,7 @@ export async function findEventByBookingId(
 
 export async function createGCalEvent(
   input: GCalEventInput,
-  client?: ReturnType<typeof getCalendarClient>,
+  client?: ReturnType<typeof getCalendarClient>
 ): Promise<{ alreadyExists: boolean }> {
   const cal = client ?? getCalendarClient()
   const { calendarId } = getCalendarConfig()

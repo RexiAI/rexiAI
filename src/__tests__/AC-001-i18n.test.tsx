@@ -49,7 +49,11 @@ describe('AC-001', () => {
 
   it('AC-001-05: No hardcoded user-facing strings in components', () => {
     // Verify dictionaries cover hero and services strings rendered
-    const allEsStrings = [es.hero.catchphrase, es.hero.subtext, ...es.services.items.map((i) => i.title)]
+    const allEsStrings = [
+      es.hero.catchphrase,
+      es.hero.subtext,
+      ...es.services.items.map((i) => i.title),
+    ]
     render(<App />)
     for (const s of allEsStrings) {
       // if hardcoded, dict wouldn't contain it, but we check rendered strings are from dict

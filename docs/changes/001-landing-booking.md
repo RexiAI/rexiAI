@@ -61,14 +61,14 @@ I will supply my actual availability hours later — that is why it must be conf
 OpenAI-style storytelling (user decision, 2026-08-26). Reference screenshots captured
 from openai.com live on 2026-08-26, stored in `design-refs/`:
 
-| File | What it shows |
-|---|---|
-| `openai-00-full-page.png` | Whole openai.com homepage scroll |
-| `openai-01-hero.png` | Hero: product-as-hero ("What can I help with?" prompt box), quick links under it |
-| `openai-02-story-cards.png` | Featured story-card grid — editorial storytelling layout |
-| `openai-03-business-stories.png` | "OpenAI for business" customer-stories section |
+| File                             | What it shows                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------- |
+| `openai-00-full-page.png`        | Whole openai.com homepage scroll                                                 |
+| `openai-01-hero.png`             | Hero: product-as-hero ("What can I help with?" prompt box), quick links under it |
+| `openai-02-story-cards.png`      | Featured story-card grid — editorial storytelling layout                         |
+| `openai-03-business-stories.png` | "OpenAI for business" customer-stories section                                   |
 
-Steal the *patterns* (hero with a real interactive element, story cards as narrative,
+Steal the _patterns_ (hero with a real interactive element, story cards as narrative,
 customer-proof section), not the branding.
 
 ## Out of scope / notes
@@ -102,11 +102,11 @@ the SPA rewrite in `vercel.json` stays as is.
 **Backend.** Vercel serverless functions (TypeScript, Node runtime), under `api/` at
 the repo root (Vercel convention mounts each handler as an HTTPS function):
 
-| File | Route | Purpose |
-|---|---|---|
-| `api/availability.ts` | `GET /api/availability?date=YYYY-MM-DD` | Bookable slots for one day |
-| `api/bookings.ts` | `POST /api/bookings` | Validate booking, compute price, create Stripe Checkout session |
-| `api/stripe-webhook.ts` | `POST /api/stripe-webhook` | On payment completion: burn free hour, create GCal event, email operator |
+| File                    | Route                                   | Purpose                                                                  |
+| ----------------------- | --------------------------------------- | ------------------------------------------------------------------------ |
+| `api/availability.ts`   | `GET /api/availability?date=YYYY-MM-DD` | Bookable slots for one day                                               |
+| `api/bookings.ts`       | `POST /api/bookings`                    | Validate booking, compute price, create Stripe Checkout session          |
+| `api/stripe-webhook.ts` | `POST /api/stripe-webhook`              | On payment completion: burn free hour, create GCal event, email operator |
 
 Shared pure logic (slot computation, pricing, validation, types) lives in `src/domain/`
 and is imported by both the SPA and the api functions. No database, no framework, no DI.
@@ -165,6 +165,7 @@ in `localStorage`. Components render strings only from the dictionaries (typed s
 locales stay complete).
 
 Acceptance criteria:
+
 - Fresh visit renders Spanish copy.
 - Switcher click swaps every rendered string to the other language.
 - Selection survives page reload via `localStorage`.
@@ -180,6 +181,7 @@ booking section shell (widget lands in task 011), contact section. Visual/layout
 follows `15-design.md` directives when it exists.
 
 Acceptance criteria:
+
 - Hero displays the catchphrase from the active locale's dictionary.
 - Services section lists exactly the four services, each with localized title and description.
 - Contact CTA is a prominent `mailto:danielbueno76@gmail.com` link with localized label.
@@ -196,15 +198,16 @@ in Europe/Madrid. Schema:
 ```yaml
 timezone: Europe/Madrid
 weekly:
-  monday: [{start: "09:00", end: "13:00"}]   # list of windows, or omit day
+  monday: [{ start: '09:00', end: '13:00' }] # list of windows, or omit day
 exceptions:
-  "2027-03-25": []                            # blackout: replaces weekly entirely
-  "2027-03-26": [{start: "16:00", end: "19:00"}]  # override window(s)
+  '2027-03-25': [] # blackout: replaces weekly entirely
+  '2027-03-26': [{ start: '16:00', end: '19:00' }] # override window(s)
 ```
 
 A slot is a start time `t` where `t + 1h ≤ window end`. Slots align to whole hours.
 
 Acceptance criteria:
+
 - Weekly windows produce correct hourly starts; last slot starts ≥1h before window end.
 - Weekday with no entry yields no slots.
 - Blackout exception yields an empty day even when weekly has slots; override exception
@@ -221,6 +224,7 @@ Scope: pure function `priceCents(hours: number, freeHourAvailable: boolean)` imp
 the pricing rule above; rejects invalid durations with a typed error value.
 
 Acceptance criteria:
+
 - First-time table: 1h→0, 2h→3000, 3h→6000, 4h→9000 cents.
 - Returning-client table: 1h→3000 … 4h→12000 cents.
 - Hours outside [1,4], negative, or fractional are rejected.
@@ -235,6 +239,7 @@ Scope: two operations over the official Stripe SDK (test mode — same code path
 customer if none exists).
 
 Acceptance criteria:
+
 - Unknown email → eligible.
 - Customer without flag → eligible; customer with flag → not eligible.
 - After `markFreeHourUsed`, lookup returns not eligible.
@@ -249,6 +254,7 @@ subtracts busy intervals from Google Calendar free/busy for that Madrid-local da
 overlap blocks a slot. Returns `{ "date": "...", "slots": ["HH:mm", ...] }`.
 
 Acceptance criteria:
+
 - Open day returns exactly the YAML slots.
 - Busy intervals remove every overlapped slot (including partial-hour overlaps).
 - Exception days respected (blackout → empty).
@@ -266,6 +272,7 @@ free_hour_applied, success/cancel URLs pointing at the result views of task 012)
 Responds `{ "checkoutUrl": "..." }`. €0 sessions go through the same Checkout flow.
 
 Acceptance criteria:
+
 - First-timer 1h creates a €0 EUR checkout session and returns a URL.
 - First-timer 2h → amount 3000 cents; returning client 2h → 6000 cents with
   `free_hour_applied=false`.
@@ -285,6 +292,7 @@ and email. Upstream failure → respond 5xx so Stripe retries. Unrelated event t
 200, no side effects.
 
 Acceptance criteria:
+
 - Valid completion triggers all three side effects exactly once and responds 200.
 - Replayed event causes no duplicate side effects and still responds 200.
 - Invalid signature → 400, zero side effects.
@@ -302,6 +310,7 @@ local start/end instants (correct UTC conversion incl. CET/CEST DST), carries
 property before insert.
 
 Acceptance criteria:
+
 - Summer date (CEST, UTC+2): Madrid 10:00–11:00 → 08:00Z–09:00Z.
 - Winter date (CET, UTC+1): Madrid 10:00–11:00 → 09:00Z–10:00Z.
 - Event carries the booking id property; duplicate insert attempt is a no-op.
@@ -316,6 +325,7 @@ Scope: on completed booking, send one email to `EMAIL_TO` via the Resend HTTP AP
 duration, and amount paid.
 
 Acceptance criteria:
+
 - Email goes to the operator address with all four data points present.
 - Exactly one send per completed booking.
 - Provider failure propagates as a retryable error (feeds task 008's 5xx rule).
@@ -331,6 +341,7 @@ hour free for new clients, then €30/hour"); the authoritative amount appears o
 Stripe page, so no client-side price computation is required.
 
 Acceptance criteria:
+
 - Selecting a date loads and displays available slots from the API.
 - Duration offers exactly integer hours 1–4.
 - Localized pricing-rules text is displayed.
@@ -347,6 +358,7 @@ cancellation message plus a way back to the booking section. These paths are the
 success/cancel URLs handed to Stripe Checkout.
 
 Acceptance criteria:
+
 - Success view renders localized confirmation copy.
 - Cancel view renders localized cancellation copy with a return-to-booking action.
 
@@ -360,6 +372,7 @@ values; keep `vercel.json` SPA rewrite intact alongside the `api/` functions; do
 env setup in the README.
 
 Acceptance criteria:
+
 - Committed YAML parses through the task-003 loader.
 - `.env.example` enumerates all seven backend vars, contains no real secret values.
 - API handlers live under `api/` per Vercel convention; SPA rewrite untouched.
@@ -381,73 +394,141 @@ Accepted for a solo-operator site; revisit if volume ever justifies it.
 ## Acceptance scenarios
 
 ## AC-001-01 — Default language is Spanish
+
 ## AC-001-02 — Switching to English
+
 ## AC-001-03 — Switching back to Spanish
+
 ## AC-001-04 — Language choice persists across reload
+
 ## AC-001-05 — No hardcoded user-facing strings in components
+
 ## AC-002-01 — Hero displays localized catchphrase
+
 ## AC-002-02 — Services section lists exactly four services
+
 ## AC-002-03 — Contact CTA is a mailto link
+
 ## AC-002-04 — Page structure has the four main sections
+
 ## AC-003-01 — Slots from weekly schedule
+
 ## AC-003-02 — Weekday without an entry yields no slots
+
 ## AC-003-03 — Blackout exception empties the day
+
 ## AC-003-04 — Override exception replaces weekly slots
+
 ## AC-003-05 — Window shorter than one hour yields no slots
+
 ## AC-003-06 — Malformed YAML fails the load
+
 ## AC-003-07 — Window with end not after start fails the load
+
 ## AC-003-08 — Missing or mismatched timezone fails the load
+
 ## AC-003-09 — Malformed time value fails the load
+
 ## AC-004-01 — First-time client pricing table
+
 ## AC-004-02 — Returning client pricing table
+
 ## AC-004-03 — Zero hours rejected
+
 ## AC-004-04 — Hours above maximum rejected
+
 ## AC-004-05 — Negative hours rejected
+
 ## AC-004-06 — Fractional hours rejected
+
 ## AC-005-01 — Unknown email is eligible
+
 ## AC-005-02 — Customer without the flag is eligible
+
 ## AC-005-03 — Customer with the flag is not eligible
+
 ## AC-005-04 — Marking usage persists the flag
+
 ## AC-005-05 — Stripe failure is never treated as eligible
+
 ## AC-006-01 — Open day returns YAML slots
+
 ## AC-006-02 — Exact busy interval removes its slots
+
 ## AC-006-03 — Partial-hour busy overlap blocks both touched slots
+
 ## AC-006-04 — Blackout exception day returns empty
+
 ## AC-006-05 — Past dates rejected
+
 ## AC-006-06 — Malformed date rejected
+
 ## AC-006-07 — Missing date parameter rejected
+
 ## AC-007-01 — First-timer one-hour booking creates a zero-euro checkout session
+
 ## AC-007-02 — First-timer two-hour booking charges €30
+
 ## AC-007-03 — Returning client pays full price
+
 ## AC-007-04 — Invalid email rejected without calling Stripe
+
 ## AC-007-05 — Invalid durations rejected without calling Stripe
+
 ## AC-007-06 — Off-grid start time rejected
+
 ## AC-007-07 — Start outside availability rejected
+
 ## AC-007-08 — Conflicting existing booking rejected
+
 ## AC-008-01 — Completed payment triggers all three side effects once
+
 ## AC-008-02 — Replayed event causes no duplicate side effects
+
 ## AC-008-03 — Invalid signature rejected with zero side effects
+
 ## AC-008-04 — Unrelated event types ignored
+
 ## AC-008-05 — Calendar failure yields retryable response without email
+
 ## AC-008-06 — Email failure after calendar success yields retryable response
+
 ## AC-009-01 — Summer times convert through CEST correctly
+
 ## AC-009-02 — Winter times convert through CET correctly
+
 ## AC-009-03 — Event carries the booking id property
+
 ## AC-009-04 — Duplicate suppression
+
 ## AC-009-05 — Calendar id and service-account credentials come from configuration
+
 ## AC-010-01 — Operator receives a complete booking summary
+
 ## AC-010-02 — Exactly one send per completed booking
+
 ## AC-010-03 — Provider failure propagates as retryable error
+
 ## AC-011-01 — Selecting a date loads available slots
+
 ## AC-011-02 — Duration control offers whole hours 1 to 4 only
+
 ## AC-011-03 — Localized pricing rules are displayed
+
 ## AC-011-04 — Valid submit posts to the API and redirects to Stripe
+
 ## AC-011-05 — Invalid email blocks submission without a request
+
 ## AC-011-06 — Missing required fields block submission
+
 ## AC-012-01 — Success view shows localized confirmation
+
 ## AC-012-02 — Cancel view shows localized cancellation with a way back
+
 ## AC-013-01 — Committed availability config parses
+
 ## AC-013-02 — Environment template lists every backend variable with no secrets
+
 ## AC-013-03 — Serverless functions mounted alongside the SPA rewrite
 
 ## Verification
@@ -465,14 +546,14 @@ Accepted for a solo-operator site; revisit if volume ever justifies it.
 
 All five runnable gates PASS. WARNs are review hints, no FAILs.
 
-| Gate | Result |
-|------|--------|
-| 1. Scenario traceability | PASS |
-| 2. Full test suite | PASS |
-| 3. Complexity gate | PASS (0 FAIL, 3 WARN) |
-| 3.5 Design-principles gate | PASS (0 FAIL, 3 WARN) |
-| 4. Scenario-to-behavior spot check | PASS |
-| 5. No unaccounted behavior | PASS (no findings) |
+| Gate                               | Result                |
+| ---------------------------------- | --------------------- |
+| 1. Scenario traceability           | PASS                  |
+| 2. Full test suite                 | PASS                  |
+| 3. Complexity gate                 | PASS (0 FAIL, 3 WARN) |
+| 3.5 Design-principles gate         | PASS (0 FAIL, 3 WARN) |
+| 4. Scenario-to-behavior spot check | PASS                  |
+| 5. No unaccounted behavior         | PASS (no findings)    |
 
 ---
 
@@ -566,82 +647,82 @@ command: npx vitest run --reporter=verbose
 exit: 0
 at: 2026-08-26T15:58:45Z
 
- RUN  v4.1.11 /home/dbueno/projects/rexiAI
+RUN v4.1.11 /home/dbueno/projects/rexiAI
 
- ✓ src/__tests__/AC-010-email.test.ts > AC-010 > AC-010-01: Operator receives a complete booking summary 4ms
- ✓ src/__tests__/AC-010-email.test.ts > AC-010 > AC-010-02: Exactly one send per completed booking 1ms
- ✓ src/__tests__/AC-010-email.test.ts > AC-010 > AC-010-03: Provider failure propagates as retryable error 2ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-01: Completed payment triggers all three side effects once 6ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-02: Replayed event causes no duplicate side effects 1ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-03: Invalid signature rejected with zero side effects 1ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-04: Unrelated event types ignored 1ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-05: Calendar failure yields retryable response without email 1ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-06: Email failure after calendar success yields retryable response 2ms
- ✓ src/__tests__/AC-013-deployment-config.test.ts > AC-013 > AC-013-01: Committed availability config parses 43ms
- ✓ src/__tests__/AC-013-deployment-config.test.ts > AC-013 > AC-013-02: Environment template lists every backend variable with no secrets 1ms
- ✓ src/__tests__/AC-013-deployment-config.test.ts > AC-013 > AC-013-03: Serverless functions mounted alongside the SPA rewrite 1ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-01: Slots from weekly schedule 38ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-02: Weekday without an entry yields no slots 2ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-03: Blackout exception empties the day 2ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-04: Override exception replaces weekly slots 3ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-05: Window shorter than one hour yields no slots 2ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-06: Malformed YAML fails the load 2ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-07: Window with end not after start fails the load 2ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-08: Missing or mismatched timezone fails the load 2ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-09: Malformed time value fails the load 3ms
- ✓ src/__tests__/AC-005-free-hour.test.ts > AC-005 > AC-005-01: Unknown email is eligible 4ms
- ✓ src/__tests__/AC-005-free-hour.test.ts > AC-005 > AC-005-02: Customer without the flag is eligible 1ms
- ✓ src/__tests__/AC-005-free-hour.test.ts > AC-005 > AC-005-03: Customer with the flag is not eligible 1ms
- ✓ src/__tests__/AC-005-free-hour.test.ts > AC-005 > AC-005-04: Marking usage persists the flag 1ms
- ✓ src/__tests__/AC-005-free-hour.test.ts > AC-005 > AC-005-05: Stripe failure is never treated as eligible 1ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-01: First-timer one-hour booking creates a zero-euro checkout session 48ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-02: First-timer two-hour booking charges 30 EUR 3ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-03: Returning client pays full price 3ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-04: Invalid email rejected without calling Stripe 1ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-05: Invalid durations rejected without calling Stripe 3ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-06: Off-grid start time rejected 2ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-07: Start outside availability rejected 2ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-08: Conflicting existing booking rejected 3ms
- ✓ src/__tests__/AC-012-result-views.test.tsx > AC-012 > AC-012-01: Success view shows localized confirmation 95ms
- ✓ src/__tests__/AC-012-result-views.test.tsx > AC-012 > AC-012-02: Cancel view shows localized cancellation with a way back 138ms
- ✓ src/__tests__/AC-002-landing-content.test.tsx > AC-002 > AC-002-01: Hero displays localized catchphrase 256ms
- ✓ src/__tests__/AC-001-i18n.test.tsx > AC-001 > AC-001-01: Default language is Spanish 273ms
- ✓ src/__tests__/AC-002-landing-content.test.tsx > AC-002 > AC-002-02: Services section lists exactly four services 107ms
- ✓ src/__tests__/AC-002-landing-content.test.tsx > AC-002 > AC-002-03: Contact CTA is a mailto link 235ms
- ✓ src/__tests__/AC-002-landing-content.test.tsx > AC-002 > AC-002-04: Page structure has the four main sections 65ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-01: Selecting a date loads available slots 291ms
- ✓ src/__tests__/AC-001-i18n.test.tsx > AC-001 > AC-001-02: Switching to English 315ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-02: Duration control offers whole hours 1 to 4 only 386ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-03: Localized pricing rules are displayed 50ms
- ✓ src/__tests__/AC-001-i18n.test.tsx > AC-001 > AC-001-03: Switching back to Spanish 198ms
- ✓ src/__tests__/AC-001-i18n.test.tsx > AC-001 > AC-001-04: Language choice persists across reload 126ms
- ✓ src/__tests__/AC-001-i18n.test.tsx > AC-001 > AC-001-05: No hardcoded user-facing strings in components 36ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-01: Open day returns YAML slots (filter with no busy) 3ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-02: Exact busy interval removes its slots 1ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-03: Partial-hour busy overlap blocks both touched slots 1ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-04: Blackout exception day returns empty 14ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-05: Past dates rejected 20ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-06: Malformed date rejected 21ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-07: Missing date parameter rejected 1ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-04: Valid submit posts to the API and redirects to Stripe 152ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-01: First-time client pricing table 2ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-02: Returning client pricing table 0ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-03: Zero hours rejected 0ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-04: Hours above maximum rejected 0ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-05: Negative hours rejected 0ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-06: Fractional hours rejected 0ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-05: Invalid email blocks submission without a request 162ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-06: Missing required fields block submission 109ms
- ✓ src/__tests__/AC-009-gcal-event.test.ts > AC-009 > AC-009-01: Summer times convert through CEST correctly 2ms
- ✓ src/__tests__/AC-009-gcal-event.test.ts > AC-009 > AC-009-02: Winter times convert through CET correctly 0ms
- ✓ src/__tests__/AC-009-gcal-event.test.ts > AC-009 > AC-009-03: Event carries the booking id property 1ms
- ✓ src/__tests__/AC-009-gcal-event.test.ts > AC-009 > AC-009-04: Duplicate suppression 1ms
- ✓ src/__tests__/AC-009-gcal-event.test.ts > AC-009 > AC-009-05: Calendar id and service-account credentials come from configuration 1ms
+✓ src/**tests**/AC-010-email.test.ts > AC-010 > AC-010-01: Operator receives a complete booking summary 4ms
+✓ src/**tests**/AC-010-email.test.ts > AC-010 > AC-010-02: Exactly one send per completed booking 1ms
+✓ src/**tests**/AC-010-email.test.ts > AC-010 > AC-010-03: Provider failure propagates as retryable error 2ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-01: Completed payment triggers all three side effects once 6ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-02: Replayed event causes no duplicate side effects 1ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-03: Invalid signature rejected with zero side effects 1ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-04: Unrelated event types ignored 1ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-05: Calendar failure yields retryable response without email 1ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-06: Email failure after calendar success yields retryable response 2ms
+✓ src/**tests**/AC-013-deployment-config.test.ts > AC-013 > AC-013-01: Committed availability config parses 43ms
+✓ src/**tests**/AC-013-deployment-config.test.ts > AC-013 > AC-013-02: Environment template lists every backend variable with no secrets 1ms
+✓ src/**tests**/AC-013-deployment-config.test.ts > AC-013 > AC-013-03: Serverless functions mounted alongside the SPA rewrite 1ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-01: Slots from weekly schedule 38ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-02: Weekday without an entry yields no slots 2ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-03: Blackout exception empties the day 2ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-04: Override exception replaces weekly slots 3ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-05: Window shorter than one hour yields no slots 2ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-06: Malformed YAML fails the load 2ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-07: Window with end not after start fails the load 2ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-08: Missing or mismatched timezone fails the load 2ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-09: Malformed time value fails the load 3ms
+✓ src/**tests**/AC-005-free-hour.test.ts > AC-005 > AC-005-01: Unknown email is eligible 4ms
+✓ src/**tests**/AC-005-free-hour.test.ts > AC-005 > AC-005-02: Customer without the flag is eligible 1ms
+✓ src/**tests**/AC-005-free-hour.test.ts > AC-005 > AC-005-03: Customer with the flag is not eligible 1ms
+✓ src/**tests**/AC-005-free-hour.test.ts > AC-005 > AC-005-04: Marking usage persists the flag 1ms
+✓ src/**tests**/AC-005-free-hour.test.ts > AC-005 > AC-005-05: Stripe failure is never treated as eligible 1ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-01: First-timer one-hour booking creates a zero-euro checkout session 48ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-02: First-timer two-hour booking charges 30 EUR 3ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-03: Returning client pays full price 3ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-04: Invalid email rejected without calling Stripe 1ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-05: Invalid durations rejected without calling Stripe 3ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-06: Off-grid start time rejected 2ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-07: Start outside availability rejected 2ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-08: Conflicting existing booking rejected 3ms
+✓ src/**tests**/AC-012-result-views.test.tsx > AC-012 > AC-012-01: Success view shows localized confirmation 95ms
+✓ src/**tests**/AC-012-result-views.test.tsx > AC-012 > AC-012-02: Cancel view shows localized cancellation with a way back 138ms
+✓ src/**tests**/AC-002-landing-content.test.tsx > AC-002 > AC-002-01: Hero displays localized catchphrase 256ms
+✓ src/**tests**/AC-001-i18n.test.tsx > AC-001 > AC-001-01: Default language is Spanish 273ms
+✓ src/**tests**/AC-002-landing-content.test.tsx > AC-002 > AC-002-02: Services section lists exactly four services 107ms
+✓ src/**tests**/AC-002-landing-content.test.tsx > AC-002 > AC-002-03: Contact CTA is a mailto link 235ms
+✓ src/**tests**/AC-002-landing-content.test.tsx > AC-002 > AC-002-04: Page structure has the four main sections 65ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-01: Selecting a date loads available slots 291ms
+✓ src/**tests**/AC-001-i18n.test.tsx > AC-001 > AC-001-02: Switching to English 315ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-02: Duration control offers whole hours 1 to 4 only 386ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-03: Localized pricing rules are displayed 50ms
+✓ src/**tests**/AC-001-i18n.test.tsx > AC-001 > AC-001-03: Switching back to Spanish 198ms
+✓ src/**tests**/AC-001-i18n.test.tsx > AC-001 > AC-001-04: Language choice persists across reload 126ms
+✓ src/**tests**/AC-001-i18n.test.tsx > AC-001 > AC-001-05: No hardcoded user-facing strings in components 36ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-01: Open day returns YAML slots (filter with no busy) 3ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-02: Exact busy interval removes its slots 1ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-03: Partial-hour busy overlap blocks both touched slots 1ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-04: Blackout exception day returns empty 14ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-05: Past dates rejected 20ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-06: Malformed date rejected 21ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-07: Missing date parameter rejected 1ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-04: Valid submit posts to the API and redirects to Stripe 152ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-01: First-time client pricing table 2ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-02: Returning client pricing table 0ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-03: Zero hours rejected 0ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-04: Hours above maximum rejected 0ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-05: Negative hours rejected 0ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-06: Fractional hours rejected 0ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-05: Invalid email blocks submission without a request 162ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-06: Missing required fields block submission 109ms
+✓ src/**tests**/AC-009-gcal-event.test.ts > AC-009 > AC-009-01: Summer times convert through CEST correctly 2ms
+✓ src/**tests**/AC-009-gcal-event.test.ts > AC-009 > AC-009-02: Winter times convert through CET correctly 0ms
+✓ src/**tests**/AC-009-gcal-event.test.ts > AC-009 > AC-009-03: Event carries the booking id property 1ms
+✓ src/**tests**/AC-009-gcal-event.test.ts > AC-009 > AC-009-04: Duplicate suppression 1ms
+✓ src/**tests**/AC-009-gcal-event.test.ts > AC-009 > AC-009-05: Calendar id and service-account credentials come from configuration 1ms
 
- Test Files  13 passed (13)
-      Tests  69 passed (69)
-   Start at  17:58:42
-   Duration  3.48s (transform 1.46s, setup 1.57s, import 4.05s, tests 3.29s, environment 14.72s)
+Test Files 13 passed (13)
+Tests 69 passed (69)
+Start at 17:58:42
+Duration 3.48s (transform 1.46s, setup 1.57s, import 4.05s, tests 3.29s, environment 14.72s)
 
 Build verification also PASS:
 
@@ -657,9 +738,9 @@ transforming...
 ✓ 20 modules transformed.
 rendering chunks...
 computing gzip size...
-dist/index.html                   0.45 kB │ gzip:  0.29 kB
-dist/assets/index-DUVvrM7X.css    0.27 kB │ gzip:  0.22 kB
-dist/assets/index-CMsKek45.js   209.94 kB │ gzip: 65.74 kB
+dist/index.html 0.45 kB │ gzip: 0.29 kB
+dist/assets/index-DUVvrM7X.css 0.27 kB │ gzip: 0.22 kB
+dist/assets/index-CMsKek45.js 209.94 kB │ gzip: 65.74 kB
 ✓ built in 128ms
 
 ---
@@ -671,10 +752,10 @@ exit: 0
 at: 2026-08-26T15:58:52Z
 
 {
-  "tier": "mvp",
-  "gates": ["complexity", "dry", "yagni", "solid", "property-tests"],
-  "fails": [],
-  "warns": [{ "message": "Possible duplication (2x identical 4-line block, first at ./api/availability.ts:79): try { /return loadConfig() /} catch (e) { /function loadConfigOrError(res: any) {", "file": "./api/availability.ts", "line": "79" }, { "message": "Possible duplication (2x identical 4-line block, first at ./src/domain/freeHour.ts:25): try { /const res = await stripe.customers.list({ email, limit: 1 }) /const customer = res.data[0] /const stripe = client ?? getStripe()", "file": "./src/domain/freeHour.ts", "line": "25" }, { "message": "Possible duplication (2x identical 4-line block, first at ./src/i18n/dictionary.ts:8): switcher: { /es: 'ES', /en: 'EN', /},", "file": "./src/i18n/dictionary.ts", "line": "8" }]
+"tier": "mvp",
+"gates": ["complexity", "dry", "yagni", "solid", "property-tests"],
+"fails": [],
+"warns": [{ "message": "Possible duplication (2x identical 4-line block, first at ./api/availability.ts:79): try { /return loadConfig() /} catch (e) { /function loadConfigOrError(res: any) {", "file": "./api/availability.ts", "line": "79" }, { "message": "Possible duplication (2x identical 4-line block, first at ./src/domain/freeHour.ts:25): try { /const res = await stripe.customers.list({ email, limit: 1 }) /const customer = res.data[0] /const stripe = client ?? getStripe()", "file": "./src/domain/freeHour.ts", "line": "25" }, { "message": "Possible duplication (2x identical 4-line block, first at ./src/i18n/dictionary.ts:8): switcher: { /es: 'ES', /en: 'EN', /},", "file": "./src/i18n/dictionary.ts", "line": "8" }]
 }
 
 Human output (same invocation without --json):
@@ -712,9 +793,10 @@ Property tests: skipped (project tier is mvp — production+ required)
 Property tests: skipped (project tier is mvp — production+ required)
 Property tests: skipped (project tier is mvp — production+ required)
 
----------------------------------------------
+---
+
 ✔ Design-principles check: 0 FAIL(s), 3 WARN(s).
-  WARNs are review hints — verify each before merging.
+WARNs are review hints — verify each before merging.
 
 Scoped to diff vs HEAD (-BaseRef HEAD). Global run (without --BaseRef) emits 5 FAILs all in .standards/ templates (go-saga-lint.go, eslint-saga-rules), not project code — scoped run correctly filters them. FAILs are zero on changed files.
 
@@ -759,9 +841,10 @@ Property tests: skipped (project tier is mvp — production+ required)
 Property tests: skipped (project tier is mvp — production+ required)
 Property tests: skipped (project tier is mvp — production+ required)
 
----------------------------------------------
+---
+
 ✔ Design-principles check: 0 FAIL(s), 3 WARN(s).
-  WARNs are review hints — verify each before merging.
+WARNs are review hints — verify each before merging.
 
 JSON transcript identical to complexity gate (same invocation, same file:line entries). No FAILs, so no pipeline stop. WARNs recorded verbatim above.
 
@@ -778,16 +861,16 @@ at: 2026-08-26T15:59:10Z
 Acceptance file: specs/001-landing-booking/20-acceptance/AC-004-pricing.md — headings AC-004-01 through AC-004-06
 Rule under test: priceCents(hours, freeHourAvailable) = freeHourAvailable ? (hours − 1) × 3000 : hours × 3000
 
-Test file: src/__tests__/AC-004-pricing.test.ts
+Test file: src/**tests**/AC-004-pricing.test.ts
 
-| Scenario | Heading | Test ID | Assertion match |
-|----------|---------|---------|-----------------|
-| AC-004-01 | First-time client pricing table (1→0,2→3000,3→6000,4→9000) | AC-004-01 | expect(priceCents(1,true)).toEqual({ok:true,cents:0}) etc. — exact table — PASS |
-| AC-004-02 | Returning client pricing table (1→3000…4→12000) | AC-004-02 | expect(priceCents(1,false))→3000 … 12000 — exact table — PASS |
-| AC-004-03 | Zero hours rejected "at least 1 hour" | AC-004-03 | r=priceCents(0,true); ok false, message /at least 1 hour/i — PASS |
-| AC-004-04 | Hours above max "at most 4 hours" | AC-004-04 | r=priceCents(5,true); message /at most 4 hours/i — PASS |
-| AC-004-05 | Negative hours rejected | AC-004-05 | priceCents(-1) ok false — PASS (scenario says rejection, no specific message required) |
-| AC-004-06 | Fractional hours rejected "whole hours" | AC-004-06 | priceCents(1.5) ok false, message /whole hours/i — PASS |
+| Scenario  | Heading                                                    | Test ID   | Assertion match                                                                        |
+| --------- | ---------------------------------------------------------- | --------- | -------------------------------------------------------------------------------------- |
+| AC-004-01 | First-time client pricing table (1→0,2→3000,3→6000,4→9000) | AC-004-01 | expect(priceCents(1,true)).toEqual({ok:true,cents:0}) etc. — exact table — PASS        |
+| AC-004-02 | Returning client pricing table (1→3000…4→12000)            | AC-004-02 | expect(priceCents(1,false))→3000 … 12000 — exact table — PASS                          |
+| AC-004-03 | Zero hours rejected "at least 1 hour"                      | AC-004-03 | r=priceCents(0,true); ok false, message /at least 1 hour/i — PASS                      |
+| AC-004-04 | Hours above max "at most 4 hours"                          | AC-004-04 | r=priceCents(5,true); message /at most 4 hours/i — PASS                                |
+| AC-004-05 | Negative hours rejected                                    | AC-004-05 | priceCents(-1) ok false — PASS (scenario says rejection, no specific message required) |
+| AC-004-06 | Fractional hours rejected "whole hours"                    | AC-004-06 | priceCents(1.5) ok false, message /whole hours/i — PASS                                |
 
 Verdict: assertions exactly encode the Given/When/Then — not just name match. Spot check PASS.
 
@@ -795,15 +878,15 @@ Verdict: assertions exactly encode the Given/When/Then — not just name match. 
 
 Acceptance file: specs/001-landing-booking/20-acceptance/AC-008-stripe-webhook.md — headings AC-008-01 through AC-008-06
 
-Test file: src/__tests__/AC-008-webhook.test.ts
+Test file: src/**tests**/AC-008-webhook.test.ts
 
-| Scenario | Heading | Test ID | Assertion match |
-|----------|---------|---------|-----------------|
-| AC-008-01 | Completed payment triggers all three side effects once, 200 | AC-008-01 | mockMark×1 + mockCreateEvent×1 + mockSendEmail×1 + status 200 — PASS |
-| AC-008-02 | Replayed event causes no duplicate side effects, 200 | AC-008-02 | second call with find=>true, createEvent still ×1, sendEmail ×1, status 200 — PASS |
-| AC-008-03 | Invalid signature → 400 zero side effects | AC-008-03 | constructEvent throws, status 400, none of three mocks called — PASS |
-| AC-008-04 | Unrelated event type ignored, 200 no side effects | AC-008-04 | type invoice.paid, status 200, mockMark not called — PASS |
-| AC-008-05 | Calendar failure → 5xx without email | AC-008-05 | mockCreateEvent rejected, status 500, mockSendEmail not called — PASS |
+| Scenario  | Heading                                                          | Test ID   | Assertion match                                                                          |
+| --------- | ---------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------- |
+| AC-008-01 | Completed payment triggers all three side effects once, 200      | AC-008-01 | mockMark×1 + mockCreateEvent×1 + mockSendEmail×1 + status 200 — PASS                     |
+| AC-008-02 | Replayed event causes no duplicate side effects, 200             | AC-008-02 | second call with find=>true, createEvent still ×1, sendEmail ×1, status 200 — PASS       |
+| AC-008-03 | Invalid signature → 400 zero side effects                        | AC-008-03 | constructEvent throws, status 400, none of three mocks called — PASS                     |
+| AC-008-04 | Unrelated event type ignored, 200 no side effects                | AC-008-04 | type invoice.paid, status 200, mockMark not called — PASS                                |
+| AC-008-05 | Calendar failure → 5xx without email                             | AC-008-05 | mockCreateEvent rejected, status 500, mockSendEmail not called — PASS                    |
 | AC-008-06 | Email failure after calendar success → retry sends missing email | AC-008-06 | first call 500, second call with find=>true sends email, final 200, CalledTimes 2 — PASS |
 
 All 6 scenarios in the file have corresponding tests. Test bodies assert exactly what the Then clause requires (side-effect counts, HTTP codes, idempotency). No false green — a test named AC-008-01 that asserted wrong values would fail.
@@ -890,82 +973,82 @@ command: npx vitest run --reporter=verbose
 exit: 0
 at: 2026-08-26T16:02:28Z
 
- RUN  v4.1.11 /home/dbueno/projects/rexiAI
+RUN v4.1.11 /home/dbueno/projects/rexiAI
 
- ✓ src/__tests__/AC-010-email.test.ts > AC-010 > AC-010-01: Operator receives a complete booking summary 5ms
- ✓ src/__tests__/AC-010-email.test.ts > AC-010 > AC-010-02: Exactly one send per completed booking 1ms
- ✓ src/__tests__/AC-010-email.test.ts > AC-010 > AC-010-03: Provider failure propagates as retryable error 2ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-01: Completed payment triggers all three side effects once 6ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-02: Replayed event causes no duplicate side effects 2ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-03: Invalid signature rejected with zero side effects 2ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-04: Unrelated event types ignored 1ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-05: Calendar failure yields retryable response without email 1ms
- ✓ src/__tests__/AC-008-webhook.test.ts > AC-008 > AC-008-06: Email failure after calendar success yields retryable response 2ms
- ✓ src/__tests__/AC-013-deployment-config.test.ts > AC-013 > AC-013-01: Committed availability config parses 36ms
- ✓ src/__tests__/AC-013-deployment-config.test.ts > AC-013 > AC-013-02: Environment template lists every backend variable with no secrets 1ms
- ✓ src/__tests__/AC-013-deployment-config.test.ts > AC-013 > AC-013-03: Serverless functions mounted alongside the SPA rewrite 1ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-01: Slots from weekly schedule 38ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-02: Weekday without an entry yields no slots 1ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-03: Blackout exception empties the day 1ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-04: Override exception replaces weekly slots 1ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-05: Window shorter than one hour yields no slots 1ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-06: Malformed YAML fails the load 2ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-07: Window with end not after start fails the load 1ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-08: Missing or mismatched timezone fails the load 2ms
- ✓ src/__tests__/AC-003-availability-config.test.ts > AC-003 > AC-003-09: Malformed time value fails the load 2ms
- ✓ src/__tests__/AC-005-free-hour.test.ts > AC-005 > AC-005-01: Unknown email is eligible 4ms
- ✓ src/__tests__/AC-005-free-hour.test.ts > AC-005 > AC-005-02: Customer without the flag is eligible 1ms
- ✓ src/__tests__/AC-005-free-hour.test.ts > AC-005 > AC-005-03: Customer with the flag is not eligible 0ms
- ✓ src/__tests__/AC-005-free-hour.test.ts > AC-005 > AC-005-04: Marking usage persists the flag 1ms
- ✓ src/__tests__/AC-005-free-hour.test.ts > AC-005 > AC-005-05: Stripe failure is never treated as eligible 3ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-01: First-timer one-hour booking creates a zero-euro checkout session 44ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-02: First-timer two-hour booking charges 30 EUR 3ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-03: Returning client pays full price 2ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-04: Invalid email rejected without calling Stripe 1ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-05: Invalid durations rejected without calling Stripe 1ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-06: Off-grid start time rejected 3ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-07: Start outside availability rejected 2ms
- ✓ src/__tests__/AC-007-bookings.test.ts > AC-007 > AC-007-08: Conflicting existing booking rejected 2ms
- ✓ src/__tests__/AC-012-result-views.test.tsx > AC-012 > AC-012-01: Success view shows localized confirmation 109ms
- ✓ src/__tests__/AC-012-result-views.test.tsx > AC-012 > AC-012-02: Cancel view shows localized cancellation with a way back 128ms
- ✓ src/__tests__/AC-002-landing-content.test.tsx > AC-002 > AC-002-01: Hero displays localized catchphrase 246ms
- ✓ src/__tests__/AC-002-landing-content.test.tsx > AC-002 > AC-002-02: Services section lists exactly four services 91ms
- ✓ src/__tests__/AC-001-i18n.test.tsx > AC-001 > AC-001-01: Default language is Spanish 249ms
- ✓ src/__tests__/AC-002-landing-content.test.tsx > AC-002 > AC-002-03: Contact CTA is a mailto link 197ms
- ✓ src/__tests__/AC-002-landing-content.test.tsx > AC-002 > AC-002-04: Page structure has the four main sections 68ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-01: Selecting a date loads available slots 277ms
- ✓ src/__tests__/AC-001-i18n.test.tsx > AC-001 > AC-001-02: Switching to English 285ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-02: Duration control offers whole hours 1 to 4 only 410ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-03: Localized pricing rules are displayed 56ms
- ✓ src/__tests__/AC-001-i18n.test.tsx > AC-001 > AC-001-03: Switching back to Spanish 184ms
- ✓ src/__tests__/AC-001-i18n.test.tsx > AC-001 > AC-001-04: Language choice persists across reload 150ms
- ✓ src/__tests__/AC-001-i18n.test.tsx > AC-001 > AC-001-05: No hardcoded user-facing strings in components 30ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-01: Open day returns YAML slots (filter with no busy) 2ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-02: Exact busy interval removes its slots 0ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-03: Partial-hour busy overlap blocks both touched slots 0ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-04: Blackout exception day returns empty 8ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-05: Past dates rejected 17ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-06: Malformed date rejected 1ms
- ✓ src/__tests__/AC-006-availability-api.test.ts > AC-006 > AC-006-07: Missing date parameter rejected 1ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-04: Valid submit posts to the API and redirects to Stripe 103ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-01: First-time client pricing table 2ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-02: Returning client pricing table 0ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-03: Zero hours rejected 1ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-04: Hours above maximum rejected 0ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-05: Negative hours rejected 0ms
- ✓ src/__tests__/AC-004-pricing.test.ts > AC-004 > AC-004-06: Fractional hours rejected 0ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-05: Invalid email blocks submission without a request 172ms
- ✓ src/__tests__/AC-011-booking-ui.test.tsx > AC-011 > AC-011-06: Missing required fields block submission 106ms
- ✓ src/__tests__/AC-009-gcal-event.test.ts > AC-009 > AC-009-01: Summer times convert through CEST correctly 2ms
- ✓ src/__tests__/AC-009-gcal-event.test.ts > AC-009 > AC-009-02: Winter times convert through CET correctly 0ms
- ✓ src/__tests__/AC-009-gcal-event.test.ts > AC-009 > AC-009-03: Event carries the booking id property 1ms
- ✓ src/__tests__/AC-009-gcal-event.test.ts > AC-009 > AC-009-04: Duplicate suppression 0ms
- ✓ src/__tests__/AC-009-gcal-event.test.ts > AC-009 > AC-009-05: Calendar id and service-account credentials come from configuration 0ms
+✓ src/**tests**/AC-010-email.test.ts > AC-010 > AC-010-01: Operator receives a complete booking summary 5ms
+✓ src/**tests**/AC-010-email.test.ts > AC-010 > AC-010-02: Exactly one send per completed booking 1ms
+✓ src/**tests**/AC-010-email.test.ts > AC-010 > AC-010-03: Provider failure propagates as retryable error 2ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-01: Completed payment triggers all three side effects once 6ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-02: Replayed event causes no duplicate side effects 2ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-03: Invalid signature rejected with zero side effects 2ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-04: Unrelated event types ignored 1ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-05: Calendar failure yields retryable response without email 1ms
+✓ src/**tests**/AC-008-webhook.test.ts > AC-008 > AC-008-06: Email failure after calendar success yields retryable response 2ms
+✓ src/**tests**/AC-013-deployment-config.test.ts > AC-013 > AC-013-01: Committed availability config parses 36ms
+✓ src/**tests**/AC-013-deployment-config.test.ts > AC-013 > AC-013-02: Environment template lists every backend variable with no secrets 1ms
+✓ src/**tests**/AC-013-deployment-config.test.ts > AC-013 > AC-013-03: Serverless functions mounted alongside the SPA rewrite 1ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-01: Slots from weekly schedule 38ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-02: Weekday without an entry yields no slots 1ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-03: Blackout exception empties the day 1ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-04: Override exception replaces weekly slots 1ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-05: Window shorter than one hour yields no slots 1ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-06: Malformed YAML fails the load 2ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-07: Window with end not after start fails the load 1ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-08: Missing or mismatched timezone fails the load 2ms
+✓ src/**tests**/AC-003-availability-config.test.ts > AC-003 > AC-003-09: Malformed time value fails the load 2ms
+✓ src/**tests**/AC-005-free-hour.test.ts > AC-005 > AC-005-01: Unknown email is eligible 4ms
+✓ src/**tests**/AC-005-free-hour.test.ts > AC-005 > AC-005-02: Customer without the flag is eligible 1ms
+✓ src/**tests**/AC-005-free-hour.test.ts > AC-005 > AC-005-03: Customer with the flag is not eligible 0ms
+✓ src/**tests**/AC-005-free-hour.test.ts > AC-005 > AC-005-04: Marking usage persists the flag 1ms
+✓ src/**tests**/AC-005-free-hour.test.ts > AC-005 > AC-005-05: Stripe failure is never treated as eligible 3ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-01: First-timer one-hour booking creates a zero-euro checkout session 44ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-02: First-timer two-hour booking charges 30 EUR 3ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-03: Returning client pays full price 2ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-04: Invalid email rejected without calling Stripe 1ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-05: Invalid durations rejected without calling Stripe 1ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-06: Off-grid start time rejected 3ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-07: Start outside availability rejected 2ms
+✓ src/**tests**/AC-007-bookings.test.ts > AC-007 > AC-007-08: Conflicting existing booking rejected 2ms
+✓ src/**tests**/AC-012-result-views.test.tsx > AC-012 > AC-012-01: Success view shows localized confirmation 109ms
+✓ src/**tests**/AC-012-result-views.test.tsx > AC-012 > AC-012-02: Cancel view shows localized cancellation with a way back 128ms
+✓ src/**tests**/AC-002-landing-content.test.tsx > AC-002 > AC-002-01: Hero displays localized catchphrase 246ms
+✓ src/**tests**/AC-002-landing-content.test.tsx > AC-002 > AC-002-02: Services section lists exactly four services 91ms
+✓ src/**tests**/AC-001-i18n.test.tsx > AC-001 > AC-001-01: Default language is Spanish 249ms
+✓ src/**tests**/AC-002-landing-content.test.tsx > AC-002 > AC-002-03: Contact CTA is a mailto link 197ms
+✓ src/**tests**/AC-002-landing-content.test.tsx > AC-002 > AC-002-04: Page structure has the four main sections 68ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-01: Selecting a date loads available slots 277ms
+✓ src/**tests**/AC-001-i18n.test.tsx > AC-001 > AC-001-02: Switching to English 285ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-02: Duration control offers whole hours 1 to 4 only 410ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-03: Localized pricing rules are displayed 56ms
+✓ src/**tests**/AC-001-i18n.test.tsx > AC-001 > AC-001-03: Switching back to Spanish 184ms
+✓ src/**tests**/AC-001-i18n.test.tsx > AC-001 > AC-001-04: Language choice persists across reload 150ms
+✓ src/**tests**/AC-001-i18n.test.tsx > AC-001 > AC-001-05: No hardcoded user-facing strings in components 30ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-01: Open day returns YAML slots (filter with no busy) 2ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-02: Exact busy interval removes its slots 0ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-03: Partial-hour busy overlap blocks both touched slots 0ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-04: Blackout exception day returns empty 8ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-05: Past dates rejected 17ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-06: Malformed date rejected 1ms
+✓ src/**tests**/AC-006-availability-api.test.ts > AC-006 > AC-006-07: Missing date parameter rejected 1ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-04: Valid submit posts to the API and redirects to Stripe 103ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-01: First-time client pricing table 2ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-02: Returning client pricing table 0ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-03: Zero hours rejected 1ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-04: Hours above maximum rejected 0ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-05: Negative hours rejected 0ms
+✓ src/**tests**/AC-004-pricing.test.ts > AC-004 > AC-004-06: Fractional hours rejected 0ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-05: Invalid email blocks submission without a request 172ms
+✓ src/**tests**/AC-011-booking-ui.test.tsx > AC-011 > AC-011-06: Missing required fields block submission 106ms
+✓ src/**tests**/AC-009-gcal-event.test.ts > AC-009 > AC-009-01: Summer times convert through CEST correctly 2ms
+✓ src/**tests**/AC-009-gcal-event.test.ts > AC-009 > AC-009-02: Winter times convert through CET correctly 0ms
+✓ src/**tests**/AC-009-gcal-event.test.ts > AC-009 > AC-009-03: Event carries the booking id property 1ms
+✓ src/**tests**/AC-009-gcal-event.test.ts > AC-009 > AC-009-04: Duplicate suppression 0ms
+✓ src/**tests**/AC-009-gcal-event.test.ts > AC-009 > AC-009-05: Calendar id and service-account credentials come from configuration 0ms
 
- Test Files  13 passed (13)
-      Tests  69 passed (69)
-   Start at  18:02:29
-   Duration  3.54s (transform 1.60s, setup 1.67s, import 4.20s, tests 3.11s, environment 15.18s)
+Test Files 13 passed (13)
+Tests 69 passed (69)
+Start at 18:02:29
+Duration 3.54s (transform 1.60s, setup 1.67s, import 4.20s, tests 3.11s, environment 15.18s)
 
 ## Remediation record
 
@@ -1001,10 +1084,10 @@ All checks reported by `gh pr checks` are in `pass` bucket. No GitHub Actions `C
 
 ### Per-check table
 
-| Check | Bucket | State | Workflow | Link |
-|---|---|---|---|---|
-| Vercel Preview Comments | pass | SUCCESS | — | https://vercel.com/github |
-| Vercel | pass | SUCCESS | — | https://vercel.com/danielbueno76-4270s-projects/rexi-ai/3gLqsbGKFE1yHGfsftV3DvJJKhxc |
+| Check                   | Bucket | State   | Workflow | Link                                                                                 |
+| ----------------------- | ------ | ------- | -------- | ------------------------------------------------------------------------------------ |
+| Vercel Preview Comments | pass   | SUCCESS | —        | https://vercel.com/github                                                            |
+| Vercel                  | pass   | SUCCESS | —        | https://vercel.com/danielbueno76-4270s-projects/rexi-ai/3gLqsbGKFE1yHGfsftV3DvJJKhxc |
 
 ### Failing check IDs
 
@@ -1056,3 +1139,876 @@ at: 2026-08-26T16:14:33Z
 
 Notes: No GitHub Actions `CI` check-runs or workflow_runs were returned for this head SHA during the entire poll window (16:11–16:14 UTC). `gh api repos/RexiAI/rexiAI/commits/<sha>/check-runs` and `gh api .../actions/runs?head_sha=<sha>` both returned empty/only-Vercel. `gh pr checks --watch` behavior was emulated via bounded re-query (4 polls, 10s interval) until both buckets terminal `pass`. `gh run list --branch spec/001-landing-booking` also returned `[]` — no `Self CI` (`.github/workflows/ci.yml`) run created for this PR at query time. If branch protection later requires a `CI` check, it would appear as `absent-unknown`, not `fail`, per triage taxonomy — but at this instant `gh pr checks` reports only Vercel, both pass.
 
+---
+
+## Post-PR CI check — Round 2 (phase 2, attempt 2)
+
+**Date:** 2026-08-27
+**PR:** https://github.com/RexiAI/rexiAI/pull/16
+**Branch:** spec/001-landing-booking
+**Head SHA:** 50c83af500bea4693b5bde838387aa7fe3c40f65
+**Run:** https://github.com/RexiAI/rexiAI/actions/runs/33070831632
+**Mode:** post-PR CI re-check per .standards/docs/SPEC_PIPELINE.md §Post-PR CI check-and-remediate loop
+**Loop budget:** SPEC_LOOP_COUNT=2, SPEC_PHASE1_RETRIES=0, SPEC_PHASE2_RETRIES=1 — phase-2 round 1 re-check after fix push (previous run 32988911776 failed Lint & Format 14 errors, new run 33070831632)
+**Trigger:** fix commit for Lint & Format (previous 14 Prettier errors)
+**Verdict:** FAIL — 1 check in `fail` bucket
+
+Bounded poll: 10s interval, up to ~5 min. Initial poll showed Vercel `pending`; polled until terminal (all buckets `pass`/`fail`/`skipping`, no `pending`). Terminal at 2026-08-27T12:14:51Z (Vercel flipped pending→pass on 2nd poll, CI already terminal `fail`).
+
+### Per-check table (terminal, bucket is parse rule)
+
+| Check                             | Bucket   | State   | Workflow | Link                                                                                 |
+| --------------------------------- | -------- | ------- | -------- | ------------------------------------------------------------------------------------ |
+| Vercel Preview Comments           | pass     | SUCCESS | —        | https://vercel.com/github                                                            |
+| frontend-ci / Build               | skipping | SKIPPED | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512452221            |
+| frontend-ci / Docker Build & Push | skipping | SKIPPED | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512451904            |
+| frontend-ci / Unit Tests          | pass     | SUCCESS | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339173            |
+| frontend-ci / Lint & Format       | **fail** | FAILURE | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339290            |
+| Vercel                            | pass     | SUCCESS | —        | https://vercel.com/danielbueno76-4270s-projects/rexi-ai/3zrwH4GfLnFh44e4uvUH7pgLNPaa |
+
+`skipping` is not `fail` (conditional workflow jobs skipped). Only `fail` bucket counts as FAIL. One FAIL → overall FAIL.
+
+### Failing check IDs
+
+| Check                       | ID          | Conclusion |
+| --------------------------- | ----------- | ---------- |
+| frontend-ci / Lint & Format | 98512339290 | failure    |
+
+Source: `gh api repos/RexiAI/rexiAI/commits/50c83af500bea4693b5bde838387aa7fe3c40f65/check-runs` (conclusion == failure)
+
+### Failing job logs (tail -c 6000, verbatim)
+
+Source: `gh run view 33070831632 --log-failed` (run 33070831632, job 98512339290)
+
+```
+Format	UNKNOWN STEP	2026-08-27T12:13:22.5573846Z [^[[33mwarn^[[39m] api/stripe-webhook.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.5686638Z [^[[33mwarn^[[39m] config/availability.yaml
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.7769818Z [^[[33mwarn^[[39m] docs/changes/001-landing-booking.md
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.8462242Z [^[[33mwarn^[[39m] src/__tests__/AC-001-i18n.test.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.8590566Z [^[[33mwarn^[[39m] src/__tests__/AC-002-landing-content.test.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.9034304Z [^[[33mwarn^[[39m] src/__tests__/AC-005-free-hour.test.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.9493414Z [^[[33mwarn^[[39m] src/__tests__/AC-007-bookings.test.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.9841173Z [^[[33mwarn^[[39m] src/__tests__/AC-008-webhook.test.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.9955288Z [^[[33mwarn^[[39m] src/__tests__/AC-009-gcal-event.test.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.0043942Z [^[[33mwarn^[[39m] src/__tests__/AC-010-email.test.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.0218775Z [^[[33mwarn^[[39m] src/__tests__/AC-011-booking-ui.test.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.0301648Z [^[[33mwarn^[[39m] src/__tests__/AC-012-result-views.test.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.0957111Z [^[[33mwarn^[[39m] src/App.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1296937Z [^[[33mwarn^[[39m] src/components/BookingWidget.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1371520Z [^[[33mwarn^[[39m] src/components/LanguageSwitcher.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1537867Z [^[[33mwarn^[[39m] src/domain/availability.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1615228Z [^[[33mwarn^[[39m] src/domain/email.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1702926Z [^[[33mwarn^[[39m] src/domain/freeHour.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1833144Z [^[[33mwarn^[[39m] src/domain/gcal.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1962196Z [^[[33mwarn^[[39m] src/domain/pricing.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2121496Z [^[[33mwarn^[[39m] src/domain/time.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2264345Z [^[[33mwarn^[[39m] src/i18n/dictionary.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2566248Z [^[[33mwarn^[[39m] Code style issues found in 24 files. Run Prettier with --write to fix.
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2803717Z ##[error]Process completed with exit code 1.
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2902861Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2903947Z Post job cleanup.
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3592423Z [command]/usr/bin/git version
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3635474Z git version 2.55.0
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3663469Z Temporarily overriding HOME='/home/runner/work/_temp/9e8ef0c9-9d17-4897-8576-7c4aa80da6f1' before making global git config changes
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3664672Z Adding repository directory to the temporary git global config as a safe directory
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3667388Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/rexiAI/rexiAI
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3697790Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3727274Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3962761Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3985485Z http.https://github.com/.extraheader
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3993983Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4026373Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4231517Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4264246Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4588466Z Cleaning up orphan processes
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4817863Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+
+```
+
+### Root cause (diagnosis for orchestrator routing)
+
+Job `frontend-ci / Lint & Format` (id 98512339290) fails at `npm run format:check` (`prettier --check .`) — exit code 1 — with:
+
+```
+Code style issues found in 24 files. Run Prettier with --write to fix.
+```
+
+Pre-fix run 32988911776 had 14 files; fix commit claimed to fix but new run still has 24 files with style issues (regression: more, not fewer). Files flagged (from log `[warn]` lines):
+
+- `api/availability.ts`, `api/bookings.ts`, `api/stripe-webhook.ts`
+- `config/availability.yaml`
+- `docs/changes/001-landing-booking.md` (the archive doc itself)
+- `src/__tests__/AC-001-i18n.test.tsx`, `AC-002-landing-content.test.tsx`, `AC-005-free-hour.test.ts`, `AC-007-bookings.test.ts`, `AC-008-webhook.test.ts`, `AC-009-gcal-event.test.ts`, `AC-010-email.test.ts`, `AC-011-booking-ui.test.tsx`, `AC-012-result-views.test.tsx`
+- `src/App.tsx`, `src/components/BookingWidget.tsx`, `src/components/LanguageSwitcher.tsx`
+- `src/domain/availability.ts`, `src/domain/email.ts`, `src/domain/freeHour.ts`, `src/domain/gcal.ts`, `src/domain/pricing.ts`, `src/domain/time.ts`
+- `src/i18n/dictionary.ts`
+
+Note: `npm run lint` (`eslint .`) in same job emitted 136 warnings (`@typescript-eslint/no-explicit-any`) but **0 errors** — those warnings are not the failure; the job fails on the subsequent `format:check` step.
+
+**Route to:** Refactorer (formatting/style) or Coder — run `npx prettier --write .` (or `npm run format`) and commit, ensure `docs/changes/001-landing-booking.md` is also formatted or excluded via `.prettierignore` if intended.
+
+### Evidence: Post-PR CI — Round 2 poll to terminal
+
+## Evidence: post-PR CI check Round 2 — poll 1 (pending)
+
+command: gh pr checks 16 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-08-27T12:14:40Z
+
+[{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512452221","name":"frontend-ci / Build","state":"SKIPPED","workflow":"CI"},{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512451904","name":"frontend-ci / Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339173","name":"frontend-ci / Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"fail","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339290","name":"frontend-ci / Lint & Format","state":"FAILURE","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"pending","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/3zrwH4GfLnFh44e4uvUH7pgLNPaa","name":"Vercel","state":"PENDING","workflow":""}]
+
+## Evidence: post-PR CI check Round 2 — poll 2 terminal (Vercel pass, CI fail remains)
+
+command: gh pr checks 16 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-08-27T12:14:51Z
+
+[{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512452221","name":"frontend-ci / Build","state":"SKIPPED","workflow":"CI"},{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512451904","name":"frontend-ci / Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339173","name":"frontend-ci / Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"fail","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339290","name":"frontend-ci / Lint & Format","state":"FAILURE","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/3zrwH4GfLnFh44e4uvUH7pgLNPaa","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+## Evidence: post-PR CI check Round 2 — final terminal snapshot
+
+command: gh pr checks 16 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-08-27T12:15:54Z
+
+[{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512452221","name":"frontend-ci / Build","state":"SKIPPED","workflow":"CI"},{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512451904","name":"frontend-ci / Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339173","name":"frontend-ci / Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"fail","link":"https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339290","name":"frontend-ci / Lint & Format","state":"FAILURE","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/3zrwH4GfLnFh44e4uvUH7pgLNPaa","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+## Evidence: check-runs for head SHA 50c83af500bea4693b5bde838387aa7fe3c40f65
+
+command: gh api repos/RexiAI/rexiAI/commits/50c83af500bea4693b5bde838387aa7fe3c40f65/check-runs
+exit: 0
+at: 2026-08-27T12:16:00Z
+
+{
+"total_count": 5,
+"check_runs": [
+{
+"id": 98512785439,
+"name": "Vercel Preview Comments",
+"node_id": "CR_kwDOUCrJBM8AAAAW79HQHw",
+"head_sha": "50c83af500bea4693b5bde838387aa7fe3c40f65",
+"external_id": "",
+"url": "https://api.github.com/repos/RexiAI/rexiAI/check-runs/98512785439",
+"html_url": "https://github.com/RexiAI/rexiAI/runs/98512785439",
+"details_url": "https://vercel.com/github",
+"status": "completed",
+"conclusion": "success",
+"started_at": "2026-08-27T12:14:48Z",
+"completed_at": "2026-08-27T12:14:48Z",
+"output": {
+"title": "\u2705 No unresolved feedback",
+"summary": "\ud83d\udcac 0 unresolved, 0 resolved. [Go to feedback](https://vercel.live/open-feedback/rexi-ai-git-spec-001-landin-3151fe-danielbueno76-4270s-projects.vercel.app?via=pr-comment-feedback-link)",
+"text": null,
+"annotations_count": 0,
+"annotations_url": "https://api.github.com/repos/RexiAI/rexiAI/check-runs/98512785439/annotations"
+},
+"check_suite": {
+"id": 89601942040
+},
+"app": {
+"id": 8329,
+"client_id": "Iv1.9d7d662ea00b8481",
+"slug": "vercel",
+"node_id": "MDM6QXBwODMyOQ==",
+"owner": {
+"login": "vercel",
+"id": 14985020,
+"node_id": "MDEyOk9yZ2FuaXphdGlvbjE0OTg1MDIw",
+"avatar_url": "https://avatars.githubusercontent.com/u/14985020?v=4",
+"gravatar_id": "",
+"url": "https://api.github.com/users/vercel",
+"html_url": "https://github.com/vercel",
+"followers_url": "https://api.github.com/users/vercel/followers",
+"following_url": "https://api.github.com/users/vercel/following{/other_user}",
+"gists_url": "https://api.github.com/users/vercel/gists{/gist_id}",
+"starred_url": "https://api.github.com/users/vercel/starred{/owner}{/repo}",
+"subscriptions_url": "https://api.github.com/users/vercel/subscriptions",
+"organizations_url": "https://api.github.com/users/vercel/orgs",
+"repos_url": "https://api.github.com/users/vercel/repos",
+"events_url": "https://api.github.com/users/vercel/events{/privacy}",
+"received_events_url": "https://api.github.com/users/vercel/received_events",
+"type": "Organization",
+"user_view_type": "public",
+"site_admin": false
+},
+"name": "Vercel",
+"description": "Vercel for GitHub automatically deploys your PRs to Vercel.\r\nPreview every PR live, without any configuration required.\r\n\r\nFor more information, see our [documentation](https://vercel.com/docs/github?utm_source=github&utm_medium=marketplace&utm_campaign=vercel-app).\r\n\r\n![](https://assets.vercel.com/image/upload/v1597943727/front/github/github-comment-monorepo.png)",
+"external_url": "https://vercel.com/github",
+"html_url": "https://github.com/apps/vercel",
+"created_at": "2018-01-19T21:51:06Z",
+"updated_at": "2026-08-20T01:39:01Z",
+"permissions": {
+"actions": "read",
+"administration": "write",
+"checks": "write",
+"contents": "write",
+"deployments": "write",
+"emails": "read",
+"issues": "write",
+"members": "read",
+"metadata": "read",
+"pull_requests": "write",
+"repository_hooks": "write",
+"statuses": "write",
+"workflows": "write"
+},
+"events": [
+"branch_protection_rule",
+"check_run",
+"delete",
+"deployment",
+"issue_comment",
+"membership",
+"pull_request",
+"pull_request_review",
+"pull_request_review_comment",
+"pull_request_review_thread",
+"push",
+"repository",
+"status",
+"team"
+]
+},
+"pull_requests": [
+{
+"url": "https://api.github.com/repos/RexiAI/rexiAI/pulls/16",
+"id": 4368798504,
+"number": 16,
+"head": {
+"ref": "spec/001-landing-booking",
+"sha": "50c83af500bea4693b5bde838387aa7fe3c40f65",
+"repo": {
+"id": 1344981252,
+"url": "https://api.github.com/repos/RexiAI/rexiAI",
+"name": "rexiAI"
+}
+},
+"base": {
+"ref": "main",
+"sha": "2a312b2a6651a13bc8faf7bb21dd3f4633f072e4",
+"repo": {
+"id": 1344981252,
+"url": "https://api.github.com/repos/RexiAI/rexiAI",
+"name": "rexiAI"
+}
+}
+}
+]
+},
+{
+"id": 98512452221,
+"name": "frontend-ci / Build",
+"node_id": "CR_kwDOUCrJBM8AAAAW78y6fQ",
+"head_sha": "50c83af500bea4693b5bde838387aa7fe3c40f65",
+"external_id": "2959e442-3998-5efe-be4f-f71bcbe63e97",
+"url": "https://api.github.com/repos/RexiAI/rexiAI/check-runs/98512452221",
+"html_url": "https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512452221",
+"details_url": "https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512452221",
+"status": "completed",
+"conclusion": "skipped",
+"started_at": "2026-08-27T12:13:31Z",
+"completed_at": "2026-08-27T12:13:30Z",
+"output": {
+"title": null,
+"summary": null,
+"text": null,
+"annotations_count": 0,
+"annotations_url": "https://api.github.com/repos/RexiAI/rexiAI/check-runs/98512452221/annotations"
+},
+"check_suite": {
+"id": 89601957468
+},
+"app": {
+"id": 15368,
+"client_id": "Iv1.05c79e9ad1f6bdfa",
+"slug": "github-actions",
+"node_id": "MDM6QXBwMTUzNjg=",
+"owner": {
+"login": "github",
+"id": 9919,
+"node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+"avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+"gravatar_id": "",
+"url": "https://api.github.com/users/github",
+"html_url": "https://github.com/github",
+"followers_url": "https://api.github.com/users/github/followers",
+"following_url": "https://api.github.com/users/github/following{/other_user}",
+"gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+"starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+"subscriptions_url": "https://api.github.com/users/github/subscriptions",
+"organizations_url": "https://api.github.com/users/github/orgs",
+"repos_url": "https://api.github.com/users/github/repos",
+"events_url": "https://api.github.com/users/github/events{/privacy}",
+"received_events_url": "https://api.github.com/users/github/received_events",
+"type": "Organization",
+"user_view_type": "public",
+"site_admin": false
+},
+"name": "GitHub Actions",
+"description": "Automate your workflow from idea to production",
+"external_url": "https://help.github.com/en/actions",
+"html_url": "https://github.com/apps/github-actions",
+"created_at": "2018-07-30T09:30:17Z",
+"updated_at": "2026-06-18T16:17:48Z",
+"permissions": {
+"actions": "write",
+"administration": "read",
+"artifact_metadata": "write",
+"attestations": "write",
+"checks": "write",
+"code_quality": "write",
+"contents": "write",
+"copilot_requests": "write",
+"deployments": "write",
+"discussions": "write",
+"drives": "write",
+"issues": "write",
+"merge_queues": "write",
+"metadata": "read",
+"models": "read",
+"packages": "write",
+"pages": "write",
+"pull_requests": "write",
+"repository_hooks": "write",
+"repository_projects": "write",
+"security_events": "write",
+"statuses": "write",
+"vulnerability_alerts": "read"
+},
+"events": [
+"branch_protection_rule",
+"check_run",
+"check_suite",
+"create",
+"delete",
+"deployment",
+"deployment_status",
+"discussion",
+"discussion_comment",
+"fork",
+"gollum",
+"issues",
+"issue_comment",
+"label",
+"merge_group",
+"milestone",
+"page_build",
+"public",
+"pull_request",
+"pull_request_review",
+"pull_request_review_comment",
+"push",
+"registry_package",
+"release",
+"repository",
+"repository_dispatch",
+"status",
+"watch",
+"workflow_dispatch",
+"workflow_run"
+]
+},
+"pull_requests": [
+{
+"url": "https://api.github.com/repos/RexiAI/rexiAI/pulls/16",
+"id": 4368798504,
+"number": 16,
+"head": {
+"ref": "spec/001-landing-booking",
+"sha": "50c83af500bea4693b5bde838387aa7fe3c40f65",
+"repo": {
+"id": 1344981252,
+"url": "https://api.github.com/repos/RexiAI/rexiAI",
+"name": "rexiAI"
+}
+},
+"base": {
+"ref": "main",
+"sha": "2a312b2a6651a13bc8faf7bb21dd3f4633f072e4",
+"repo": {
+"id": 1344981252,
+"url": "https://api.github.com/repos/RexiAI/rexiAI",
+"name": "rexiAI"
+}
+}
+}
+]
+},
+{
+"id": 98512451904,
+"name": "frontend-ci / Docker Build & Push",
+"node_id": "CR_kwDOUCrJBM8AAAAW78y5QA",
+"head_sha": "50c83af500bea4693b5bde838387aa7fe3c40f65",
+"external_id": "8cf3fb58-2f02-5e39-91b5-599e15bd6305",
+"url": "https://api.github.com/repos/RexiAI/rexiAI/check-runs/98512451904",
+"html_url": "https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512451904",
+"details_url": "https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512451904",
+"status": "completed",
+"conclusion": "skipped",
+"started_at": "2026-08-27T12:13:31Z",
+"completed_at": "2026-08-27T12:13:30Z",
+"output": {
+"title": null,
+"summary": null,
+"text": null,
+"annotations_count": 0,
+"annotations_url": "https://api.github.com/repos/RexiAI/rexiAI/check-runs/98512451904/annotations"
+},
+"check_suite": {
+"id": 89601957468
+},
+"app": {
+"id": 15368,
+"client_id": "Iv1.05c79e9ad1f6bdfa",
+"slug": "github-actions",
+"node_id": "MDM6QXBwMTUzNjg=",
+"owner": {
+"login": "github",
+"id": 9919,
+"node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+"avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+"gravatar_id": "",
+"url": "https://api.github.com/users/github",
+"html_url": "https://github.com/github",
+"followers_url": "https://api.github.com/users/github/followers",
+"following_url": "https://api.github.com/users/github/following{/other_user}",
+"gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+"starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+"subscriptions_url": "https://api.github.com/users/github/subscriptions",
+"organizations_url": "https://api.github.com/users/github/orgs",
+"repos_url": "https://api.github.com/users/github/repos",
+"events_url": "https://api.github.com/users/github/events{/privacy}",
+"received_events_url": "https://api.github.com/users/github/received_events",
+"type": "Organization",
+"user_view_type": "public",
+"site_admin": false
+},
+"name": "GitHub Actions",
+"description": "Automate your workflow from idea to production",
+"external_url": "https://help.github.com/en/actions",
+"html_url": "https://github.com/apps/github-actions",
+"created_at": "2018-07-30T09:30:17Z",
+"updated_at": "2026-06-18T16:17:48Z",
+"permissions": {
+"actions": "write",
+"administration": "read",
+"artifact_metadata": "write",
+"attestations": "write",
+"checks": "write",
+"code_quality": "write",
+"contents": "write",
+"copilot_requests": "write",
+"deployments": "write",
+"discussions": "write",
+"drives": "write",
+"issues": "write",
+"merge_queues": "write",
+"metadata": "read",
+"models": "read",
+"packages": "write",
+"pages": "write",
+"pull_requests": "write",
+"repository_hooks": "write",
+"repository_projects": "write",
+"security_events": "write",
+"statuses": "write",
+"vulnerability_alerts": "read"
+},
+"events": [
+"branch_protection_rule",
+"check_run",
+"check_suite",
+"create",
+"delete",
+"deployment",
+"deployment_status",
+"discussion",
+"discussion_comment",
+"fork",
+"gollum",
+"issues",
+"issue_comment",
+"label",
+"merge_group",
+"milestone",
+"page_build",
+"public",
+"pull_request",
+"pull_request_review",
+"pull_request_review_comment",
+"push",
+"registry_package",
+"release",
+"repository",
+"repository_dispatch",
+"status",
+"watch",
+"workflow_dispatch",
+"workflow_run"
+]
+},
+"pull_requests": [
+{
+"url": "https://api.github.com/repos/RexiAI/rexiAI/pulls/16",
+"id": 4368798504,
+"number": 16,
+"head": {
+"ref": "spec/001-landing-booking",
+"sha": "50c83af500bea4693b5bde838387aa7fe3c40f65",
+"repo": {
+"id": 1344981252,
+"url": "https://api.github.com/repos/RexiAI/rexiAI",
+"name": "rexiAI"
+}
+},
+"base": {
+"ref": "main",
+"sha": "2a312b2a6651a13bc8faf7bb21dd3f4633f072e4",
+"repo": {
+"id": 1344981252,
+"url": "https://api.github.com/repos/RexiAI/rexiAI",
+"name": "rexiAI"
+}
+}
+}
+]
+},
+{
+"id": 98512339290,
+"name": "frontend-ci / Lint & Format",
+"node_id": "CR_kwDOUCrJBM8AAAAW78sBWg",
+"head_sha": "50c83af500bea4693b5bde838387aa7fe3c40f65",
+"external_id": "dd121d78-998c-55e6-869d-76890007fcdf",
+"url": "https://api.github.com/repos/RexiAI/rexiAI/check-runs/98512339290",
+"html_url": "https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339290",
+"details_url": "https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339290",
+"status": "completed",
+"conclusion": "failure",
+"started_at": "2026-08-27T12:13:07Z",
+"completed_at": "2026-08-27T12:13:25Z",
+"output": {
+"title": null,
+"summary": null,
+"text": null,
+"annotations_count": 12,
+"annotations_url": "https://api.github.com/repos/RexiAI/rexiAI/check-runs/98512339290/annotations"
+},
+"check_suite": {
+"id": 89601957468
+},
+"app": {
+"id": 15368,
+"client_id": "Iv1.05c79e9ad1f6bdfa",
+"slug": "github-actions",
+"node_id": "MDM6QXBwMTUzNjg=",
+"owner": {
+"login": "github",
+"id": 9919,
+"node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+"avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+"gravatar_id": "",
+"url": "https://api.github.com/users/github",
+"html_url": "https://github.com/github",
+"followers_url": "https://api.github.com/users/github/followers",
+"following_url": "https://api.github.com/users/github/following{/other_user}",
+"gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+"starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+"subscriptions_url": "https://api.github.com/users/github/subscriptions",
+"organizations_url": "https://api.github.com/users/github/orgs",
+"repos_url": "https://api.github.com/users/github/repos",
+"events_url": "https://api.github.com/users/github/events{/privacy}",
+"received_events_url": "https://api.github.com/users/github/received_events",
+"type": "Organization",
+"user_view_type": "public",
+"site_admin": false
+},
+"name": "GitHub Actions",
+"description": "Automate your workflow from idea to production",
+"external_url": "https://help.github.com/en/actions",
+"html_url": "https://github.com/apps/github-actions",
+"created_at": "2018-07-30T09:30:17Z",
+"updated_at": "2026-06-18T16:17:48Z",
+"permissions": {
+"actions": "write",
+"administration": "read",
+"artifact_metadata": "write",
+"attestations": "write",
+"checks": "write",
+"code_quality": "write",
+"contents": "write",
+"copilot_requests": "write",
+"deployments": "write",
+"discussions": "write",
+"drives": "write",
+"issues": "write",
+"merge_queues": "write",
+"metadata": "read",
+"models": "read",
+"packages": "write",
+"pages": "write",
+"pull_requests": "write",
+"repository_hooks": "write",
+"repository_projects": "write",
+"security_events": "write",
+"statuses": "write",
+"vulnerability_alerts": "read"
+},
+"events": [
+"branch_protection_rule",
+"check_run",
+"check_suite",
+"create",
+"delete",
+"deployment",
+"deployment_status",
+"discussion",
+"discussion_comment",
+"fork",
+"gollum",
+"issues",
+"issue_comment",
+"label",
+"merge_group",
+"milestone",
+"page_build",
+"public",
+"pull_request",
+"pull_request_review",
+"pull_request_review_comment",
+"push",
+"registry_package",
+"release",
+"repository",
+"repository_dispatch",
+"status",
+"watch",
+"workflow_dispatch",
+"workflow_run"
+]
+},
+"pull_requests": [
+{
+"url": "https://api.github.com/repos/RexiAI/rexiAI/pulls/16",
+"id": 4368798504,
+"number": 16,
+"head": {
+"ref": "spec/001-landing-booking",
+"sha": "50c83af500bea4693b5bde838387aa7fe3c40f65",
+"repo": {
+"id": 1344981252,
+"url": "https://api.github.com/repos/RexiAI/rexiAI",
+"name": "rexiAI"
+}
+},
+"base": {
+"ref": "main",
+"sha": "2a312b2a6651a13bc8faf7bb21dd3f4633f072e4",
+"repo": {
+"id": 1344981252,
+"url": "https://api.github.com/repos/RexiAI/rexiAI",
+"name": "rexiAI"
+}
+}
+}
+]
+},
+{
+"id": 98512339173,
+"name": "frontend-ci / Unit Tests",
+"node_id": "CR_kwDOUCrJBM8AAAAW78sA5Q",
+"head_sha": "50c83af500bea4693b5bde838387aa7fe3c40f65",
+"external_id": "1385f93f-90d2-50bf-983f-4cb4ebf31e7a",
+"url": "https://api.github.com/repos/RexiAI/rexiAI/check-runs/98512339173",
+"html_url": "https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339173",
+"details_url": "https://github.com/RexiAI/rexiAI/actions/runs/33070831632/job/98512339173",
+"status": "completed",
+"conclusion": "success",
+"started_at": "2026-08-27T12:13:07Z",
+"completed_at": "2026-08-27T12:13:30Z",
+"output": {
+"title": null,
+"summary": null,
+"text": null,
+"annotations_count": 1,
+"annotations_url": "https://api.github.com/repos/RexiAI/rexiAI/check-runs/98512339173/annotations"
+},
+"check_suite": {
+"id": 89601957468
+},
+"app": {
+"id": 15368,
+"client_id": "Iv1.05c79e9ad1f6bdfa",
+"slug": "github-actions",
+"node_id": "MDM6QXBwMTUzNjg=",
+"owner": {
+"login": "github",
+"id": 9919,
+"node_id": "MDEyOk9yZ2FuaXphdGlvbjk5MTk=",
+"avatar_url": "https://avatars.githubusercontent.com/u/9919?v=4",
+"gravatar_id": "",
+"url": "https://api.github.com/users/github",
+"html_url": "https://github.com/github",
+"followers_url": "https://api.github.com/users/github/followers",
+"following_url": "https://api.github.com/users/github/following{/other_user}",
+"gists_url": "https://api.github.com/users/github/gists{/gist_id}",
+"starred_url": "https://api.github.com/users/github/starred{/owner}{/repo}",
+"subscriptions_url": "https://api.github.com/users/github/subscriptions",
+"organizations_url": "https://api.github.com/users/github/orgs",
+"repos_url": "https://api.github.com/users/github/repos",
+"events_url": "https://api.github.com/users/github/events{/privacy}",
+"received_events_url": "https://api.github.com/users/github/received_events",
+"type": "Organization",
+"user_view_type": "public",
+"site_admin": false
+},
+"name": "GitHub Actions",
+"description": "Automate your workflow from idea to production",
+"external_url": "https://help.github.com/en/actions",
+"html_url": "https://github.com/apps/github-actions",
+"created_at": "2018-07-30T09:30:17Z",
+"updated_at": "2026-06-18T16:17:48Z",
+"permissions": {
+"actions": "write",
+"administration": "read",
+"artifact_metadata": "write",
+"attestations": "write",
+"checks": "write",
+"code_quality": "write",
+"contents": "write",
+"copilot_requests": "write",
+"deployments": "write",
+"discussions": "write",
+"drives": "write",
+"issues": "write",
+"merge_queues": "write",
+"metadata": "read",
+"models": "read",
+"packages": "write",
+"pages": "write",
+"pull_requests": "write",
+"repository_hooks": "write",
+"repository_projects": "write",
+"security_events": "write",
+"statuses": "write",
+"vulnerability_alerts": "read"
+},
+"events": [
+"branch_protection_rule",
+"check_run",
+"check_suite",
+"create",
+"delete",
+"deployment",
+"deployment_status",
+"discussion",
+"discussion_comment",
+"fork",
+"gollum",
+"issues",
+"issue_comment",
+"label",
+"merge_group",
+"milestone",
+"page_build",
+"public",
+"pull_request",
+"pull_request_review",
+"pull_request_review_comment",
+"push",
+"registry_package",
+"release",
+"repository",
+"repository_dispatch",
+"status",
+"watch",
+"workflow_dispatch",
+"workflow_run"
+]
+},
+"pull_requests": [
+{
+"url": "https://api.github.com/repos/RexiAI/rexiAI/pulls/16",
+"id": 4368798504,
+"number": 16,
+"head": {
+"ref": "spec/001-landing-booking",
+"sha": "50c83af500bea4693b5bde838387aa7fe3c40f65",
+"repo": {
+"id": 1344981252,
+"url": "https://api.github.com/repos/RexiAI/rexiAI",
+"name": "rexiAI"
+}
+},
+"base": {
+"ref": "main",
+"sha": "2a312b2a6651a13bc8faf7bb21dd3f4633f072e4",
+"repo": {
+"id": 1344981252,
+"url": "https://api.github.com/repos/RexiAI/rexiAI",
+"name": "rexiAI"
+}
+}
+}
+]
+}
+]
+}
+
+## Evidence: failing check annotations (Lint & Format)
+
+command: gh api repos/RexiAI/rexiAI/check-runs/98512339290/annotations
+exit: 0
+at: 2026-08-27T12:16:00Z
+
+12 annotations: 1 failure (exit code 1 at .github line 35) + 10 warnings @typescript-eslint/no-explicit-any + 1 warning Node.js 20 deprecated. Verbatim first 3 annotation messages: "Process completed with exit code 1." / "Unexpected any. Specify a different type" / "Node.js 20 is deprecated..."
+
+## Evidence: failing job logs (tail -c 6000)
+
+command: gh run view 33070831632 --log-failed | tail -c 6000
+exit: 0
+at: 2026-08-27T12:16:05Z
+
+```
+Format	UNKNOWN STEP	2026-08-27T12:13:22.5573846Z [^[[33mwarn^[[39m] api/stripe-webhook.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.5686638Z [^[[33mwarn^[[39m] config/availability.yaml
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.7769818Z [^[[33mwarn^[[39m] docs/changes/001-landing-booking.md
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.8462242Z [^[[33mwarn^[[39m] src/__tests__/AC-001-i18n.test.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.8590566Z [^[[33mwarn^[[39m] src/__tests__/AC-002-landing-content.test.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.9034304Z [^[[33mwarn^[[39m] src/__tests__/AC-005-free-hour.test.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.9493414Z [^[[33mwarn^[[39m] src/__tests__/AC-007-bookings.test.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.9841173Z [^[[33mwarn^[[39m] src/__tests__/AC-008-webhook.test.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:22.9955288Z [^[[33mwarn^[[39m] src/__tests__/AC-009-gcal-event.test.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.0043942Z [^[[33mwarn^[[39m] src/__tests__/AC-010-email.test.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.0218775Z [^[[33mwarn^[[39m] src/__tests__/AC-011-booking-ui.test.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.0301648Z [^[[33mwarn^[[39m] src/__tests__/AC-012-result-views.test.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.0957111Z [^[[33mwarn^[[39m] src/App.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1296937Z [^[[33mwarn^[[39m] src/components/BookingWidget.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1371520Z [^[[33mwarn^[[39m] src/components/LanguageSwitcher.tsx
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1537867Z [^[[33mwarn^[[39m] src/domain/availability.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1615228Z [^[[33mwarn^[[39m] src/domain/email.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1702926Z [^[[33mwarn^[[39m] src/domain/freeHour.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1833144Z [^[[33mwarn^[[39m] src/domain/gcal.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.1962196Z [^[[33mwarn^[[39m] src/domain/pricing.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2121496Z [^[[33mwarn^[[39m] src/domain/time.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2264345Z [^[[33mwarn^[[39m] src/i18n/dictionary.ts
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2566248Z [^[[33mwarn^[[39m] Code style issues found in 24 files. Run Prettier with --write to fix.
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2803717Z ##[error]Process completed with exit code 1.
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2902861Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.2903947Z Post job cleanup.
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3592423Z [command]/usr/bin/git version
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3635474Z git version 2.55.0
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3663469Z Temporarily overriding HOME='/home/runner/work/_temp/9e8ef0c9-9d17-4897-8576-7c4aa80da6f1' before making global git config changes
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3664672Z Adding repository directory to the temporary git global config as a safe directory
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3667388Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/rexiAI/rexiAI
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3697790Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3727274Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3962761Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3985485Z http.https://github.com/.extraheader
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.3993983Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4026373Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4231517Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4264246Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4588466Z Cleaning up orphan processes
+frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4817863Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+
+```

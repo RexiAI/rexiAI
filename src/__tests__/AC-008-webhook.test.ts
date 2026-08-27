@@ -51,7 +51,12 @@ describe('AC-008', () => {
         object: {
           id: 'cs_test_123',
           customer_email: 'client@example.com',
-          metadata: { email: 'client@example.com', date: '2027-03-01', start_time: '10:00', hours: '1' },
+          metadata: {
+            email: 'client@example.com',
+            date: '2027-03-01',
+            start_time: '10:00',
+            hours: '1',
+          },
           amount_total: 0,
           ...overrides.object,
         },
@@ -62,7 +67,12 @@ describe('AC-008', () => {
   it('AC-008-01: Completed payment triggers all three side effects once', async () => {
     const ev = makeEvent()
     webhookMocks.mockConstruct.mockReturnValue(ev)
-    const req: any = { method: 'POST', headers: { 'stripe-signature': 'sig' }, bodyRaw: '{}', body: {} }
+    const req: any = {
+      method: 'POST',
+      headers: { 'stripe-signature': 'sig' },
+      bodyRaw: '{}',
+      body: {},
+    }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
     await webhook(req, res)
     expect(webhookMocks.mockMark).toHaveBeenCalledTimes(1)
@@ -75,7 +85,12 @@ describe('AC-008', () => {
     const ev = makeEvent()
     webhookMocks.mockConstruct.mockReturnValue(ev)
     webhookMocks.mockFind.mockResolvedValue(false)
-    const req: any = { method: 'POST', headers: { 'stripe-signature': 'sig' }, bodyRaw: '{}', body: {} }
+    const req: any = {
+      method: 'POST',
+      headers: { 'stripe-signature': 'sig' },
+      bodyRaw: '{}',
+      body: {},
+    }
     const res1: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
     await webhook(req, res1)
     webhookMocks.mockFind.mockResolvedValue(true)
@@ -87,8 +102,15 @@ describe('AC-008', () => {
   })
 
   it('AC-008-03: Invalid signature rejected with zero side effects', async () => {
-    webhookMocks.mockConstruct.mockImplementation(() => { throw new Error('invalid sig') })
-    const req: any = { method: 'POST', headers: { 'stripe-signature': 'bad' }, bodyRaw: '{}', body: {} }
+    webhookMocks.mockConstruct.mockImplementation(() => {
+      throw new Error('invalid sig')
+    })
+    const req: any = {
+      method: 'POST',
+      headers: { 'stripe-signature': 'bad' },
+      bodyRaw: '{}',
+      body: {},
+    }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
     await webhook(req, res)
     expect(res.status).toHaveBeenCalledWith(400)
@@ -100,7 +122,12 @@ describe('AC-008', () => {
   it('AC-008-04: Unrelated event types ignored', async () => {
     const ev = { id: 'evt_2', type: 'invoice.paid', data: { object: { id: 'in_1' } } }
     webhookMocks.mockConstruct.mockReturnValue(ev)
-    const req: any = { method: 'POST', headers: { 'stripe-signature': 'sig' }, bodyRaw: '{}', body: {} }
+    const req: any = {
+      method: 'POST',
+      headers: { 'stripe-signature': 'sig' },
+      bodyRaw: '{}',
+      body: {},
+    }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
     await webhook(req, res)
     expect(res.status).toHaveBeenCalledWith(200)
@@ -112,7 +139,12 @@ describe('AC-008', () => {
     webhookMocks.mockConstruct.mockReturnValue(ev)
     webhookMocks.mockFind.mockResolvedValue(false)
     webhookMocks.mockCreateEvent.mockRejectedValue(new Error('gcal fail'))
-    const req: any = { method: 'POST', headers: { 'stripe-signature': 'sig' }, bodyRaw: '{}', body: {} }
+    const req: any = {
+      method: 'POST',
+      headers: { 'stripe-signature': 'sig' },
+      bodyRaw: '{}',
+      body: {},
+    }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
     await webhook(req, res)
     expect(res.status).toHaveBeenCalledWith(500)
@@ -124,7 +156,12 @@ describe('AC-008', () => {
     webhookMocks.mockConstruct.mockReturnValue(ev)
     webhookMocks.mockFind.mockResolvedValue(false)
     webhookMocks.mockSendEmail.mockRejectedValueOnce(new Error('email fail'))
-    const req: any = { method: 'POST', headers: { 'stripe-signature': 'sig' }, bodyRaw: '{}', body: {} }
+    const req: any = {
+      method: 'POST',
+      headers: { 'stripe-signature': 'sig' },
+      bodyRaw: '{}',
+      body: {},
+    }
     const res1: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
     await webhook(req, res1)
     expect(res1.status).toHaveBeenCalledWith(500)

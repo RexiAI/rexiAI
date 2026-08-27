@@ -67,11 +67,14 @@ function extractWindowBounds(win: unknown, context: string): { start: string; en
 
 function validateTimes(start: string, end: string, context: string): void {
   const sMin = parseMinutes(start)
-  if (sMin === null) throw new Error(`availability.yaml: invalid time value "${start}" in ${context}`)
+  if (sMin === null)
+    throw new Error(`availability.yaml: invalid time value "${start}" in ${context}`)
   const eMin = parseMinutes(end)
   if (eMin === null) throw new Error(`availability.yaml: invalid time value "${end}" in ${context}`)
   if (eMin <= sMin) {
-    throw new Error(`availability.yaml: window end must be after start in ${context}: ${start} - ${end}`)
+    throw new Error(
+      `availability.yaml: window end must be after start in ${context}: ${start} - ${end}`
+    )
   }
 }
 
@@ -98,7 +101,11 @@ function assertValidDateKey(date: string): void {
   }
 }
 
-function extractOptionalRecord(obj: Record<string, unknown>, key: string, errorMsg: string): Record<string, unknown> | null {
+function extractOptionalRecord(
+  obj: Record<string, unknown>,
+  key: string,
+  errorMsg: string
+): Record<string, unknown> | null {
   const raw = obj[key]
   if (raw === undefined || raw === null) return null
   if (typeof raw !== 'object' || Array.isArray(raw)) {
@@ -118,7 +125,11 @@ function parseWeeklySection(obj: Record<string, unknown>): Record<string, Window
 }
 
 function parseExceptionsSection(obj: Record<string, unknown>): Record<string, Window[]> {
-  const rec = extractOptionalRecord(obj, 'exceptions', 'availability.yaml: exceptions must be an object')
+  const rec = extractOptionalRecord(
+    obj,
+    'exceptions',
+    'availability.yaml: exceptions must be an object'
+  )
   if (!rec) return {}
   const out: Record<string, Window[]> = {}
   for (const [date, windows] of Object.entries(rec)) {

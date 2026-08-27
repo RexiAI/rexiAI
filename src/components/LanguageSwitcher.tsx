@@ -13,9 +13,24 @@ function buttonStyle(active: boolean): React.CSSProperties {
   }
 }
 
-function LangButton({ active, label, ariaLabel, onClick }: { active: boolean; label: string; ariaLabel: string; onClick: () => void }) {
+function LangButton({
+  active,
+  label,
+  ariaLabel,
+  onClick,
+}: {
+  active: boolean
+  label: string
+  ariaLabel: string
+  onClick: () => void
+}) {
   return (
-    <button aria-pressed={active} aria-label={ariaLabel} onClick={onClick} style={buttonStyle(active)}>
+    <button
+      aria-pressed={active}
+      aria-label={ariaLabel}
+      onClick={onClick}
+      style={buttonStyle(active)}
+    >
       {label}
     </button>
   )
@@ -24,9 +39,29 @@ function LangButton({ active, label, ariaLabel, onClick }: { active: boolean; la
 export function LanguageSwitcher() {
   const { locale, setLocale } = useI18n()
   return (
-    <div role="group" aria-label="Language switcher" style={{ display: 'inline-flex', border: '1px solid #E4E4E7', borderRadius: '9999px', overflow: 'hidden', padding: 2 }}>
-      <LangButton active={locale === 'es'} label="ES" ariaLabel="Español" onClick={() => setLocale('es')} />
-      <LangButton active={locale === 'en'} label="EN" ariaLabel="English" onClick={() => setLocale('en')} />
+    <div
+      role="group"
+      aria-label="Language switcher"
+      style={{
+        display: 'inline-flex',
+        border: '1px solid #E4E4E7',
+        borderRadius: '9999px',
+        overflow: 'hidden',
+        padding: 2,
+      }}
+    >
+      <LangButton
+        active={locale === 'es'}
+        label="ES"
+        ariaLabel="Español"
+        onClick={() => setLocale('es')}
+      />
+      <LangButton
+        active={locale === 'en'}
+        label="EN"
+        ariaLabel="English"
+        onClick={() => setLocale('en')}
+      />
     </div>
   )
 }

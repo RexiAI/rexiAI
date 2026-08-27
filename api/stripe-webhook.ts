@@ -89,15 +89,21 @@ function getAmountTotal(session: Stripe.Checkout.Session): number {
 
 function hasRequiredFields(email: string, date: string, startTime: string, res: any): boolean {
   if (!email) {
-    res.status(400).json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
+    res
+      .status(400)
+      .json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
     return false
   }
   if (!date) {
-    res.status(400).json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
+    res
+      .status(400)
+      .json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
     return false
   }
   if (!startTime) {
-    res.status(400).json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
+    res
+      .status(400)
+      .json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
     return false
   }
   return true
@@ -124,7 +130,17 @@ async function checkAlreadyExists(bookingId: string, res: any): Promise<boolean 
   }
 }
 
-async function trySendEmail(data: { email: string; date: string; startTime: string; hours: number; amountTotal: number; bookingId: string }, res: any): Promise<boolean> {
+async function trySendEmail(
+  data: {
+    email: string
+    date: string
+    startTime: string
+    hours: number
+    amountTotal: number
+    bookingId: string
+  },
+  res: any
+): Promise<boolean> {
   try {
     await sendOperatorEmail({
       clientEmail: data.email,
@@ -151,7 +167,10 @@ async function tryMarkFree(email: string, res: any): Promise<boolean> {
   }
 }
 
-async function tryCreateEvent(data: { bookingId: string; email: string; date: string; startTime: string; hours: number }, res: any): Promise<boolean> {
+async function tryCreateEvent(
+  data: { bookingId: string; email: string; date: string; startTime: string; hours: number },
+  res: any
+): Promise<boolean> {
   try {
     await createGCalEvent({
       bookingId: data.bookingId,
@@ -167,7 +186,10 @@ async function tryCreateEvent(data: { bookingId: string; email: string; date: st
   }
 }
 
-async function handleExistingBooking(data: ReturnType<typeof extractBookingData> & {}, res: any): Promise<boolean> {
+async function handleExistingBooking(
+  data: ReturnType<typeof extractBookingData> & {},
+  res: any
+): Promise<boolean> {
   const d = data!
   if (emailSentForBooking.has(d.bookingId)) {
     res.status(200).json({ received: true, deduped: true })
@@ -179,7 +201,10 @@ async function handleExistingBooking(data: ReturnType<typeof extractBookingData>
   return true
 }
 
-async function handleNewBooking(data: ReturnType<typeof extractBookingData> & {}, res: any): Promise<boolean> {
+async function handleNewBooking(
+  data: ReturnType<typeof extractBookingData> & {},
+  res: any
+): Promise<boolean> {
   const d = data!
   if (!(await tryMarkFree(d.email, res))) return true
   if (!(await tryCreateEvent(d as any, res))) return true

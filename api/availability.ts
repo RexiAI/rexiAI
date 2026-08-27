@@ -3,7 +3,11 @@ import path from 'path'
 
 import { google } from 'googleapis'
 
-import { parseAvailabilityYaml, computeSlotsForDate, isPastDate } from '../src/domain/availability.js'
+import {
+  parseAvailabilityYaml,
+  computeSlotsForDate,
+  isPastDate,
+} from '../src/domain/availability.js'
 import { createCalendarAuth } from '../src/domain/googleAuth.js'
 import { madridToUtc } from '../src/domain/time.js'
 
@@ -43,7 +47,7 @@ async function getBusyIntervals(dateStr: string): Promise<{ start: Date; end: Da
 function filterSlotsByBusy(
   slots: string[],
   dateStr: string,
-  busy: { start: Date; end: Date }[],
+  busy: { start: Date; end: Date }[]
 ): string[] {
   if (busy.length === 0) return slots
   return slots.filter((s) => {
@@ -68,7 +72,9 @@ function validateDateParam(req: any, res: any): string | null {
     return null
   }
   if (!isValidDateFormat(date)) {
-    res.status(400).json({ error: { code: 'INVALID_DATE', message: 'Invalid date format, expected YYYY-MM-DD' } })
+    res.status(400).json({
+      error: { code: 'INVALID_DATE', message: 'Invalid date format, expected YYYY-MM-DD' },
+    })
     return null
   }
   if (isPastDate(date)) {
@@ -82,14 +88,18 @@ function loadConfigOrError(res: any) {
   try {
     return loadConfig()
   } catch (e) {
-    res.status(500).json({ error: { code: 'CONFIG_ERROR', message: e instanceof Error ? e.message : String(e) } })
+    res.status(500).json({
+      error: { code: 'CONFIG_ERROR', message: e instanceof Error ? e.message : String(e) },
+    })
     return null
   }
 }
 
 export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
+    return res
+      .status(405)
+      .json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
   }
   const date = validateDateParam(req, res)
   if (!date) return

@@ -2,13 +2,20 @@ import { describe, it, expect, vi } from 'vitest'
 
 import { isFreeHourAvailable, markFreeHourUsed } from '../domain/freeHour'
 
-function makeMockStripe(opts: { listData?: any[]; listError?: boolean; updateImpl?: any; createImpl?: any }) {
+function makeMockStripe(opts: {
+  listData?: any[]
+  listError?: boolean
+  updateImpl?: any
+  createImpl?: any
+}) {
   const list = vi.fn().mockImplementation(async () => {
     if (opts.listError) throw new Error('network error')
     return { data: opts.listData ?? [] }
   })
   const update = vi.fn().mockImplementation(opts.updateImpl ?? (async () => ({})))
-  const create = vi.fn().mockImplementation(opts.createImpl ?? (async () => ({ id: 'cus_new', metadata: {} })))
+  const create = vi
+    .fn()
+    .mockImplementation(opts.createImpl ?? (async () => ({ id: 'cus_new', metadata: {} })))
   return {
     customers: { list, update, create },
   } as any
@@ -26,7 +33,9 @@ describe('AC-005', () => {
     expect(res).toBe(true)
   })
   it('AC-005-03: Customer with the flag is not eligible', async () => {
-    const stripe = makeMockStripe({ listData: [{ id: 'cus_1', metadata: { rexi_free_hour_used: '1' } }] })
+    const stripe = makeMockStripe({
+      listData: [{ id: 'cus_1', metadata: { rexi_free_hour_used: '1' } }],
+    })
     const res = await isFreeHourAvailable('returning@example.com', stripe)
     expect(res).toBe(false)
   })
@@ -61,6 +70,8 @@ describe('AC-005', () => {
   })
   it('AC-005-05: Stripe failure is never treated as eligible', async () => {
     const stripe = makeMockStripe({ listError: true })
-    await expect(isFreeHourAvailable('err@example.com', stripe)).rejects.toThrow(/Stripe lookup failed/i)
+    await expect(isFreeHourAvailable('err@example.com', stripe)).rejects.toThrow(
+      /Stripe lookup failed/i
+    )
   })
 })

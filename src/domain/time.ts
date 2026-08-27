@@ -50,7 +50,11 @@ export function madridToUtc(dateStr: string, timeStr: string): Date {
   return new Date(guess)
 }
 
-export function slotIntervalUtc(dateStr: string, timeStr: string, hours: number): { start: Date; end: Date } {
+export function slotIntervalUtc(
+  dateStr: string,
+  timeStr: string,
+  hours: number
+): { start: Date; end: Date } {
   const start = madridToUtc(dateStr, timeStr)
   const end = new Date(start.getTime() + hours * 3600000)
   return { start, end }

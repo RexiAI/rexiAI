@@ -21,7 +21,9 @@ describe('AC-002', () => {
   it('AC-002-03: Contact CTA is a mailto link', () => {
     render(<App />)
     const links = screen.getAllByRole('link')
-    const mailto = links.find((a) => (a as HTMLAnchorElement).href.includes('mailto:danielbueno76@gmail.com'))
+    const mailto = links.find((a) =>
+      (a as HTMLAnchorElement).href.includes('mailto:danielbueno76@gmail.com')
+    )
     expect(mailto).toBeDefined()
     expect((mailto as HTMLAnchorElement).href).toBe('mailto:danielbueno76@gmail.com')
   })

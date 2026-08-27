@@ -12,7 +12,10 @@ describe('AC-011', () => {
   it('AC-011-01: Selecting a date loads available slots', async () => {
     const fetchMock = vi.fn().mockImplementation((url: string) => {
       if (typeof url === 'string' && url.includes('/api/availability')) {
-        return Promise.resolve({ ok: true, json: async () => ({ date: '2027-03-01', slots: ['09:00', '10:00'] }) } as any)
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ date: '2027-03-01', slots: ['09:00', '10:00'] }),
+        } as any)
       }
       return Promise.resolve({ ok: true, json: async () => ({}) } as any)
     })
@@ -21,7 +24,11 @@ describe('AC-011', () => {
     const dateInput = document.getElementById('booking-date') as HTMLInputElement
     expect(dateInput).toBeTruthy()
     fireEvent.change(dateInput, { target: { value: '2027-03-01' } })
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/availability?date=2027-03-01')))
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/availability?date=2027-03-01')
+      )
+    )
     await waitFor(() => expect(screen.getByText('09:00')).toBeInTheDocument())
     expect(screen.getByText('10:00')).toBeInTheDocument()
   })
@@ -42,8 +49,13 @@ describe('AC-011', () => {
   })
 
   it('AC-011-04: Valid submit posts to the API and redirects to Stripe', async () => {
-    const availMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ slots: ['10:00'] }) } as any)
-    const bookingsMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ checkoutUrl: 'https://checkout.stripe.com/pay/cs_123' }) } as any)
+    const availMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ slots: ['10:00'] }) } as any)
+    const bookingsMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ checkoutUrl: 'https://checkout.stripe.com/pay/cs_123' }),
+    } as any)
     const fetchMock = vi.fn().mockImplementation((url: string, opts?: any) => {
       if (typeof url === 'string' && url.includes('/api/availability')) return availMock()
       if (typeof url === 'string' && url.includes('/api/bookings')) return bookingsMock(url, opts)
@@ -65,29 +77,48 @@ describe('AC-011', () => {
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
     const submit = screen.getByRole('button', { name: /Reservar y pagar/i })
     fireEvent.click(submit)
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('/api/bookings'), expect.any(Object)))
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/bookings'),
+        expect.any(Object)
+      )
+    )
     // verify body
     const call = fetchMock.mock.calls.find((c) => String(c[0]).includes('/api/bookings'))
     expect(call).toBeDefined()
     const body = JSON.parse(call![1].body)
-    expect(body).toEqual(expect.objectContaining({ email: 'test@example.com', date: '2027-03-01', startTime: '10:00', hours: expect.any(Number) }))
+    expect(body).toEqual(
+      expect.objectContaining({
+        email: 'test@example.com',
+        date: '2027-03-01',
+        startTime: '10:00',
+        hours: expect.any(Number),
+      })
+    )
     expect(window.location.href).toBe('https://checkout.stripe.com/pay/cs_123')
     // restore
     ;(window as any).location = loc
   })
 
   it('AC-011-05: Invalid email blocks submission without a request', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ checkoutUrl: 'https://x' }) } as any)
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ checkoutUrl: 'https://x' }) } as any)
     vi.stubGlobal('fetch', fetchMock)
     render(<App />)
     const dateInput = document.getElementById('booking-date') as HTMLInputElement
     // need date and slot to not trigger missing fields first, but invalid email should still block
     // set date, mock availability quickly
-    const availMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ slots: ['10:00'] }) } as any)
-    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
-      if (String(url).includes('/api/availability')) return availMock()
-      return fetchMock(url)
-    }))
+    const availMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ slots: ['10:00'] }) } as any)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        if (String(url).includes('/api/availability')) return availMock()
+        return fetchMock(url)
+      })
+    )
     fireEvent.change(dateInput, { target: { value: '2027-03-01' } })
     await waitFor(() => screen.getByText('10:00'))
     fireEvent.click(screen.getByText('10:00'))
@@ -99,7 +130,10 @@ describe('AC-011', () => {
     vi.stubGlobal('fetch', bookingsSpy)
     fireEvent.click(submit)
     await new Promise((r) => setTimeout(r, 50))
-    expect(bookingsSpy).not.toHaveBeenCalledWith(expect.stringContaining('/api/bookings'), expect.anything())
+    expect(bookingsSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('/api/bookings'),
+      expect.anything()
+    )
     expect(screen.getByText(/Introduce un email válido/i)).toBeInTheDocument()
   })
 
@@ -111,7 +145,10 @@ describe('AC-011', () => {
     fireEvent.click(submit)
     await new Promise((r) => setTimeout(r, 50))
     // should show required errors and not call bookings
-    expect(fetchMock).not.toHaveBeenCalledWith(expect.stringContaining('/api/bookings'), expect.anything())
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('/api/bookings'),
+      expect.anything()
+    )
     // at least one required message
     expect(screen.getAllByText(/obligatorio/i).length).toBeGreaterThan(0)
   })
