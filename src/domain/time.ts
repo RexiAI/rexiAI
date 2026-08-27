@@ -35,7 +35,7 @@ export function madridToUtc(dateStr: string, timeStr: string): Date {
   let offset = 60
   // Guess UTC = wall -60
   let guess = Date.UTC(y, mo - 1, d, h, mi) - offset * 60000
-  let actualOffset = madridOffsetMinutes(new Date(guess))
+  const actualOffset = madridOffsetMinutes(new Date(guess))
   if (actualOffset !== offset) {
     offset = actualOffset
     guess = Date.UTC(y, mo - 1, d, h, mi) - offset * 60000

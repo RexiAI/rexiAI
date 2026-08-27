@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react'
+/* eslint-disable react-hooks/set-state-in-effect -- availability fetch intentionally syncs fetched slots into state */
+import { useEffect, useState } from 'react'
+
 import { useI18n } from '../i18n/I18nContext'
 
 function todayMadrid(): string {
@@ -63,10 +65,11 @@ function useBookingFields() {
 }
 
 function useResetOnDate(fields: ReturnType<typeof useBookingFields>) {
+  const { date, setConflictError, setSelectedSlot } = fields
   useEffect(() => {
-    fields.setSelectedSlot('')
-    fields.setConflictError('')
-  }, [fields.date])
+    setSelectedSlot('')
+    setConflictError('')
+  }, [date, setConflictError, setSelectedSlot])
 }
 
 function handleBookingResponse(fields: ReturnType<typeof useBookingFields>, dict: any, res: any, data: any): boolean {

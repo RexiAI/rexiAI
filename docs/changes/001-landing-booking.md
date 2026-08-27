@@ -983,3 +983,76 @@ Recorded via .standards/scripts/record-gate-run.sh if present — see command be
 
 PR: https://github.com/RexiAI/rexiAI/pull/16
 Commits: 3
+
+---
+
+## Post-PR CI check — Round 1 (phase 2, attempt 1)
+
+**Date:** 2026-08-26
+**PR:** https://github.com/RexiAI/rexiAI/pull/16
+**Branch:** spec/001-landing-booking
+**Head SHA:** f2ffcc4c33c7f1295ff397b1a7bc6e06c05a0bd0
+**Mode:** post-PR CI check per .standards/docs/SPEC_PIPELINE.md §Post-PR CI check-and-remediate loop
+**Loop budget:** SPEC_LOOP_COUNT=1, SPEC_PHASE1_RETRIES=0, SPEC_PHASE2_RETRIES=0 — first post-PR round, attempt 1 phase 2
+
+### Verdict: PASS — all reported checks passed (no FAIL, no pending)
+
+All checks reported by `gh pr checks` are in `pass` bucket. No GitHub Actions `CI` run present for this head SHA (Vercel-only PR, `ci.yml` triggers on `pull_request` to `main` — at query time no `check-runs`/`workflow_runs` for this SHA were created; only Vercel suites reported). Per the spec gate rule — `bucket` is the PASS/FAIL parse rule and `pending` is neither — with all reported buckets `pass`, verdict is PASS.
+
+### Per-check table
+
+| Check | Bucket | State | Workflow | Link |
+|---|---|---|---|---|
+| Vercel Preview Comments | pass | SUCCESS | — | https://vercel.com/github |
+| Vercel | pass | SUCCESS | — | https://vercel.com/danielbueno76-4270s-projects/rexi-ai/3gLqsbGKFE1yHGfsftV3DvJJKhxc |
+
+### Failing check IDs
+
+None — no check reported `bucket: fail` / `conclusion: failure`.
+
+### Failing job logs (tail -c 6000)
+
+None — no failing checks, no logs to capture. `gh api repos/RexiAI/rexiAI/commits/f2ffcc4c33c7f1295ff397b1a7bc6e06c05a0bd0/check-runs` returned only `Vercel Preview Comments` with `conclusion: success`; `gh api .../actions/runs?head_sha=...` returned empty `workflow_runs`; `gh pr checks --watch` terminal at pass.
+
+### Evidence: Post-PR CI — initial pending then pass (poll)
+
+## Evidence: post-PR CI check (poll — pending → pass)
+
+command: gh pr checks 16 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-08-26T16:11:48Z
+
+[{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"pending","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/3gLqsbGKFE1yHGfsftV3DvJJKhxc","name":"Vercel","state":"PENDING","workflow":""}]
+
+command: gh pr checks 16 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-08-26T16:13:47Z
+
+[{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/3gLqsbGKFE1yHGfsftV3DvJJKhxc","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+command: gh pr view 16 --json isDraft,createdAt,updatedAt,state,mergeable
+exit: 0
+at: 2026-08-26T16:13:57Z
+
+{"createdAt":"2026-08-26T16:09:53Z","isDraft":true,"mergeable":"UNKNOWN","state":"OPEN","updatedAt":"2026-08-26T16:13:35Z"}
+
+command: gh api repos/RexiAI/rexiAI/commits/f2ffcc4c33c7f1295ff397b1a7bc6e06c05a0bd0/check-runs
+exit: 0
+at: 2026-08-26T16:13:57Z
+
+[{"conclusion":"success","id":98235931138,"name":"Vercel Preview Comments","status":"completed"}]
+
+command: gh api repos/RexiAI/rexiAI/actions/runs?head_sha=f2ffcc4c33c7f1295ff397b1a7bc6e06c05a0bd0
+exit: 0
+at: 2026-08-26T16:14:09Z
+
+{"workflow_runs":[]}
+
+command: gh pr checks 16 --json name,state,bucket,workflow,link (poll round — 4 consecutive terminals)
+exit: 0
+at: 2026-08-26T16:14:33Z
+
+[{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/3gLqsbGKFE1yHGfsftV3DvJJKhxc","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+Notes: No GitHub Actions `CI` check-runs or workflow_runs were returned for this head SHA during the entire poll window (16:11–16:14 UTC). `gh api repos/RexiAI/rexiAI/commits/<sha>/check-runs` and `gh api .../actions/runs?head_sha=<sha>` both returned empty/only-Vercel. `gh pr checks --watch` behavior was emulated via bounded re-query (4 polls, 10s interval) until both buckets terminal `pass`. `gh run list --branch spec/001-landing-booking` also returned `[]` — no `Self CI` (`.github/workflows/ci.yml`) run created for this PR at query time. If branch protection later requires a `CI` check, it would appear as `absent-unknown`, not `fail`, per triage taxonomy — but at this instant `gh pr checks` reports only Vercel, both pass.
+

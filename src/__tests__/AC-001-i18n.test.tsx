@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, beforeEach } from 'vitest'
+
 import App from '../App'
 import { es, en } from '../i18n/dictionary'
 

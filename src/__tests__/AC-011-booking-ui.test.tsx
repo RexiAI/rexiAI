@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
 import App from '../App'
 
 describe('AC-011', () => {
@@ -51,9 +52,7 @@ describe('AC-011', () => {
     vi.stubGlobal('fetch', fetchMock)
     // mock window.location href setter
     const loc = window.location
-    // @ts-ignore
     delete (window as any).location
-    // @ts-ignore
     ;(window as any).location = { href: '' } as any
 
     render(<App />)

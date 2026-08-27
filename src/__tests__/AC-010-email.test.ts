@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+
 import { sendOperatorEmail } from '../domain/email'
 
 describe('AC-010', () => {

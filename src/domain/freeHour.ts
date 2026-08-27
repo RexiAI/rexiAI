@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+
 import { getStripe } from './stripeClient.js'
 
 export async function isFreeHourAvailable(
@@ -14,7 +15,7 @@ export async function isFreeHourAvailable(
     const flag = (customer.metadata as Record<string, string> | undefined)?.['rexi_free_hour_used']
     return flag !== '1'
   } catch (e) {
-    throw new Error(`Stripe lookup failed: ${e instanceof Error ? e.message : String(e)}`)
+    throw new Error(`Stripe lookup failed: ${e instanceof Error ? e.message : String(e)}`, { cause: e })
   }
 }
 
@@ -37,6 +38,6 @@ export async function markFreeHourUsed(
       metadata: { ...customer.metadata, rexi_free_hour_used: '1' },
     })
   } catch (e) {
-    throw new Error(`Stripe mark failed: ${e instanceof Error ? e.message : String(e)}`)
+    throw new Error(`Stripe mark failed: ${e instanceof Error ? e.message : String(e)}`, { cause: e })
   }
 }

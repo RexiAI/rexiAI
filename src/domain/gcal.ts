@@ -1,6 +1,7 @@
 import { google } from 'googleapis'
-import { madridToUtc } from './time.js'
+
 import { createCalendarAuth } from './googleAuth.js'
+import { madridToUtc } from './time.js'
 
 export interface GCalEventInput {
   bookingId: string

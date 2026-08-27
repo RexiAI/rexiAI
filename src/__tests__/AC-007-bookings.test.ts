@@ -31,6 +31,7 @@ vi.mock('googleapis', () => ({
 }))
 
 import bookingsHandler from '../../api/bookings'
+
 import fs from 'fs'
 
 const yamlContent = `

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
-import { madridToUtc } from '../domain/time'
+
 import { createGCalEvent } from '../domain/gcal'
+import { madridToUtc } from '../domain/time'
 
 describe('AC-009', () => {
   it('AC-009-01: Summer times convert through CEST correctly', () => {

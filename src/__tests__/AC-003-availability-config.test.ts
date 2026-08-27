@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+
 import { parseAvailabilityYaml, computeSlotsForDate } from '../domain/availability'
 
 describe('AC-003', () => {

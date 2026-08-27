@@ -1,8 +1,9 @@
 import Stripe from 'stripe'
-import { getStripe } from '../src/domain/stripeClient.js'
+
+import { sendOperatorEmail } from '../src/domain/email.js'
 import { markFreeHourUsed } from '../src/domain/freeHour.js'
 import { createGCalEvent, findEventByBookingId } from '../src/domain/gcal.js'
-import { sendOperatorEmail } from '../src/domain/email.js'
+import { getStripe } from '../src/domain/stripeClient.js'
 
 function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
@@ -14,22 +15,49 @@ export function _resetEmailSent() {
   emailSentForBooking.clear()
 }
 
-function getVerifiedEvent(req: any, res: any): Stripe.Event | null {
+function validateMethod(req: any, res: any): boolean {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
-    return null
+    return false
   }
-  const sig = req.headers?.['stripe-signature'] as string | undefined
-  const webhookSecret = process.env['STRIPE_WEBHOOK_SECRET']
-  if (!webhookSecret || !sig) {
+  return true
+}
+
+function getSignature(req: any): string | undefined {
+  return req.headers?.['stripe-signature'] as string | undefined
+}
+
+function getWebhookSecret(): string | undefined {
+  return process.env['STRIPE_WEBHOOK_SECRET']
+}
+
+function validateSignature(sig: string | undefined, secret: string | undefined, res: any): boolean {
+  if (!secret || !sig) {
     res.status(400).json({ error: { code: 'INVALID_SIGNATURE', message: 'Missing signature' } })
-    return null
+    return false
   }
+  return true
+}
+
+function buildPayload(req: any): string {
+  const rawBody = req.bodyRaw ?? req.body ?? ''
+  if (typeof rawBody === 'string') return rawBody
+  return JSON.stringify(rawBody)
+}
+
+function constructStripeEvent(payload: string, sig: string, secret: string): Stripe.Event {
+  const stripe = getStripe()
+  return stripe.webhooks.constructEvent(payload, sig, secret)
+}
+
+function getVerifiedEvent(req: any, res: any): Stripe.Event | null {
+  if (!validateMethod(req, res)) return null
+  const sig = getSignature(req)
+  const secret = getWebhookSecret()
+  if (!validateSignature(sig, secret, res)) return null
   try {
-    const stripe = getStripe()
-    const rawBody = req.bodyRaw ?? req.body ?? ''
-    const payload = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody)
-    return stripe.webhooks.constructEvent(payload, sig, webhookSecret)
+    const payload = buildPayload(req)
+    return constructStripeEvent(payload, sig!, secret!)
   } catch (e) {
     res.status(400).json({ error: { code: 'INVALID_SIGNATURE', message: errMsg(e) } })
     return null

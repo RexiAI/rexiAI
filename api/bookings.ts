@@ -1,13 +1,15 @@
 import fs from 'fs'
 import path from 'path'
-import { parseAvailabilityYaml, computeSlotsForDate, isPastDate } from '../src/domain/availability.js'
-import { priceCents } from '../src/domain/pricing.js'
-import { isFreeHourAvailable } from '../src/domain/freeHour.js'
-import { isValidEmail } from '../src/domain/validation.js'
-import { madridToUtc } from '../src/domain/time.js'
-import { getStripe } from '../src/domain/stripeClient.js'
-import { createCalendarAuth } from '../src/domain/googleAuth.js'
+
 import { google } from 'googleapis'
+
+import { computeSlotsForDate, isPastDate, parseAvailabilityYaml } from '../src/domain/availability.js'
+import { isFreeHourAvailable } from '../src/domain/freeHour.js'
+import { createCalendarAuth } from '../src/domain/googleAuth.js'
+import { priceCents } from '../src/domain/pricing.js'
+import { getStripe } from '../src/domain/stripeClient.js'
+import { madridToUtc } from '../src/domain/time.js'
+import { isValidEmail } from '../src/domain/validation.js'
 
 function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
@@ -36,32 +38,53 @@ async function queryFreeBusy(calendarId: string, slotStart: Date, slotEnd: Date,
   return (res.data.calendars?.[calendarId]?.busy ?? []) as { start: string; end: string }[]
 }
 
-async function hasConflict(date: string, startTime: string, hours: number): Promise<boolean> {
+function getCalendarEnv(): { calendarId: string; serviceJson: string } | null {
   const calendarId = process.env['GOOGLE_CALENDAR_ID']
   const serviceJson = process.env['GOOGLE_SERVICE_ACCOUNT_JSON']
-  if (!calendarId || !serviceJson || serviceJson.includes('REPLACE_ME')) return false
+  if (!calendarId) return null
+  if (!serviceJson) return null
+  if (serviceJson.includes('REPLACE_ME')) return null
+  return { calendarId, serviceJson }
+}
+
+async function fetchConflictBusy(calendarId: string, serviceJson: string, date: string, startTime: string, hours: number) {
+  const auth = createCalendarAuth(serviceJson)
+  const slotStart = madridToUtc(date, startTime)
+  const slotEnd = new Date(slotStart.getTime() + hours * 3600000)
+  return { slotStart, slotEnd, busy: await queryFreeBusy(calendarId, slotStart, slotEnd, auth) }
+}
+
+function isOverlapping(slotStart: Date, slotEnd: Date, busy: { start: string; end: string }[]): boolean {
+  for (const b of busy) {
+    if (slotStart < new Date(b.end) && slotEnd > new Date(b.start)) return true
+  }
+  return false
+}
+
+async function hasConflict(date: string, startTime: string, hours: number): Promise<boolean> {
+  const env = getCalendarEnv()
+  if (!env) return false
   try {
-    const auth = createCalendarAuth(serviceJson)
-    const slotStart = madridToUtc(date, startTime)
-    const slotEnd = new Date(slotStart.getTime() + hours * 3600000)
-    const busy = await queryFreeBusy(calendarId, slotStart, slotEnd, auth)
-    for (const b of busy) if (slotStart < new Date(b.end) && slotEnd > new Date(b.start)) return true
-    return false
+    const { slotStart, slotEnd, busy } = await fetchConflictBusy(env.calendarId, env.serviceJson, date, startTime, hours)
+    return isOverlapping(slotStart, slotEnd, busy)
   } catch {
     return false
   }
 }
 
-function getWindowsForDate(config: any, date: string) {
-  if (date in config.exceptions) return config.exceptions[date] as { start: string; end: string }[]
+function getDowForDate(date: string): string {
   const d = new Date(date + 'T12:00:00Z')
-  let dow = ''
   try {
     const fmt = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'Europe/Madrid' })
-    dow = fmt.format(d).toLowerCase()
+    return fmt.format(d).toLowerCase()
   } catch {
-    dow = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][new Date(date + 'T12:00:00Z').getUTCDay()]
+    return ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][d.getUTCDay()]
   }
+}
+
+function getWindowsForDate(config: any, date: string) {
+  if (date in config.exceptions) return config.exceptions[date] as { start: string; end: string }[]
+  const dow = getDowForDate(date)
   return (config.weekly[dow] ?? []) as { start: string; end: string }[]
 }
 
@@ -113,7 +136,6 @@ function validateTime(startTime: string, res: any): boolean {
 
 function validateHours(raw: unknown, res: any): number | null {
   if (typeof raw !== 'number' || !Number.isInteger(raw)) {
-    // also handles fractional
     const priceCheck = priceCents(Number(raw), true)
     if (!priceCheck.ok) {
       res.status(400).json({ error: { code: 'INVALID_DURATION', message: priceCheck.error.message } })
@@ -153,11 +175,15 @@ function loadAndValidateSlot(date: string, startTime: string, hours: number, res
   return validateSlotCoverage(config, date, startTime, hours, res)
 }
 
-function validateInput(body: any, res: any): { email: string; date: string; startTime: string; hours: number } | null {
+function extractBookingFields(body: any): { email: string; date: string; startTime: string; hoursRaw: unknown } {
   const email = typeof body.email === 'string' ? body.email.trim() : ''
   const date = typeof body.date === 'string' ? body.date : ''
   const startTime = typeof body.startTime === 'string' ? body.startTime : ''
-  const hoursRaw = body.hours
+  return { email, date, startTime, hoursRaw: body.hours }
+}
+
+function validateInput(body: any, res: any): { email: string; date: string; startTime: string; hours: number } | null {
+  const { email, date, startTime, hoursRaw } = extractBookingFields(body)
   if (!validateEmail(email, res)) return null
   if (!validateDate(date, res)) return null
   if (!validateTime(startTime, res)) return null

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+
 import { isFreeHourAvailable, markFreeHourUsed } from '../domain/freeHour'
 
 function makeMockStripe(opts: { listData?: any[]; listError?: boolean; updateImpl?: any; createImpl?: any }) {
@@ -31,7 +32,7 @@ describe('AC-005', () => {
   })
   it('AC-005-04: Marking usage persists the flag', async () => {
     // Use in-memory mock that remembers
-    let store: Record<string, any> = {}
+    const store: Record<string, any> = {}
     const stripe: any = {
       customers: {
         list: vi.fn().mockImplementation(async ({ email }: any) => {

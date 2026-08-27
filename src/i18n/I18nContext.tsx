@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+
 import { es, en, type Locale, type Dictionary } from './dictionary'
 
 const dictionaries: Record<Locale, Dictionary> = { es, en: en as unknown as Dictionary }

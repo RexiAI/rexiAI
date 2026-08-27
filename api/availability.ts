@@ -1,9 +1,11 @@
 import fs from 'fs'
 import path from 'path'
-import { parseAvailabilityYaml, computeSlotsForDate, isPastDate } from '../src/domain/availability.js'
-import { madridToUtc } from '../src/domain/time.js'
-import { createCalendarAuth } from '../src/domain/googleAuth.js'
+
 import { google } from 'googleapis'
+
+import { parseAvailabilityYaml, computeSlotsForDate, isPastDate } from '../src/domain/availability.js'
+import { createCalendarAuth } from '../src/domain/googleAuth.js'
+import { madridToUtc } from '../src/domain/time.js'
 
 function loadConfig() {
   const p = path.join(process.cwd(), 'config', 'availability.yaml')

@@ -1,6 +1,6 @@
-import { I18nProvider, useI18n } from './i18n/I18nContext'
-import { LanguageSwitcher } from './components/LanguageSwitcher'
 import { BookingWidget } from './components/BookingWidget'
+import { LanguageSwitcher } from './components/LanguageSwitcher'
+import { I18nProvider, useI18n } from './i18n/I18nContext'
 
 function isSuccessPath(): boolean {
   if (typeof window === 'undefined') return false

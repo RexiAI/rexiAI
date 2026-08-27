@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+
 import { filterSlotsByBusy } from '../../api/availability.js'
 import { madridToUtc } from '../domain/time'
 
