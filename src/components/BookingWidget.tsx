@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 
 import { useI18n } from '../i18n/I18nContext'
+import './BookingWidget.css'
 
 function todayMadrid(): string {
   const fmt = new Intl.DateTimeFormat('en-CA', {
@@ -161,21 +162,10 @@ function DateField({
   const { dict } = useI18n()
   return (
     <>
-      <label
-        htmlFor="booking-date"
-        style={{
-          display: 'block',
-          fontSize: 14,
-          fontWeight: 500,
-          color: '#18181B',
-          marginBottom: 4,
-        }}
-      >
+      <label htmlFor="booking-date" className="booking-label">
         {dict.booking.form.dateLabel}
       </label>
-      <p style={{ fontSize: 13, color: '#52525B', marginBottom: 4 }}>
-        {dict.booking.form.dateLabel} helper
-      </p>
+      <p className="field-helper">{dict.booking.form.dateLabel} helper</p>
       <input
         id="booking-date"
         type="date"
@@ -183,16 +173,10 @@ function DateField({
         min={todayMadrid()}
         onChange={(e) => setDate(e.target.value)}
         aria-describedby={error ? 'err-date' : undefined}
-        style={{
-          width: '100%',
-          padding: '8px 12px',
-          borderRadius: 12,
-          border: '1px solid #E4E4E7',
-          marginBottom: 12,
-        }}
+        className="booking-input"
       />
       {error ? (
-        <p id="err-date" style={{ color: '#B91C1C', fontSize: 13, marginBottom: 8 }}>
+        <p id="err-date" className="field-error">
           {error}
         </p>
       ) : null}
@@ -210,27 +194,14 @@ function SlotPill({
   onSelect: () => void
 }) {
   return (
-    <label
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '6px 14px',
-        borderRadius: 9999,
-        border: selected ? '1px solid #18181B' : '1px solid #E4E4E7',
-        background: selected ? '#18181B' : '#fff',
-        color: selected ? '#fff' : '#18181B',
-        cursor: 'pointer',
-        fontSize: 14,
-        transition: 'background 150ms',
-      }}
-    >
+    <label className={`slot-chip${selected ? ' slot-chip--selected' : ''}`}>
       <input
         type="radio"
         name="slot"
         value={slot}
         checked={selected}
         onChange={onSelect}
-        style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+        className="slot-chip__input"
       />
       {slot}
     </label>
@@ -247,7 +218,7 @@ function SlotList({
   setSelectedSlot: (s: string) => void
 }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+    <div className="slot-list">
       {slots.map((s) => (
         <SlotPill
           key={s}
@@ -288,16 +259,12 @@ function SlotField(props: SlotFieldProps) {
   const { dict } = useI18n()
   const body = getSlotBody(props, dict)
   return (
-    <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px 0' }}>
-      <legend style={{ fontSize: 14, fontWeight: 500, color: '#18181B', marginBottom: 8 }}>
-        {dict.booking.form.slotLabel}
-      </legend>
+    <fieldset className="booking-fieldset">
+      <legend className="booking-legend">{dict.booking.form.slotLabel}</legend>
       {body}
-      {props.error ? (
-        <p style={{ color: '#B91C1C', fontSize: 13, marginTop: 6 }}>{props.error}</p>
-      ) : null}
+      {props.error ? <p className="field-error--slot">{props.error}</p> : null}
       {props.conflictError ? (
-        <p role="alert" style={{ color: '#B91C1C', fontSize: 13, marginTop: 6 }}>
+        <p role="alert" className="field-error--slot">
           {props.conflictError}
         </p>
       ) : null}
@@ -308,36 +275,16 @@ function SlotField(props: SlotFieldProps) {
 function DurationField({ hours, setHours }: { hours: number; setHours: (h: number) => void }) {
   const { dict } = useI18n()
   return (
-    <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px 0' }}>
-      <legend style={{ fontSize: 14, fontWeight: 500, color: '#18181B', marginBottom: 8 }}>
-        {dict.booking.form.durationLabel}
-      </legend>
-      <div
-        role="group"
-        aria-label={dict.booking.form.durationLabel}
-        style={{
-          display: 'inline-flex',
-          border: '1px solid #E4E4E7',
-          borderRadius: 9999,
-          overflow: 'hidden',
-          padding: 2,
-        }}
-      >
+    <fieldset className="booking-fieldset">
+      <legend className="booking-legend">{dict.booking.form.durationLabel}</legend>
+      <div role="group" aria-label={dict.booking.form.durationLabel} className="duration-group">
         {[1, 2, 3, 4].map((h) => (
           <button
             key={h}
             type="button"
             aria-pressed={hours === h}
             onClick={() => setHours(h)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 9999,
-              border: 'none',
-              cursor: 'pointer',
-              background: hours === h ? '#18181B' : 'transparent',
-              color: hours === h ? '#fff' : '#18181B',
-              fontSize: 14,
-            }}
+            className={`duration-btn${hours === h ? ' duration-btn--active' : ''}`}
           >
             {h}h
           </button>
@@ -359,40 +306,23 @@ function EmailField({
   const { dict } = useI18n()
   return (
     <>
-      <label
-        htmlFor="booking-email"
-        style={{
-          display: 'block',
-          fontSize: 14,
-          fontWeight: 500,
-          color: '#18181B',
-          marginBottom: 4,
-        }}
-      >
+      <label htmlFor="booking-email" className="booking-label">
         {dict.booking.form.emailLabel}
       </label>
-      <p style={{ fontSize: 13, color: '#52525B', marginBottom: 4 }}>
-        {dict.booking.form.emailHelper}
-      </p>
+      <p className="field-helper">{dict.booking.form.emailHelper}</p>
       <input
         id="booking-email"
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         aria-describedby={error ? 'err-email' : 'help-email'}
-        style={{
-          width: '100%',
-          padding: '8px 12px',
-          borderRadius: 12,
-          border: error ? '1px solid #B91C1C' : '1px solid #E4E4E7',
-          marginBottom: 4,
-        }}
+        className={`booking-input booking-input--email${error ? ' booking-input--error' : ''}`}
       />
-      <span id="help-email" style={{ display: 'none' }}>
+      <span id="help-email" className="hidden-helper">
         {dict.booking.form.emailHelper}
       </span>
       {error ? (
-        <p id="err-email" style={{ color: '#B91C1C', fontSize: 13, marginBottom: 8 }}>
+        <p id="err-email" className="field-error">
           {error}
         </p>
       ) : null}
@@ -414,19 +344,9 @@ function BookingLayout({
   handleSubmit: (e: React.FormEvent) => void
 }) {
   return (
-    <div
-      style={{
-        background: '#fff',
-        border: '1px solid #E4E4E7',
-        borderRadius: 16,
-        padding: 24,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-      }}
-    >
-      <p style={{ fontSize: 13, color: '#52525B', marginBottom: 8 }}>{dict.booking.pricingRules}</p>
-      <p style={{ fontSize: 12, color: '#71717A', marginBottom: 16 }}>
-        {dict.booking.pricingExample}
-      </p>
+    <div className="booking-card">
+      <p className="booking-pricing">{dict.booking.pricingRules}</p>
+      <p className="booking-pricing-example">{dict.booking.pricingExample}</p>
       <form onSubmit={handleSubmit} noValidate>
         <DateField date={fields.date} setDate={fields.setDate} error={fields.errors['date']} />
         <SlotField
@@ -444,23 +364,7 @@ function BookingLayout({
           setEmail={fields.setEmail}
           error={fields.errors['email']}
         />
-        <button
-          type="submit"
-          disabled={fields.submitting}
-          style={{
-            width: '100%',
-            marginTop: 16,
-            padding: '12px 24px',
-            borderRadius: 9999,
-            border: 'none',
-            background: '#18181B',
-            color: '#fff',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: fields.submitting ? 'not-allowed' : 'pointer',
-            opacity: fields.submitting ? 0.7 : 1,
-          }}
-        >
+        <button type="submit" disabled={fields.submitting} className="booking-submit">
           {fields.submitting ? dict.booking.form.submitting : dict.booking.form.submit}
         </button>
       </form>

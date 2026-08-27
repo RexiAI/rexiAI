@@ -2012,3 +2012,121 @@ frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4588466Z Cleaning u
 frontend-ci / Lint & Format	UNKNOWN STEP	2026-08-27T12:13:23.4817863Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
 
 ```
+
+## Post-PR CI check — Round 3 (phase 2, attempt 3)
+
+**Date:** 2026-08-27
+**PR:** https://github.com/RexiAI/rexiAI/pull/16
+**Branch:** spec/001-landing-booking
+**Head SHA:** 5fe89b2a7be6e13180630a65e5e35123738e8233
+**Run:** https://github.com/RexiAI/rexiAI/actions/runs/33071499963
+**Mode:** post-PR CI re-check per .standards/docs/SPEC_PIPELINE.md §Post-PR CI check-and-remediate loop
+**Loop budget:** SPEC_LOOP_COUNT=3, SPEC_PHASE1_RETRIES=0, SPEC_PHASE2_RETRIES=2 — phase-2 round 2 re-check after fix push (previous run 33070831632 failed Lint & Format prettier 24 files, new head 5fe89b2 after commit 5fe89b2)
+**Trigger:** fix commit 5fe89b2a7be6e13180630a65e5e35123738e8233 (after 50c83af) — Prettier format fix
+**Verdict:** PASS — 0 checks in `fail` bucket, all non-skipped checks pass
+
+Bounded poll: 10s interval, up to ~5 min. Initial poll at 2026-08-27T12:23:29Z showed Vercel `pending`; terminal at 2026-08-27T12:25:54Z with all buckets `pass`/`skipping` (no `pending`). Vercel flipped pending→pass between polls; CI already terminal `pass`.
+
+### Per-check table (terminal, bucket is parse rule)
+
+| Check                             | Bucket   | State   | Workflow | Link                                                                                 |
+| --------------------------------- | -------- | ------- | -------- | ------------------------------------------------------------------------------------ |
+| Vercel Preview Comments           | pass     | SUCCESS | —        | https://vercel.com/github                                                            |
+| frontend-ci / Build               | pass     | SUCCESS | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514760023            |
+| frontend-ci / Docker Build & Push | skipping | SKIPPED | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514898130            |
+| frontend-ci / Unit Tests          | pass     | SUCCESS | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514641635            |
+| frontend-ci / Lint & Format       | pass     | SUCCESS | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514641937            |
+| Vercel                            | pass     | SUCCESS | CI       | https://vercel.com/danielbueno76-4270s-projects/rexi-ai/2EdtjbYJzxQa9BYMcPWLxnSkNPWJ |
+
+`skipping` is not `fail` (conditional workflow jobs skipped). Only `fail` bucket counts as FAIL. Zero FAIL → overall PASS.
+
+**Build anomaly check:** Build was `skipping` in Round 2 because Lint & Format failed (workflow `needs: lint` gating). After Lint passes in Round 3, Build is `pass` (SUCCESS) — expected. No anomaly. Docker Build & Push remains `skipping` on non-main branch — expected per workflow condition, not a failure. Criteria met: Vercel pass + frontend-ci Lint & Format pass + Unit Tests pass + Build pass (Docker skipping acceptable).
+
+### Failing check IDs
+
+No failing checks. All non-skipped checks pass.
+
+Source: `gh api repos/RexiAI/rexiAI/commits/5fe89b2a7be6e13180630a65e5e35123738e8233/check-runs` (conclusion == failure → 0 results)
+
+| Check | ID  | Conclusion |
+| ----- | --- | ---------- |
+| —     | —   | —          |
+
+### Evidence: Post-PR CI — Round 3 poll to terminal
+
+## Evidence: post-PR CI check Round 3 — poll 1 (Vercel pending)
+
+command: gh pr checks 16 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-08-27T12:23:29Z
+
+[{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514898130","name":"frontend-ci / Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514760023","name":"frontend-ci / Build","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514641635","name":"frontend-ci / Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514641937","name":"frontend-ci / Lint & Format","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"pending","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/2EdtjbYJzxQa9BYMcPWLxnSkNPWJ","name":"Vercel","state":"PENDING","workflow":""}]
+
+## Evidence: post-PR CI check Round 3 — terminal (all pass)
+
+command: gh pr checks 16 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-08-27T12:25:54Z
+
+[{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514898130","name":"frontend-ci / Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514760023","name":"frontend-ci / Build","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514641635","name":"frontend-ci / Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33071499963/job/98514641937","name":"frontend-ci / Lint & Format","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/2EdtjbYJzxQa9BYMcPWLxnSkNPWJ","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+## Evidence: check-runs for head SHA 5fe89b2a7be6e13180630a65e5e35123738e8233
+
+command: gh api repos/RexiAI/rexiAI/commits/5fe89b2a7be6e13180630a65e5e35123738e8233/check-runs
+exit: 0
+at: 2026-08-27T12:25:54Z
+
+{
+"total_count": 5,
+"check_runs": [
+{
+"id": 98515101318,
+"name": "Vercel Preview Comments",
+"head_sha": "5fe89b2a7be6e13180630a65e5e35123738e8233",
+"conclusion": "success",
+"status": "completed"
+},
+{
+"id": 98514898130,
+"name": "frontend-ci / Docker Build & Push",
+"head_sha": "5fe89b2a7be6e13180630a65e5e35123738e8233",
+"conclusion": "skipped",
+"status": "completed"
+},
+{
+"id": 98514760023,
+"name": "frontend-ci / Build",
+"head_sha": "5fe89b2a7be6e13180630a65e5e35123738e8233",
+"conclusion": "success",
+"status": "completed"
+},
+{
+"id": 98514641937,
+"name": "frontend-ci / Lint & Format",
+"head_sha": "5fe89b2a7be6e13180630a65e5e35123738e8233",
+"conclusion": "success",
+"status": "completed"
+},
+{
+"id": 98514641635,
+"name": "frontend-ci / Unit Tests",
+"head_sha": "5fe89b2a7be6e13180630a65e5e35123738e8233",
+"conclusion": "success",
+"status": "completed"
+}
+]
+}
+
+## Evidence: CI run view (head 5fe89b2)
+
+command: gh run view 33071499963 --json conclusion,status,headSha,workflowName,displayTitle
+exit: 0
+at: 2026-08-27T12:26:02Z
+
+{
+"conclusion": "success",
+"displayTitle": "feat(001-landing-booking): landing with i18n, availability, pricing, booking and deployment wiring",
+"headSha": "5fe89b2a7be6e13180630a65e5e35123738e8233",
+"status": "completed",
+"workflowName": "CI"
+}

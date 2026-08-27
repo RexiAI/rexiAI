@@ -1,6 +1,7 @@
 import { BookingWidget } from './components/BookingWidget'
 import { LanguageSwitcher } from './components/LanguageSwitcher'
 import { I18nProvider, useI18n } from './i18n/I18nContext'
+import './App.css'
 
 function isSuccessPath(): boolean {
   if (typeof window === 'undefined') return false
@@ -14,49 +15,11 @@ function isCancelPath(): boolean {
 function SuccessView() {
   const { dict } = useI18n()
   return (
-    <div
-      style={{
-        minHeight: '100dvh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: 24,
-        gap: 16,
-      }}
-    >
-      <div
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: 9999,
-          background: '#059669',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#fff',
-          fontSize: 24,
-        }}
-      >
-        ✓
-      </div>
-      <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.02em', color: '#18181B' }}>
-        {dict.result.successTitle}
-      </h1>
-      <p style={{ fontSize: 16, color: '#52525B', maxWidth: '48ch' }}>{dict.result.successBody}</p>
-      <a
-        href="/"
-        style={{
-          display: 'inline-block',
-          padding: '10px 24px',
-          borderRadius: 9999,
-          background: '#18181B',
-          color: '#fff',
-          textDecoration: 'none',
-          fontWeight: 600,
-        }}
-      >
+    <div className="result-view">
+      <div className="result-icon result-icon--success">✓</div>
+      <h1 className="result-title">{dict.result.successTitle}</h1>
+      <p className="result-body">{dict.result.successBody}</p>
+      <a href="/" className="result-action">
         {dict.result.successAction}
       </a>
     </div>
@@ -66,49 +29,11 @@ function SuccessView() {
 function CancelView() {
   const { dict } = useI18n()
   return (
-    <div
-      style={{
-        minHeight: '100dvh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        padding: 24,
-        gap: 16,
-      }}
-    >
-      <div
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: 9999,
-          background: '#E4E4E7',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#18181B',
-          fontSize: 24,
-        }}
-      >
-        ↺
-      </div>
-      <h1 style={{ fontSize: 32, fontWeight: 600, letterSpacing: '-0.02em', color: '#18181B' }}>
-        {dict.result.cancelTitle}
-      </h1>
-      <p style={{ fontSize: 16, color: '#52525B', maxWidth: '48ch' }}>{dict.result.cancelBody}</p>
-      <a
-        href="/#booking"
-        style={{
-          display: 'inline-block',
-          padding: '10px 24px',
-          borderRadius: 9999,
-          background: '#18181B',
-          color: '#fff',
-          textDecoration: 'none',
-          fontWeight: 600,
-        }}
-      >
+    <div className="result-view">
+      <div className="result-icon result-icon--cancel">↺</div>
+      <h1 className="result-title">{dict.result.cancelTitle}</h1>
+      <p className="result-body">{dict.result.cancelBody}</p>
+      <a href="/#booking" className="result-action">
         {dict.result.cancelAction}
       </a>
     </div>
@@ -127,153 +52,63 @@ function Landing() {
   if (result) return <ResultViews />
 
   return (
-    <div
-      style={{
-        fontFamily: 'Geist, system-ui, sans-serif',
-        color: '#18181B',
-        background: '#FFFFFF',
-      }}
-    >
-      <nav
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 24px',
-          maxHeight: 72,
-          borderBottom: '1px solid #E4E4E7',
-          position: 'sticky',
-          top: 0,
-          background: '#fff',
-          zIndex: 10,
-        }}
-      >
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <span style={{ fontWeight: 700, fontSize: 18 }}>RexiAI</span>
-          <a href="#services" style={{ fontSize: 14, color: '#52525B', textDecoration: 'none' }}>
+    <div className="landing">
+      <nav className="nav">
+        <div className="nav-links">
+          <span className="nav-brand">RexiAI</span>
+          <a href="#services" className="nav-link">
             {dict.nav.services}
           </a>
-          <a href="#booking" style={{ fontSize: 14, color: '#52525B', textDecoration: 'none' }}>
+          <a href="#booking" className="nav-link">
             {dict.nav.booking}
           </a>
-          <a href="#contact" style={{ fontSize: 14, color: '#52525B', textDecoration: 'none' }}>
+          <a href="#contact" className="nav-link">
             {dict.nav.contact}
           </a>
         </div>
         <LanguageSwitcher />
       </nav>
 
-      <section
-        id="hero"
-        style={{ textAlign: 'center', padding: '80px 24px 64px', maxWidth: 800, margin: '0 auto' }}
-      >
-        <h1
-          style={{
-            fontSize: 48,
-            fontWeight: 700,
-            letterSpacing: '-0.03em',
-            lineHeight: 1.1,
-            marginBottom: 16,
-          }}
-        >
-          {dict.hero.catchphrase}
-        </h1>
-        <p style={{ fontSize: 18, color: '#52525B', maxWidth: '60ch', margin: '0 auto 24px' }}>
-          {dict.hero.subtext}
-        </p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-          <a
-            href="#booking"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '12px 24px',
-              borderRadius: 9999,
-              background: '#18181B',
-              color: '#fff',
-              textDecoration: 'none',
-              fontWeight: 600,
-            }}
-          >
+      <section id="hero" className="hero">
+        <h1 className="hero-title">{dict.hero.catchphrase}</h1>
+        <p className="hero-subtext">{dict.hero.subtext}</p>
+        <div className="hero-ctas">
+          <a href="#booking" className="hero-cta--primary">
             {dict.hero.ctaBooking} →
           </a>
-          <a
-            href="mailto:danielbueno76@gmail.com"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: '12px 24px',
-              borderRadius: 9999,
-              border: '1px solid #E4E4E7',
-              color: '#18181B',
-              textDecoration: 'none',
-              fontWeight: 500,
-            }}
-          >
+          <a href="mailto:danielbueno76@gmail.com" className="hero-cta--secondary">
             {dict.hero.ctaContact}
           </a>
         </div>
       </section>
 
-      <section id="services" style={{ padding: '48px 24px', maxWidth: 1100, margin: '0 auto' }}>
-        <h2 style={{ fontSize: 28, fontWeight: 600, marginBottom: 24 }}>{dict.services.title}</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16 }}>
+      <section id="services" className="services">
+        <h2 className="section-title">{dict.services.title}</h2>
+        <div className="services-grid">
           {dict.services.items.map((s, idx) => (
-            <div
-              key={s.id}
-              style={{
-                gridColumn: idx === 0 ? '1 / span 2' : undefined,
-                background: '#FAFAFA',
-                borderRadius: 16,
-                overflow: 'hidden',
-                padding: 0,
-              }}
-            >
+            <div key={s.id} className={`service-card${idx === 0 ? ' service-card--featured' : ''}`}>
               <img
                 src={`https://picsum.photos/seed/rexiai-${s.id}/800/600`}
                 alt={s.title}
-                style={{
-                  width: '100%',
-                  height: 180,
-                  objectFit: 'cover',
-                  borderRadius: 12,
-                  display: 'block',
-                }}
+                className="service-card__image"
               />
-              <div style={{ padding: 16 }}>
-                <h3 style={{ fontSize: 20, fontWeight: 600, marginBottom: 6 }}>{s.title}</h3>
-                <p style={{ fontSize: 14, color: '#52525B', maxWidth: '60ch', marginBottom: 8 }}>
-                  {s.description}
-                </p>
-                <p style={{ fontFamily: 'Geist Mono, monospace', fontSize: 12, color: '#71717A' }}>
-                  {s.meta}
-                </p>
+              <div className="service-card__body">
+                <h3 className="service-card__title">{s.title}</h3>
+                <p className="service-card__desc">{s.description}</p>
+                <p className="service-card__meta">{s.meta}</p>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section
-        id="booking"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 32,
-          padding: '48px 24px',
-          maxWidth: 1100,
-          margin: '0 auto',
-        }}
-      >
+      <section id="booking" className="booking">
         <div>
-          <h2 style={{ fontSize: 28, fontWeight: 600, marginBottom: 12 }}>{dict.booking.title}</h2>
-          <p style={{ fontSize: 16, color: '#52525B', marginBottom: 16 }}>
-            {dict.booking.narrative}
-          </p>
-          <ol style={{ paddingLeft: 20, color: '#52525B', fontSize: 14 }}>
+          <h2 className="booking__title">{dict.booking.title}</h2>
+          <p className="booking__narrative">{dict.booking.narrative}</p>
+          <ol className="booking-steps">
             {dict.booking.steps.map((step, i) => (
-              <li key={i} style={{ marginBottom: 6 }}>
+              <li key={i} className="booking-steps__item">
                 {step}
               </li>
             ))}
@@ -284,38 +119,15 @@ function Landing() {
         </div>
       </section>
 
-      <section
-        id="contact"
-        style={{ background: '#FAFAFA', textAlign: 'center', padding: '56px 24px' }}
-      >
-        <h2 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>{dict.contact.title}</h2>
-        <p style={{ fontSize: 16, color: '#52525B', marginBottom: 20 }}>{dict.contact.body}</p>
-        <a
-          href="mailto:danielbueno76@gmail.com"
-          style={{
-            display: 'inline-block',
-            padding: '12px 24px',
-            borderRadius: 9999,
-            background: '#18181B',
-            color: '#fff',
-            textDecoration: 'none',
-            fontWeight: 600,
-          }}
-        >
+      <section id="contact" className="contact">
+        <h2 className="contact__title">{dict.contact.title}</h2>
+        <p className="contact__body">{dict.contact.body}</p>
+        <a href="mailto:danielbueno76@gmail.com" className="contact__cta">
           {dict.contact.cta}
         </a>
       </section>
 
-      <footer
-        style={{
-          padding: '24px',
-          borderTop: '1px solid #E4E4E7',
-          display: 'flex',
-          justifyContent: 'space-between',
-          fontSize: 13,
-          color: '#52525B',
-        }}
-      >
+      <footer className="footer">
         <span>RexiAI</span>
         <span>
           © {new Date().getFullYear()} RexiAI. {dict.footer.rights}.
