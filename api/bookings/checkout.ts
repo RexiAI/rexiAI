@@ -1,0 +1,77 @@
+import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
+import { priceCents } from '../../src/domain/pricing.js'
+import { getStripe } from '../../src/domain/stripeClient.js'
+
+import { errMsg } from './config.js'
+
+async function getFreeAvailable(email: string, res: any): Promise<boolean | null> {
+  try {
+    return await isFreeHourAvailable(email)
+  } catch (e) {
+    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errMsg(e) } })
+    return null
+  }
+}
+
+function getBaseUrl(req: any): string {
+  const host = req.headers?.host
+  const h = host ? host : 'example.com'
+  const protocol = req.headers?.['x-forwarded-proto']
+  const p = protocol ? protocol : 'https'
+  return `${p}://${h}`
+}
+
+type SessionOpts = {
+  email: string
+  date: string
+  startTime: string
+  hours: number
+  freeAvailable: boolean
+  cents: number
+  req: any
+  res: any
+}
+
+function buildSessionParams(opts: SessionOpts, baseUrl: string) {
+  // prettier-ignore
+  return { mode: 'payment' as const, currency: 'eur' as const, line_items: [{ price_data: { currency: 'eur' as const, product_data: { name: `Booking ${opts.date} ${opts.startTime} (${opts.hours}h)` }, unit_amount: opts.cents }, quantity: 1 as const }], customer_email: opts.email, metadata: { email: opts.email, date: opts.date, start_time: opts.startTime, hours: String(opts.hours), free_hour_applied: String(opts.freeAvailable) }, success_url: `${baseUrl}/booking/success`, cancel_url: `${baseUrl}/booking/cancel` }
+}
+
+async function createSession(opts: SessionOpts) {
+  try {
+    const stripe = getStripe()
+    const baseUrl = getBaseUrl(opts.req)
+    const params = buildSessionParams(opts, baseUrl)
+    return await stripe.checkout.sessions.create(params)
+  } catch (e) {
+    opts.res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errMsg(e) } })
+    return null
+  }
+}
+
+export async function createCheckout(
+  email: string,
+  date: string,
+  startTime: string,
+  hours: number,
+  req: any,
+  res: any
+) {
+  const freeAvailable = await getFreeAvailable(email, res)
+  if (freeAvailable === null) return null
+  const priceRes = priceCents(hours, freeAvailable)
+  if (!priceRes.ok) {
+    res.status(400).json({ error: { code: 'INVALID_DURATION', message: priceRes.error.message } })
+    return null
+  }
+  return createSession({
+    email,
+    date,
+    startTime,
+    hours,
+    freeAvailable,
+    cents: priceRes.cents,
+    req,
+    res,
+  })
+}

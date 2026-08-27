@@ -2130,3 +2130,93 @@ at: 2026-08-27T12:26:02Z
 "status": "completed",
 "workflowName": "CI"
 }
+
+## Post-PR CI check — Round 4 (phase 2, attempt 4)
+
+**Date:** 2026-08-27
+**PR:** https://github.com/RexiAI/rexiAI/pull/16
+**Branch:** spec/001-landing-booking
+**Head SHA:** 85a091d388cad1d51a64eba5b35a903db1e9074b
+**Run:** https://github.com/RexiAI/rexiAI/actions/runs/33078558439
+**Mode:** post-PR CI re-check per .standards/docs/SPEC_PIPELINE.md §Post-PR CI check-and-remediate loop — final phase-2 attempt (3/3 budget used). Poll `gh pr checks 16` until terminal (all pass/fail, no pending), 10s interval up to 5 min. Fix verified: .github/workflows/ci.yml inlined so lint/test/build run in parallel with NO needs between them.
+**Loop budget:** SPEC_LOOP_COUNT=4, SPEC_PHASE1_RETRIES=0, SPEC_PHASE2_RETRIES=3 — phase-2 round 3 re-check after fix push (previous head 5fe89b2 passed, new head 85a091d after commit 85a091d — clean code + CI parallel jobs)
+**Trigger:** fix commit 85a091d388cad1d51a64eba5b35a903db1e9074b (after 5fe89b2) — extract inline styles to CSS + CI parallel jobs (no needs between lint/test/build)
+**Verdict:** PASS — 0 checks in `fail` bucket, all non-skipped checks pass. Build no longer SKIPPED when lint fails — verified by workflow inline (no `needs:` between lint/test/build, only docker `needs: [build]`).
+
+Bounded poll: 10s interval, up to ~5 min. Initial poll at 2026-08-27T13:47:58Z already terminal with all buckets `pass`/`skipping` (no `pending`). Confirmed stable across 3 polls 13:48:24Z–13:48:48Z. CI conclusion `success` for head 85a091d.
+
+### Per-check table (terminal, bucket is parse rule)
+
+| Check                   | Bucket   | State   | Workflow | Link                                                                                 |
+| ----------------------- | -------- | ------- | -------- | ------------------------------------------------------------------------------------ |
+| Vercel Preview Comments | pass     | SUCCESS | —        | https://vercel.com/github                                                            |
+| Docker Build & Push     | skipping | SKIPPED | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539337777            |
+| Build                   | pass     | SUCCESS | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178724            |
+| Unit Tests              | pass     | SUCCESS | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178761            |
+| Lint & Format           | pass     | SUCCESS | CI       | https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178518            |
+| Vercel                  | pass     | SUCCESS | CI       | https://vercel.com/danielbueno76-4270s-projects/rexi-ai/4mGy2s1VZ3K1XqkXtxs2QomLHpp3 |
+
+`skipping` is not `fail` (conditional workflow job skipped). Only `fail` bucket counts as FAIL. Zero FAIL → overall PASS. Docker Build & Push `skipping` on PR is expected (condition `if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch` — deploys only on main push). Criteria met: Vercel pass + Lint & Format pass + Unit Tests pass + Build pass (Docker skipping acceptable). Build parallel fix verified: Build `pass` independent of Lint — workflow has no `needs: [lint]` gating.
+
+### Failing check IDs
+
+No failing checks. All non-skipped checks pass.
+
+Source: `gh api repos/RexiAI/rexiAI/commits/85a091d388cad1d51a64eba5b35a903db1e9074b/check-runs` (conclusion == failure → 0 results)
+
+| Check | ID  | Conclusion |
+| ----- | --- | ---------- |
+| —     | —   | —          |
+
+### Evidence: Post-PR CI — Round 4 poll to terminal (3 polls, stable terminal)
+
+## Evidence: post-PR CI check Round 4 — poll 1 initial (already terminal)
+
+command: gh pr checks 16 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-08-27T13:47:58Z
+
+[{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539337777","name":"Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178724","name":"Build","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178761","name":"Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178518","name":"Lint & Format","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/4mGy2s1VZ3K1XqkXtxs2QomLHpp3","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+## Evidence: post-PR CI check Round 4 — poll 2 (stable)
+
+command: gh pr checks 16 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-08-27T13:48:37Z
+
+[{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539337777","name":"Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178724","name":"Build","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178761","name":"Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178518","name":"Lint & Format","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/4mGy2s1VZ3K1XqkXtxs2QomLHpp3","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+## Evidence: post-PR CI check Round 4 — poll 3 (stable terminal)
+
+command: gh pr checks 16 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-08-27T13:48:48Z
+
+[{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539337777","name":"Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178724","name":"Build","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178761","name":"Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/33078558439/job/98539178518","name":"Lint & Format","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/4mGy2s1VZ3K1XqkXtxs2QomLHpp3","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+## Evidence: check-runs for head SHA 85a091d388cad1d51a64eba5b35a903db1e9074b
+
+command: gh api repos/RexiAI/rexiAI/commits/85a091d388cad1d51a64eba5b35a903db1e9074b/check-runs
+exit: 0
+at: 2026-08-27T13:48:10Z
+
+{"total_count":5,"check_runs":[{"id":98539730334,"name":"Vercel Preview Comments","head_sha":"85a091d388cad1d51a64eba5b35a903db1e9074b","conclusion":"success","status":"completed"},{"id":98539337777,"name":"Docker Build & Push","head_sha":"85a091d388cad1d51a64eba5b35a903db1e9074b","conclusion":"skipped","status":"completed"},{"id":98539178761,"name":"Unit Tests","head_sha":"85a091d388cad1d51a64eba5b35a903db1e9074b","conclusion":"success","status":"completed"},{"id":98539178724,"name":"Build","head_sha":"85a091d388cad1d51a64eba5b35a903db1e9074b","conclusion":"success","status":"completed"},{"id":98539178518,"name":"Lint & Format","head_sha":"85a091d388cad1d51a64eba5b35a903db1e9074b","conclusion":"success","status":"completed"}]}
+
+## Evidence: CI run view (head 85a091d)
+
+command: gh run view 33078558439 --json conclusion,status,headSha,workflowName,displayTitle
+exit: 0
+at: 2026-08-27T13:48:15Z
+
+{"conclusion":"success","displayTitle":"feat(001-landing-booking): landing with i18n, availability, pricing, booking and deployment wiring","headSha":"85a091d388cad1d51a64eba5b35a903db1e9074b","status":"completed","workflowName":"CI"}
+
+## Evidence: workflow parallel fix — no needs between lint/test/build
+
+command: grep -n "needs" .github/workflows/ci.yml
+exit: 0
+at: 2026-08-27T13:48:15Z
+
+10:# Inline jobs — no `needs` between lint/test/build so every job reports independently.
+11:# Previous reusable workflow had `build: needs: [lint, unit-test]` which hid build/test
+49: # Runs in parallel with unit-test and lint — no needs between them.
+62: needs: [build]
