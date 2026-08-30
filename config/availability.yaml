@@ -1,3 +1,10 @@
+# Availability config — fallback when env vars not set.
+# Env overrides (Vercel env vars) take precedence if any is set:
+#   AVAILABILITY_TIMEZONE — IANA timezone (e.g. Europe/Madrid, America/New_York)
+#   AVAILABILITY_HOURS — daily windows "HH:MM-HH:MM[,HH:MM-HH:MM]*" e.g. "09:00-13:00,14:00-18:00"
+#   AVAILABILITY_DAYS — weekdays "monday,tuesday,wednesday,thursday,friday"
+# When any env var is set, weekly is built from AVAILABILITY_DAYS + AVAILABILITY_HOURS
+# and exceptions are empty; otherwise this file is used (weekly + exceptions).
 timezone: Europe/Madrid
 weekly:
   monday:

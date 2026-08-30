@@ -1,16 +1,11 @@
-import fs from 'fs'
-import path from 'path'
-
-import { parseAvailabilityYaml } from '../../src/domain/availability.js'
+import { loadAvailabilityConfig } from '../../src/domain/availability.js'
 
 export function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
 
 export function loadConfig() {
-  const p = path.join(process.cwd(), 'config', 'availability.yaml')
-  const yaml = fs.readFileSync(p, 'utf8')
-  return parseAvailabilityYaml(yaml)
+  return loadAvailabilityConfig()
 }
 
 export function loadConfigOrError(res: any) {

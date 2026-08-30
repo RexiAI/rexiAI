@@ -98,7 +98,7 @@ exceptions: {}
 `
     expect(() => parseAvailabilityYaml(yaml1)).toThrow(/timezone/i)
     const yaml2 = `
-timezone: Europe/London
+timezone: Invalid/Timezone
 weekly:
   monday:
     - {start: "09:00", end: "13:00"}

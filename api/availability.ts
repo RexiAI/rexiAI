@@ -1,21 +1,12 @@
-import fs from 'fs'
-import path from 'path'
-
 import { google } from 'googleapis'
 
 import {
-  parseAvailabilityYaml,
+  loadAvailabilityConfig,
   computeSlotsForDate,
   isPastDate,
 } from '../src/domain/availability.js'
 import { createCalendarAuth } from '../src/domain/googleAuth.js'
-import { madridToUtc } from '../src/domain/time.js'
-
-function loadConfig() {
-  const p = path.join(process.cwd(), 'config', 'availability.yaml')
-  const yaml = fs.readFileSync(p, 'utf8')
-  return parseAvailabilityYaml(yaml)
-}
+import { zonedToUtc } from '../src/domain/time.js'
 
 async function queryBusy(calendarId: string, dayStart: Date, endOfDay: Date, auth: any) {
   const cal = google.calendar({ version: 'v3', auth } as any)
@@ -30,13 +21,16 @@ async function queryBusy(calendarId: string, dayStart: Date, endOfDay: Date, aut
   return busy.map((b) => ({ start: new Date(b.start), end: new Date(b.end) }))
 }
 
-async function getBusyIntervals(dateStr: string): Promise<{ start: Date; end: Date }[]> {
+async function getBusyIntervals(
+  dateStr: string,
+  timezone: string
+): Promise<{ start: Date; end: Date }[]> {
   const calendarId = process.env['GOOGLE_CALENDAR_ID']
   const serviceJson = process.env['GOOGLE_SERVICE_ACCOUNT_JSON']
   if (!calendarId || !serviceJson || serviceJson.includes('REPLACE_ME')) return []
   try {
     const auth = createCalendarAuth(serviceJson)
-    const dayStart = madridToUtc(dateStr, '00:00')
+    const dayStart = zonedToUtc(timezone, dateStr, '00:00')
     const endOfDay = new Date(dayStart.getTime() + 24 * 3600000)
     return await queryBusy(calendarId, dayStart, endOfDay, auth)
   } catch {
@@ -47,11 +41,12 @@ async function getBusyIntervals(dateStr: string): Promise<{ start: Date; end: Da
 function filterSlotsByBusy(
   slots: string[],
   dateStr: string,
-  busy: { start: Date; end: Date }[]
+  busy: { start: Date; end: Date }[],
+  timezone = 'Europe/Madrid'
 ): string[] {
   if (busy.length === 0) return slots
   return slots.filter((s) => {
-    const slotStart = madridToUtc(dateStr, s)
+    const slotStart = zonedToUtc(timezone, dateStr, s)
     const slotEnd = new Date(slotStart.getTime() + 3600000)
     for (const b of busy) if (slotStart < b.end && slotEnd > b.start) return false
     return true
@@ -86,7 +81,7 @@ function validateDateParam(req: any, res: any): string | null {
 
 function loadConfigOrError(res: any) {
   try {
-    return loadConfig()
+    return loadAvailabilityConfig()
   } catch (e) {
     res.status(500).json({
       error: { code: 'CONFIG_ERROR', message: e instanceof Error ? e.message : String(e) },
@@ -106,8 +101,10 @@ export default async function handler(req: any, res: any) {
   const config = loadConfigOrError(res)
   if (!config) return
   const slots = computeSlotsForDate(config, date)
-  const busy = await getBusyIntervals(date).catch(() => [] as { start: Date; end: Date }[])
-  const filtered = filterSlotsByBusy(slots, date, busy)
+  const busy = await getBusyIntervals(date, config.timezone).catch(
+    () => [] as { start: Date; end: Date }[]
+  )
+  const filtered = filterSlotsByBusy(slots, date, busy, config.timezone)
   return res.status(200).json({ date, slots: filtered })
 }
 

@@ -1,7 +1,8 @@
 import { google } from 'googleapis'
 
+import { loadAvailabilityConfig } from './availability.js'
 import { createCalendarAuth } from './googleAuth.js'
-import { madridToUtc } from './time.js'
+import { zonedToUtc } from './time.js'
 
 export interface GCalEventInput {
   bookingId: string
@@ -27,6 +28,15 @@ function getCalendarClient() {
   const { serviceJson } = getCalendarConfig()
   const auth = buildAuth(serviceJson)
   return google.calendar({ version: 'v3', auth } as any)
+}
+
+function getTimezone(): string {
+  try {
+    const cfg = loadAvailabilityConfig()
+    return cfg.timezone
+  } catch {
+    return process.env['AVAILABILITY_TIMEZONE'] || process.env['TIMEZONE'] || 'Europe/Madrid'
+  }
 }
 
 export async function findEventByBookingId(
@@ -56,7 +66,8 @@ export async function createGCalEvent(
   const exists = await findEventByBookingId(input.bookingId, cal)
   if (exists) return { alreadyExists: true }
 
-  const start = madridToUtc(input.date, input.startTime)
+  const timezone = getTimezone()
+  const start = zonedToUtc(timezone, input.date, input.startTime)
   const end = new Date(start.getTime() + input.hours * 3600000)
 
   await (cal.events as any).insert({

@@ -1,3 +1,6 @@
+import fs from 'fs'
+import path from 'path'
+
 import { parse } from 'yaml'
 
 export interface Window {
@@ -43,12 +46,40 @@ function ensureRecord(raw: unknown): Record<string, unknown> {
   return raw as Record<string, unknown>
 }
 
+function matchesIanaPattern(tz: string): boolean {
+  return /^[A-Za-z_]+\/[A-Za-z_/]+$/.test(tz)
+}
+
+function canFormatTimezone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz }).format(new Date())
+    return true
+  } catch {
+    return false
+  }
+}
+
+function isValidIanaTimezone(tz: string): boolean {
+  if (!matchesIanaPattern(tz)) return false
+  const anyIntl = Intl as unknown as { supportedValuesOf?: (k: string) => string[] }
+  if (typeof anyIntl.supportedValuesOf === 'function') {
+    const list = anyIntl.supportedValuesOf('timeZone') as string[]
+    if (list.includes(tz)) return true
+  }
+  return canFormatTimezone(tz)
+}
+
 function validateTimezone(obj: Record<string, unknown>): void {
   if (!('timezone' in obj)) {
-    throw new Error('availability.yaml: timezone is required and must be "Europe/Madrid"')
+    throw new Error(
+      'availability.yaml: timezone is required and must be a valid IANA timezone (e.g. "Europe/Madrid")'
+    )
   }
-  if (obj['timezone'] !== 'Europe/Madrid') {
-    throw new Error('availability.yaml: timezone must be "Europe/Madrid"')
+  const tz = obj['timezone']
+  if (typeof tz !== 'string' || !isValidIanaTimezone(tz)) {
+    throw new Error(
+      `availability.yaml: timezone must be a valid IANA timezone string (e.g. "Europe/Madrid"), got "${String(tz)}"`
+    )
   }
 }
 
@@ -145,7 +176,127 @@ export function parseAvailabilityYaml(yamlString: string): AvailabilityConfig {
   validateTimezone(obj)
   const weekly = parseWeeklySection(obj)
   const exceptions = parseExceptionsSection(obj)
-  return { timezone: 'Europe/Madrid', weekly, exceptions }
+  return { timezone: obj['timezone'] as string, weekly, exceptions }
+}
+
+function assertEnvWindowSegments(part: string, segs: string[]): void {
+  if (segs.length !== 2 || !segs[0] || !segs[1]) {
+    throw new Error(`AVAILABILITY_HOURS: invalid window "${part}", expected "HH:MM-HH:MM"`)
+  }
+}
+
+function assertEnvWindowMinutes(start: string, end: string, part: string): void {
+  const sMin = parseMinutes(start)
+  if (sMin === null)
+    throw new Error(`AVAILABILITY_HOURS: invalid start time "${start}" in window "${part}"`)
+  const eMin = parseMinutes(end)
+  if (eMin === null)
+    throw new Error(`AVAILABILITY_HOURS: invalid end time "${end}" in window "${part}"`)
+  if (eMin <= sMin)
+    throw new Error(`AVAILABILITY_HOURS: window end must be after start in "${part}"`)
+}
+
+function parseSingleEnvWindow(part: string): Window {
+  const segs = part.split('-').map((s) => s.trim())
+  assertEnvWindowSegments(part, segs)
+  const start = segs[0]
+  const end = segs[1]
+  assertEnvWindowMinutes(start, end, part)
+  return { start, end }
+}
+
+export function parseEnvHours(hoursStr: string): Window[] {
+  if (!hoursStr || !hoursStr.trim()) throw new Error('AVAILABILITY_HOURS is empty')
+  const parts = hoursStr
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (parts.length === 0) throw new Error('AVAILABILITY_HOURS must contain at least one window')
+  return parts.map((p) => parseSingleEnvWindow(p))
+}
+
+function validateEnvDayName(d: string): void {
+  if (!DAY_NAMES.includes(d)) {
+    throw new Error(
+      `AVAILABILITY_DAYS: invalid weekday "${d}", expected one of ${DAY_NAMES.join(', ')}`
+    )
+  }
+}
+
+function splitEnvDays(daysStr: string): string[] {
+  const raw = daysStr
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+  if (raw.length === 0) throw new Error('AVAILABILITY_DAYS must contain at least one weekday')
+  return raw
+}
+
+function dedupeDays(days: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const d of days)
+    if (!seen.has(d)) {
+      seen.add(d)
+      out.push(d)
+    }
+  return out
+}
+
+export function parseEnvDays(daysStr: string): string[] {
+  if (!daysStr || !daysStr.trim()) throw new Error('AVAILABILITY_DAYS is empty')
+  const raw = splitEnvDays(daysStr)
+  for (const d of raw) validateEnvDayName(d)
+  return dedupeDays(raw)
+}
+
+function hasEnvOverride(): boolean {
+  const envTz = process.env['AVAILABILITY_TIMEZONE']
+  const envHours = process.env['AVAILABILITY_HOURS']
+  const envDays = process.env['AVAILABILITY_DAYS']
+  return Boolean(
+    (envTz && envTz.trim()) || (envHours && envHours.trim()) || (envDays && envDays.trim())
+  )
+}
+
+function resolveEnvTimezone(): string {
+  const envTz = process.env['AVAILABILITY_TIMEZONE']
+  const tz = envTz && envTz.trim() ? envTz.trim() : 'Europe/Madrid'
+  if (!isValidIanaTimezone(tz)) {
+    throw new Error(`AVAILABILITY_TIMEZONE: invalid IANA timezone "${tz}"`)
+  }
+  return tz
+}
+
+function resolveEnvWindows(): Window[] {
+  const envHours = process.env['AVAILABILITY_HOURS']
+  const hoursStr = envHours && envHours.trim() ? envHours.trim() : '09:00-13:00'
+  return parseEnvHours(hoursStr)
+}
+
+function resolveEnvDays(): string[] {
+  const envDays = process.env['AVAILABILITY_DAYS']
+  const daysStr =
+    envDays && envDays.trim() ? envDays.trim() : 'monday,tuesday,wednesday,thursday,friday'
+  return parseEnvDays(daysStr)
+}
+
+function buildEnvConfig(): AvailabilityConfig {
+  const timezone = resolveEnvTimezone()
+  const windows = resolveEnvWindows()
+  const days = resolveEnvDays()
+  const weekly: Record<string, Window[]> = {}
+  for (const day of days) {
+    weekly[day] = windows.map((w) => ({ ...w }))
+  }
+  return { timezone, weekly, exceptions: {} }
+}
+
+export function loadAvailabilityConfig(): AvailabilityConfig {
+  if (hasEnvOverride()) return buildEnvConfig()
+  const p = path.join(process.cwd(), 'config', 'availability.yaml')
+  const yaml = fs.readFileSync(p, 'utf8')
+  return parseAvailabilityYaml(yaml)
 }
 
 function slotsFromWindows(windows: Window[]): string[] {
@@ -162,10 +313,10 @@ function slotsFromWindows(windows: Window[]): string[] {
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
 
-function weekdayForDate(dateStr: string): string {
+function weekdayForDate(dateStr: string, timezone: string): string {
   const d = new Date(dateStr + 'T12:00:00')
   try {
-    const fmt = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'Europe/Madrid' })
+    const fmt = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: timezone })
     const parts = fmt.format(d).toLowerCase()
     if (DAY_NAMES.includes(parts)) return parts
   } catch {
@@ -178,15 +329,14 @@ export function computeSlotsForDate(config: AvailabilityConfig, dateStr: string)
   if (dateStr in config.exceptions) {
     return slotsFromWindows(config.exceptions[dateStr])
   }
-  const weekday = weekdayForDate(dateStr)
+  const weekday = weekdayForDate(dateStr, config.timezone)
   const windows = config.weekly[weekday] ?? []
   return slotsFromWindows(windows)
 }
 
-// Helper to get today string in Europe/Madrid
-export function todayInMadrid(): string {
+export function todayInTimezone(timezone: string): string {
   const fmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Madrid',
+    timeZone: timezone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -194,7 +344,27 @@ export function todayInMadrid(): string {
   return fmt.format(new Date())
 }
 
+// Helper to get today string in Europe/Madrid — kept for backward compat
+export function todayInMadrid(): string {
+  return todayInTimezone('Europe/Madrid')
+}
+
+function resolveEffectiveTimezone(): string {
+  const envTz = process.env['AVAILABILITY_TIMEZONE'] || process.env['TIMEZONE']
+  if (envTz && envTz.trim()) return envTz.trim()
+  try {
+    const p = path.join(process.cwd(), 'config', 'availability.yaml')
+    const yaml = fs.readFileSync(p, 'utf8')
+    const cfg = parseAvailabilityYaml(yaml)
+    return cfg.timezone
+  } catch {
+    return 'Europe/Madrid'
+  }
+}
+
 export function isPastDate(dateStr: string): boolean {
-  const today = todayInMadrid()
+  let effectiveTz = resolveEffectiveTimezone()
+  if (!isValidIanaTimezone(effectiveTz)) effectiveTz = 'Europe/Madrid'
+  const today = todayInTimezone(effectiveTz)
   return dateStr < today
 }
