@@ -23,3 +23,20 @@ export function priceCents(hours: number, freeHourAvailable: boolean): PriceResu
   const cents = freeHourAvailable ? (hours - 1) * PRICE_PER_HOUR : hours * PRICE_PER_HOUR
   return { ok: true, cents }
 }
+
+// Pro-rata per minute: €30/h = €0.50/min = 50 cents/min
+const CENTS_PER_MINUTE = 50
+
+export function recordedBillingCents(totalMinutes: number, freeHourAvailable: boolean): number {
+  const freeMinutes = freeHourAvailable ? 60 : 0
+  const billableMinutes = Math.max(0, totalMinutes - freeMinutes)
+  return Math.ceil(billableMinutes * CENTS_PER_MINUTE)
+}
+
+export function validateActualMinutes(v: unknown): string | null {
+  if (typeof v !== 'number' || !Number.isFinite(v) || !Number.isInteger(v))
+    return 'actualMinutes must be an integer'
+  if (v <= 0) return 'actualMinutes must be > 0'
+  if (v > 600) return 'actualMinutes too large'
+  return null
+}

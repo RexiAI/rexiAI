@@ -1,8 +1,10 @@
 import Stripe from 'stripe'
 
+import { createCalendarEvent } from '../src/domain/calendar.js'
 import { sendOperatorEmail } from '../src/domain/email.js'
-import { markFreeHourUsed } from '../src/domain/freeHour.js'
-import { createGCalEvent, findEventByBookingId } from '../src/domain/gcal.js'
+import { isFreeHourAvailable, markFreeHourUsed } from '../src/domain/freeHour.js'
+import { findEventByBookingId } from '../src/domain/gcal.js'
+import { getCalendarProvider } from '../src/domain/providers.js'
 import { getStripe } from '../src/domain/stripeClient.js'
 
 function errMsg(e: unknown): string {
@@ -109,16 +111,111 @@ function hasRequiredFields(email: string, date: string, startTime: string, res: 
   return true
 }
 
-function extractBookingData(session: Stripe.Checkout.Session, res: any) {
-  const bookingId = session.id
+type BookingData =
+  | {
+      bookingId: string
+      email: string
+      date: string
+      startTime: string
+      hours: number
+      amountTotal: number
+      joinUrl: string | null
+      recordedBilling: true
+      actualMinutes: number
+    }
+  | {
+      bookingId: string
+      email: string
+      date: string
+      startTime: string
+      hours: number
+      amountTotal: number
+      joinUrl: string | null
+      recordedBilling: false
+      actualMinutes: number
+    }
+
+function getRawBookingFields(session: Stripe.Checkout.Session) {
   const metadata = getMetadata(session)
-  const email = metaValue(metadata, 'email', getCustomerEmail(session))
-  const date = metaValue(metadata, 'date', '')
-  const startTime = metaValue(metadata, 'start_time', '')
-  const hours = parseInt(metaValue(metadata, 'hours', '1'), 10)
-  const amountTotal = getAmountTotal(session)
-  if (!hasRequiredFields(email, date, startTime, res)) return null
-  return { bookingId, email, date, startTime, hours, amountTotal }
+  const joinUrlRaw = metaValue(metadata, 'join_url', '')
+  return {
+    bookingId: session.id,
+    metadata,
+    email: metaValue(metadata, 'email', getCustomerEmail(session)),
+    date: metaValue(metadata, 'date', ''),
+    startTime: metaValue(metadata, 'start_time', ''),
+    hours: parseInt(metaValue(metadata, 'hours', '1'), 10),
+    amountTotal: getAmountTotal(session),
+    joinUrl: joinUrlRaw ? joinUrlRaw : null,
+    recordedBilling: metadata['recorded_billing'] === '1',
+    actualMinutes: parseInt(getActualMinutesRaw(metadata), 10),
+  }
+}
+
+function getActualMinutesRaw(metadata: Record<string, string>): string {
+  const v = metadata['actual_minutes']
+  if (v) return v
+  return '0'
+}
+
+function resolveOrigBookingId(metadata: Record<string, string>, fallback: string): string {
+  const v = metadata['bookingId']
+  if (v) return v
+  return fallback
+}
+
+function buildRecordedBillingData(
+  raw: ReturnType<typeof getRawBookingFields>,
+  res: any
+): BookingData | null {
+  const origBookingId = resolveOrigBookingId(raw.metadata, raw.bookingId)
+  if (!raw.email) {
+    res
+      .status(400)
+      .json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
+    return null
+  }
+  if (!origBookingId) {
+    res
+      .status(400)
+      .json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
+    return null
+  }
+  return {
+    bookingId: origBookingId,
+    email: raw.email,
+    date: raw.date,
+    startTime: raw.startTime,
+    hours: raw.hours,
+    amountTotal: raw.amountTotal,
+    joinUrl: raw.joinUrl,
+    recordedBilling: true,
+    actualMinutes: raw.actualMinutes,
+  }
+}
+
+function buildStandardBookingData(
+  raw: ReturnType<typeof getRawBookingFields>,
+  res: any
+): BookingData | null {
+  if (!hasRequiredFields(raw.email, raw.date, raw.startTime, res)) return null
+  return {
+    bookingId: raw.bookingId,
+    email: raw.email,
+    date: raw.date,
+    startTime: raw.startTime,
+    hours: raw.hours,
+    amountTotal: raw.amountTotal,
+    joinUrl: raw.joinUrl,
+    recordedBilling: false,
+    actualMinutes: 0,
+  }
+}
+
+function extractBookingData(session: Stripe.Checkout.Session, res: any): BookingData | null {
+  const raw = getRawBookingFields(session)
+  if (raw.recordedBilling) return buildRecordedBillingData(raw, res)
+  return buildStandardBookingData(raw, res)
 }
 
 async function checkAlreadyExists(bookingId: string, res: any): Promise<boolean | null> {
@@ -138,6 +235,7 @@ async function trySendEmail(
     hours: number
     amountTotal: number
     bookingId: string
+    joinUrl?: string | null
   },
   res: any
 ): Promise<boolean> {
@@ -148,6 +246,7 @@ async function trySendEmail(
       startTime: data.startTime,
       hours: Number.isFinite(data.hours) ? data.hours : 1,
       amountCents: data.amountTotal,
+      joinUrl: data.joinUrl ?? null,
     })
     emailSentForBooking.add(data.bookingId)
     return true
@@ -167,17 +266,45 @@ async function tryMarkFree(email: string, res: any): Promise<boolean> {
   }
 }
 
+function resolveCalendarTimezone(explicit?: string): string {
+  if (explicit) return explicit
+  const envTz = process.env['AVAILABILITY_TIMEZONE']
+  if (envTz) return envTz
+  const fallbackTz = process.env['TIMEZONE']
+  if (fallbackTz) return fallbackTz
+  return 'Europe/Madrid'
+}
+
+function normalizeBookingHours(hours: unknown): number {
+  if (Number.isFinite(hours as number)) return hours as number
+  return 1
+}
+
 async function tryCreateEvent(
-  data: { bookingId: string; email: string; date: string; startTime: string; hours: number },
+  data: {
+    bookingId: string
+    email: string
+    date: string
+    startTime: string
+    hours: number
+    joinUrl?: string | null
+    timezone?: string
+  },
   res: any
 ): Promise<boolean> {
   try {
-    await createGCalEvent({
+    const timezone = resolveCalendarTimezone(data.timezone)
+    const hours = normalizeBookingHours(data.hours)
+    const joinUrl = data.joinUrl ?? null
+    await createCalendarEvent({
+      provider: getCalendarProvider(),
+      timezone,
       bookingId: data.bookingId,
       email: data.email,
       date: data.date,
       startTime: data.startTime,
-      hours: Number.isFinite(data.hours) ? data.hours : 1,
+      hours,
+      joinUrl,
     })
     return true
   } catch (e) {
@@ -201,11 +328,47 @@ async function handleExistingBooking(
   return true
 }
 
+async function handleRecordedBilling(
+  data: { bookingId: string; email: string; amountTotal: number },
+  res: any
+): Promise<boolean> {
+  // Only burn free hour if it was available at checkout time (metadata free_hour_applied) and not already burned.
+  // Check Stripe customer flag to avoid double burn.
+  try {
+    const available = await isFreeHourAvailable(data.email)
+    if (available) {
+      if (!(await tryMarkFree(data.email, res))) return true
+    }
+  } catch {
+    // if lookup fails, don't block webhook
+  }
+  // Email for recorded billing (hours not relevant, use actualMinutes as hours for email body approximation)
+  if (
+    !(await trySendEmail(
+      {
+        email: data.email,
+        date: '',
+        startTime: '',
+        hours: 0,
+        amountTotal: data.amountTotal,
+        bookingId: data.bookingId + '_recorded',
+      } as any,
+      res
+    ))
+  )
+    return true
+  res.status(200).json({ received: true, recordedBilling: true })
+  return true
+}
+
 async function handleNewBooking(
   data: ReturnType<typeof extractBookingData> & {},
   res: any
 ): Promise<boolean> {
   const d = data!
+  if (d.recordedBilling) {
+    return handleRecordedBilling(d as any, res)
+  }
   if (!(await tryMarkFree(d.email, res))) return true
   if (!(await tryCreateEvent(d as any, res))) return true
   if (!(await trySendEmail(d as any, res))) return true
@@ -213,15 +376,25 @@ async function handleNewBooking(
   return true
 }
 
-export default async function handler(req: any, res: any) {
-  const event = getVerifiedEvent(req, res)
-  if (!event) return
-  if (event.type !== 'checkout.session.completed') {
-    return res.status(200).json({ received: true })
+function getRecordedDedupKey(data: BookingData, session: Stripe.Checkout.Session): string {
+  return `${data.bookingId}_recorded_${(session as unknown as { id: string }).id}`
+}
+
+async function handleRecordedSession(
+  data: BookingData,
+  session: Stripe.Checkout.Session,
+  res: any
+): Promise<void> {
+  const dedupKey = getRecordedDedupKey(data, session)
+  if (emailSentForBooking.has(dedupKey)) {
+    res.status(200).json({ received: true, deduped: true })
+    return
   }
-  const session = event.data.object as Stripe.Checkout.Session
-  const data = extractBookingData(session, res)
-  if (!data) return
+  await handleNewBooking(data, res)
+  emailSentForBooking.add(dedupKey)
+}
+
+async function handleStandardSession(data: BookingData, res: any): Promise<void> {
   const alreadyExists = await checkAlreadyExists(data.bookingId, res)
   if (alreadyExists === null) return
   if (alreadyExists) {
@@ -229,4 +402,30 @@ export default async function handler(req: any, res: any) {
     return
   }
   await handleNewBooking(data, res)
+}
+
+async function handleCheckoutSession(session: Stripe.Checkout.Session, res: any): Promise<void> {
+  const data = extractBookingData(session, res)
+  if (!data) return
+  if (data.recordedBilling) {
+    await handleRecordedSession(data, session, res)
+    return
+  }
+  await handleStandardSession(data, res)
+}
+
+function isRelevantCheckoutEvent(event: Stripe.Event, res: any): boolean {
+  if (event.type !== 'checkout.session.completed') {
+    res.status(200).json({ received: true })
+    return false
+  }
+  return true
+}
+
+export default async function handler(req: any, res: any) {
+  const event = getVerifiedEvent(req, res)
+  if (!event) return
+  if (!isRelevantCheckoutEvent(event, res)) return
+  const session = event.data.object as Stripe.Checkout.Session
+  await handleCheckoutSession(session, res)
 }

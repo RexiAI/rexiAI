@@ -30,11 +30,20 @@ type SessionOpts = {
   cents: number
   req: any
   res: any
+  joinUrl?: string | null
 }
 
 function buildSessionParams(opts: SessionOpts, baseUrl: string) {
+  const metadata: Record<string, string> = {
+    email: opts.email,
+    date: opts.date,
+    start_time: opts.startTime,
+    hours: String(opts.hours),
+    free_hour_applied: String(opts.freeAvailable),
+  }
+  if (opts.joinUrl) metadata['join_url'] = opts.joinUrl
   // prettier-ignore
-  return { mode: 'payment' as const, currency: 'eur' as const, line_items: [{ price_data: { currency: 'eur' as const, product_data: { name: `Booking ${opts.date} ${opts.startTime} (${opts.hours}h)` }, unit_amount: opts.cents }, quantity: 1 as const }], customer_email: opts.email, metadata: { email: opts.email, date: opts.date, start_time: opts.startTime, hours: String(opts.hours), free_hour_applied: String(opts.freeAvailable) }, success_url: `${baseUrl}/booking/success`, cancel_url: `${baseUrl}/booking/cancel` }
+  return { mode: 'payment' as const, currency: 'eur' as const, line_items: [{ price_data: { currency: 'eur' as const, product_data: { name: `Booking ${opts.date} ${opts.startTime} (${opts.hours}h)` }, unit_amount: opts.cents }, quantity: 1 as const }], customer_email: opts.email, metadata, success_url: `${baseUrl}/booking/success`, cancel_url: `${baseUrl}/booking/cancel` }
 }
 
 async function createSession(opts: SessionOpts) {
@@ -49,29 +58,40 @@ async function createSession(opts: SessionOpts) {
   }
 }
 
+function normalizeJoinUrl(joinUrl?: string | null): string | null {
+  if (joinUrl) return joinUrl
+  return null
+}
+
+function getValidatedCents(hours: number, freeAvailable: boolean, res: any): number | null {
+  const priceRes = priceCents(hours, freeAvailable)
+  if (priceRes.ok) return priceRes.cents
+  res.status(400).json({ error: { code: 'INVALID_DURATION', message: priceRes.error.message } })
+  return null
+}
+
 export async function createCheckout(
   email: string,
   date: string,
   startTime: string,
   hours: number,
   req: any,
-  res: any
+  res: any,
+  joinUrl?: string | null
 ) {
   const freeAvailable = await getFreeAvailable(email, res)
   if (freeAvailable === null) return null
-  const priceRes = priceCents(hours, freeAvailable)
-  if (!priceRes.ok) {
-    res.status(400).json({ error: { code: 'INVALID_DURATION', message: priceRes.error.message } })
-    return null
-  }
+  const cents = getValidatedCents(hours, freeAvailable, res)
+  if (cents === null) return null
   return createSession({
     email,
     date,
     startTime,
     hours,
     freeAvailable,
-    cents: priceRes.cents,
+    cents,
     req,
     res,
+    joinUrl: normalizeJoinUrl(joinUrl),
   })
 }

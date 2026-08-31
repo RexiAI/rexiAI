@@ -3,7 +3,11 @@
 #   AVAILABILITY_TIMEZONE — IANA timezone (e.g. Europe/Madrid, America/New_York)
 #   AVAILABILITY_HOURS — daily windows "HH:MM-HH:MM[,HH:MM-HH:MM]*" e.g. "09:00-13:00,14:00-18:00"
 #   AVAILABILITY_DAYS — weekdays "monday,tuesday,wednesday,thursday,friday"
-# When any env var is set, weekly is built from AVAILABILITY_DAYS + AVAILABILITY_HOURS
+#   CALENDAR_PROVIDER — google | microsoft (default google); EMAIL_PROVIDER — gmail | microsoft365 (default gmail)
+#   MICROSOFT_* — Graph credentials when using Microsoft 365 (see .env.example for setup steps).
+#   Recording guarantee: owner must enable Teams meeting policy AllowCloudRecording true (Global policy).
+#   Billing: prepaid reservation + pro-rata post-pay via POST /api/bookings/recorded-billing (50 cents/min, 60 min free once).
+# When any AVAILABILITY_* env var is set, weekly is built from AVAILABILITY_DAYS + AVAILABILITY_HOURS
 # and exceptions are empty; otherwise this file is used (weekly + exceptions).
 timezone: Europe/Madrid
 weekly:
