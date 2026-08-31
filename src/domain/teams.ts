@@ -1,16 +1,6 @@
-import { loadAvailabilityConfig } from './availability.js'
 import { getMicrosoftAccessToken, getMicrosoftConfig } from './microsoftAuth.js'
 import { getCalendarProvider } from './providers.js'
-import { zonedToUtc } from './time.js'
-
-function getTimezone(): string {
-  try {
-    const cfg = loadAvailabilityConfig()
-    return cfg.timezone
-  } catch {
-    return process.env['AVAILABILITY_TIMEZONE'] || process.env['TIMEZONE'] || 'Europe/Madrid'
-  }
-}
+import { getConfiguredTimezone, zonedToUtc } from './time.js'
 
 export interface TeamsMeetingInput {
   date: string
@@ -42,7 +32,7 @@ type Window = { startUtc: Date; endUtc: Date }
 
 function resolveWindow(input: TeamsMeetingInput): Window | null {
   try {
-    const startUtc = zonedToUtc(getTimezone(), input.date, input.startTime)
+    const startUtc = zonedToUtc(getConfiguredTimezone(), input.date, input.startTime)
     return { startUtc, endUtc: new Date(startUtc.getTime() + input.hours * 3600000) }
   } catch {
     return null

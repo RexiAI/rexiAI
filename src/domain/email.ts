@@ -1,5 +1,6 @@
 import { getMicrosoftAccessToken, getMicrosoftConfig } from './microsoftAuth.js'
 import { getEmailProvider } from './providers.js'
+import { getConfiguredTimezone } from './time.js'
 
 export interface OperatorEmailInput {
   clientEmail: string
@@ -8,6 +9,61 @@ export interface OperatorEmailInput {
   hours: number
   amountCents: number
   joinUrl?: string | null
+  /** Omitted means: infer from amountCents (0 => a no-charge reservation). */
+  kind?: 'reservation' | 'charge'
+}
+
+/**
+ * clientEmail is attacker-controlled and reaches the operator's mailbox as HTML.
+ * & must be replaced first, otherwise the ampersands introduced by the later
+ * replacements get double-escaped.
+ */
+export function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+interface BodyLine {
+  label?: string
+  value: string
+}
+
+function amountLine(input: OperatorEmailInput): BodyLine {
+  const kind = input.kind ?? (input.amountCents === 0 ? 'reservation' : 'charge')
+  if (kind === 'reservation') {
+    return { value: 'Reserva sin cargo — se factura tras la reunión (pro-rata 0,50 EUR/min)' }
+  }
+  // Pro-rata is 50 cents/minute, so half-euro totals are routine: 2 decimals, never 0.
+  const amountEuro = (input.amountCents / 100).toFixed(2)
+  return { label: 'Importe cobrado', value: `${amountEuro} EUR (${input.amountCents} cents)` }
+}
+
+function buildLines(input: OperatorEmailInput): BodyLine[] {
+  const timezone = getConfiguredTimezone()
+  const lines: BodyLine[] = [
+    { label: 'Cliente', value: input.clientEmail },
+    { label: 'Fecha', value: input.date },
+    { label: `Hora (${timezone})`, value: input.startTime },
+    { label: 'Duración', value: `${input.hours} horas` },
+    amountLine(input),
+  ]
+  if (input.joinUrl) lines.push({ label: 'Teams', value: input.joinUrl })
+  return lines
+}
+
+function renderText(lines: BodyLine[]): string {
+  return lines.map((l) => (l.label ? `${l.label}: ${l.value}` : l.value)).join('\n')
+}
+
+function renderHtml(lines: BodyLine[]): string {
+  const inner = lines
+    .map((l) => (l.label ? `${escapeHtml(l.label)}: ${escapeHtml(l.value)}` : escapeHtml(l.value)))
+    .join('<br/>')
+  return `<p>${inner}</p>`
 }
 
 function getEmailConfig() {
@@ -20,21 +76,21 @@ function getEmailConfig() {
   return { apiKey, from, to }
 }
 
-function buildBody(input: OperatorEmailInput): { subject: string; body: string } {
-  const amountEuro = (input.amountCents / 100).toFixed(0)
+/**
+ * `text` is the plain part and stays unescaped; `html` is built from per-field
+ * escaped values, never by string-replacing the plaintext. `subject` stays
+ * plaintext because Resend and Graph both take it as a plain string — do not
+ * build HTML from it without escaping.
+ */
+function buildBody(input: OperatorEmailInput): { subject: string; text: string; html: string } {
   const subject = `Nueva reserva: ${input.clientEmail} - ${input.date} ${input.startTime}`
-  let body = `Cliente: ${input.clientEmail}
-Fecha: ${input.date}
-Hora Madrid: ${input.startTime}
-Duracion: ${input.hours} horas
-Importe pagado: ${amountEuro} EUR (${input.amountCents} cents)`
-  if (input.joinUrl) body += `\nTeams: ${input.joinUrl}`
-  return { subject, body }
+  const lines = buildLines(input)
+  return { subject, text: renderText(lines), html: renderHtml(lines) }
 }
 
 async function sendViaResend(input: OperatorEmailInput, fetchImpl: typeof fetch): Promise<void> {
   const { apiKey, from, to } = getEmailConfig()
-  const { subject, body } = buildBody(input)
+  const { subject, text, html } = buildBody(input)
   const res = await fetchImpl('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -45,13 +101,13 @@ async function sendViaResend(input: OperatorEmailInput, fetchImpl: typeof fetch)
       from,
       to,
       subject,
-      text: body,
-      html: `<p>${body.replace(/\n/g, '<br/>')}</p>`,
+      text,
+      html,
     }),
   })
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`Resend failed: ${res.status} ${text}`)
+    const errText = await res.text().catch(() => '')
+    throw new Error(`Resend failed: ${res.status} ${errText}`)
   }
 }
 
@@ -59,10 +115,9 @@ async function sendViaMicrosoft(input: OperatorEmailInput, fetchImpl: typeof fet
   const cfg = getMicrosoftConfig()
   if (!cfg) throw new Error('Microsoft Graph not configured')
   const token = await getMicrosoftAccessToken(fetchImpl)
-  const { subject, body } = buildBody(input)
+  const { subject, html } = buildBody(input)
   const to = process.env['EMAIL_TO'] || cfg.userId
   const from = process.env['EMAIL_FROM'] || cfg.userId
-  const htmlBody = body.replace(/\n/g, '<br/>')
   const res = await fetchImpl(
     `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(cfg.userId)}/sendMail`,
     {
@@ -71,7 +126,7 @@ async function sendViaMicrosoft(input: OperatorEmailInput, fetchImpl: typeof fet
       body: JSON.stringify({
         message: {
           subject,
-          body: { contentType: 'HTML', content: `<p>${htmlBody}</p>` },
+          body: { contentType: 'HTML', content: html },
           toRecipients: [{ emailAddress: { address: to } }],
           from: { emailAddress: { address: from } },
         },
@@ -80,8 +135,8 @@ async function sendViaMicrosoft(input: OperatorEmailInput, fetchImpl: typeof fet
     }
   )
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`Graph sendMail failed: ${res.status} ${text}`)
+    const errText = await res.text().catch(() => '')
+    throw new Error(`Graph sendMail failed: ${res.status} ${errText}`)
   }
 }
 

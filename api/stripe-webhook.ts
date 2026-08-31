@@ -236,6 +236,7 @@ async function trySendEmail(
     amountTotal: number
     bookingId: string
     joinUrl?: string | null
+    kind?: 'reservation' | 'charge'
   },
   res: any
 ): Promise<boolean> {
@@ -247,6 +248,7 @@ async function trySendEmail(
       hours: Number.isFinite(data.hours) ? data.hours : 1,
       amountCents: data.amountTotal,
       joinUrl: data.joinUrl ?? null,
+      ...(data.kind ? { kind: data.kind } : {}),
     })
     emailSentForBooking.add(data.bookingId)
     return true
@@ -352,6 +354,9 @@ async function handleRecordedBilling(
         hours: 0,
         amountTotal: data.amountTotal,
         bookingId: data.bookingId + '_recorded',
+        // Recorded-billing sessions are the actual post-meeting charge, even
+        // when the pro-rata total happens to land on zero.
+        kind: 'charge' as const,
       } as any,
       res
     ))

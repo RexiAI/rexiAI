@@ -1,8 +1,7 @@
 import { google } from 'googleapis'
 
-import { loadAvailabilityConfig } from '../../src/domain/availability.js'
 import { createCalendarAuth } from '../../src/domain/googleAuth.js'
-import { zonedToUtc } from '../../src/domain/time.js'
+import { getConfiguredTimezone, zonedToUtc } from '../../src/domain/time.js'
 
 async function queryFreeBusy(calendarId: string, slotStart: Date, slotEnd: Date, auth: any) {
   const cal = google.calendar({ version: 'v3', auth } as any)
@@ -25,15 +24,6 @@ function getCalendarEnv(): { calendarId: string; serviceJson: string } | null {
   return { calendarId, serviceJson }
 }
 
-function getTimezone(): string {
-  try {
-    const cfg = loadAvailabilityConfig()
-    return cfg.timezone
-  } catch {
-    return process.env['AVAILABILITY_TIMEZONE'] || process.env['TIMEZONE'] || 'Europe/Madrid'
-  }
-}
-
 async function fetchConflictBusy(
   calendarId: string,
   serviceJson: string,
@@ -42,7 +32,7 @@ async function fetchConflictBusy(
   hours: number
 ) {
   const auth = createCalendarAuth(serviceJson)
-  const timezone = getTimezone()
+  const timezone = getConfiguredTimezone()
   const slotStart = zonedToUtc(timezone, date, startTime)
   const slotEnd = new Date(slotStart.getTime() + hours * 3600000)
   return { slotStart, slotEnd, busy: await queryFreeBusy(calendarId, slotStart, slotEnd, auth) }
@@ -81,7 +71,7 @@ export async function hasConflict(
 }
 
 function getDowForDate(date: string): string {
-  const timezone = getTimezone()
+  const timezone = getConfiguredTimezone()
   const d = new Date(date + 'T12:00:00Z')
   try {
     const fmt = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: timezone })

@@ -1,3 +1,20 @@
+import { loadAvailabilityConfig } from './availability.js'
+
+/**
+ * Single source of truth for "which timezone is this deployment operating in".
+ * The config loader already folds AVAILABILITY_TIMEZONE in, so it is tried
+ * first; the env/default chain is the fallback for a missing or invalid
+ * config/availability.yaml. email.ts, teams.ts and gcal.ts all call this —
+ * they previously each carried a byte-identical private copy.
+ */
+export function getConfiguredTimezone(): string {
+  try {
+    return loadAvailabilityConfig().timezone
+  } catch {
+    return process.env['AVAILABILITY_TIMEZONE'] || process.env['TIMEZONE'] || 'Europe/Madrid'
+  }
+}
+
 function formatToPartsInTimezone(timezone: string, date: Date): Record<string, string> {
   const fmt = new Intl.DateTimeFormat('en-US', {
     timeZone: timezone,

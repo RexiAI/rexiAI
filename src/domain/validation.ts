@@ -1,5 +1,12 @@
+// Conservative RFC-pragmatic shape. Deliberately rejects < > " ' ( ) , ; and
+// backslash — those are legal only in quoted-local-form addresses nobody books
+// with, and they are exactly what turns an address into live HTML downstream.
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+const EMAIL_MAX_LENGTH = 254
+
 export function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  if (email.length > EMAIL_MAX_LENGTH) return false
+  return EMAIL_RE.test(email)
 }
 
 export function isValidDateStr(s: string): boolean {
