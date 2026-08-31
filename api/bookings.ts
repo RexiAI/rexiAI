@@ -1,4 +1,4 @@
-import { createTeamsMeeting } from '../src/domain/teams.js'
+import { createTeamsMeeting, type TeamsMeetingResult } from '../src/domain/teams.js'
 
 import { hasConflict } from './bookings/calendar.js'
 import { createCheckout } from './bookings/checkout.js'
@@ -12,22 +12,31 @@ function isPostMethod(req: any, res: any): boolean {
   return true
 }
 
-async function resolveTeamsJoinUrl(input: {
+async function resolveTeamsMeeting(input: {
   date: string
   startTime: string
   hours: number
   email: string
-}): Promise<string | null> {
-  try {
-    return await createTeamsMeeting({
-      date: input.date,
-      startTime: input.startTime,
-      hours: input.hours,
-      subject: `RexiAI booking ${input.email} ${input.date} ${input.startTime}`,
-    })
-  } catch {
-    return null
-  }
+}): Promise<TeamsMeetingResult> {
+  return createTeamsMeeting({
+    date: input.date,
+    startTime: input.startTime,
+    hours: input.hours,
+    subject: `RexiAI booking ${input.email} ${input.date} ${input.startTime}`,
+  })
+}
+
+// A Teams failure must abort before the Stripe session is created, otherwise the
+// client holds a reservation for a meeting that has no room to join.
+function rejectOnTeamsError(meeting: TeamsMeetingResult, res: any): boolean {
+  if (meeting.status !== 'error') return false
+  res.status(502).json({
+    error: {
+      code: 'TEAMS_ERROR',
+      message: 'Could not create the Teams meeting; booking not made',
+    },
+  })
+  return true
 }
 
 async function checkSlotConflict(
@@ -41,13 +50,13 @@ async function checkSlotConflict(
   return false
 }
 
-function toOptionalJoinUrl(joinUrl: string | null): string | undefined {
-  if (joinUrl) return joinUrl
+function toOptionalJoinUrl(meeting: TeamsMeetingResult): string | undefined {
+  if (meeting.status === 'ok') return meeting.joinUrl
   return undefined
 }
 
-function buildBookingResponse(checkout: { url: string | null }, joinUrl: string | null) {
-  return { checkoutUrl: checkout.url, joinUrl: toOptionalJoinUrl(joinUrl) }
+function buildBookingResponse(checkout: { url: string | null }, meeting: TeamsMeetingResult) {
+  return { checkoutUrl: checkout.url, joinUrl: toOptionalJoinUrl(meeting) }
 }
 
 export default async function handler(req: any, res: any) {
@@ -55,7 +64,8 @@ export default async function handler(req: any, res: any) {
   const input = prepareBookingInput(req, res)
   if (!input) return
   if (await checkSlotConflict(input, res)) return
-  const joinUrl = await resolveTeamsJoinUrl(input)
+  const meeting = await resolveTeamsMeeting(input)
+  if (rejectOnTeamsError(meeting, res)) return
   const checkout = await createCheckout(
     input.email,
     input.date,
@@ -63,8 +73,8 @@ export default async function handler(req: any, res: any) {
     input.hours,
     req,
     res,
-    joinUrl
+    toOptionalJoinUrl(meeting)
   )
   if (!checkout) return
-  return res.status(200).json(buildBookingResponse(checkout, joinUrl))
+  return res.status(200).json(buildBookingResponse(checkout, meeting))
 }

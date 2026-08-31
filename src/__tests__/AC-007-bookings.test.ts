@@ -86,7 +86,9 @@ describe('AC-007', () => {
     )
   })
 
-  it('AC-007-02: First-timer two-hour booking charges 30 EUR', async () => {
+  it('AC-007-02: First-timer two-hour booking creates a zero-euro reservation', async () => {
+    // Charging happens post-meeting via /api/bookings/recorded-billing (pro-rata per
+    // minute), so the reservation captures nothing at booking time.
     stripeMocks.mockList.mockResolvedValue({ data: [] })
     const req: any = {
       method: 'POST',
@@ -95,12 +97,16 @@ describe('AC-007', () => {
     }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
     await bookingsHandler(req, res)
-    const unitAmount = stripeMocks.mockCreate.mock.calls[0][0].line_items[0].price_data.unit_amount
-    expect(unitAmount).toBe(3000)
-    expect(stripeMocks.mockCreate.mock.calls[0][0].metadata.free_hour_applied).toBe('true')
+    const args = stripeMocks.mockCreate.mock.calls[0][0]
+    expect(args.line_items[0].price_data.unit_amount).toBe(0)
+    expect(args.metadata.reservation).toBe('1')
+    expect(args.metadata.quoted_hours).toBe('2')
+    expect(args.metadata.free_hour_applied).toBe('true')
   })
 
-  it('AC-007-03: Returning client pays full price', async () => {
+  it('AC-007-03: Returning client reservation is also zero-euro', async () => {
+    // Charging happens post-meeting via /api/bookings/recorded-billing (pro-rata per
+    // minute), so the reservation captures nothing at booking time.
     stripeMocks.mockList.mockResolvedValue({
       data: [{ id: 'cus_1', metadata: { rexi_free_hour_used: '1' } }],
     })
@@ -111,9 +117,11 @@ describe('AC-007', () => {
     }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
     await bookingsHandler(req, res)
-    const unitAmount = stripeMocks.mockCreate.mock.calls[0][0].line_items[0].price_data.unit_amount
-    expect(unitAmount).toBe(6000)
-    expect(stripeMocks.mockCreate.mock.calls[0][0].metadata.free_hour_applied).toBe('false')
+    const args = stripeMocks.mockCreate.mock.calls[0][0]
+    expect(args.line_items[0].price_data.unit_amount).toBe(0)
+    expect(args.metadata.reservation).toBe('1')
+    expect(args.metadata.quoted_hours).toBe('2')
+    expect(args.metadata.free_hour_applied).toBe('false')
   })
 
   it('AC-007-04: Invalid email rejected without calling Stripe', async () => {

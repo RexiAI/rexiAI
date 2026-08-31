@@ -1,3 +1,5 @@
+import { timingSafeEqual } from 'crypto'
+
 import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
 import { recordedBillingCents, validateActualMinutes } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
@@ -5,6 +7,39 @@ import { isValidEmail } from '../../src/domain/validation.js'
 
 function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
+}
+
+function equalsConstantTime(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, 'utf8')
+  const bufB = Buffer.from(b, 'utf8')
+  // timingSafeEqual throws on length mismatch, so the length is compared first.
+  // Length is not secret; the byte content is what must not leak via timing.
+  if (bufA.length !== bufB.length) return false
+  return timingSafeEqual(bufA, bufB)
+}
+
+function getBearerToken(req: any): string {
+  const header = req.headers?.['authorization']
+  if (typeof header !== 'string') return ''
+  if (!header.startsWith('Bearer ')) return ''
+  return header.slice('Bearer '.length)
+}
+
+// Fail closed: this endpoint captures money, so an unconfigured token means the
+// endpoint is unavailable, never open. Runs before body parsing and before Stripe.
+function isAuthorized(req: any, res: any): boolean {
+  const expected = process.env['RECORDED_BILLING_TOKEN']
+  if (!expected) {
+    res
+      .status(503)
+      .json({ error: { code: 'NOT_CONFIGURED', message: 'Recorded billing is not configured' } })
+    return false
+  }
+  if (!equalsConstantTime(getBearerToken(req), expected)) {
+    res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized' } })
+    return false
+  }
+  return true
 }
 
 function getBaseUrl(req: any): string {
@@ -203,6 +238,7 @@ async function handleCheckoutResult(
 
 export default async function handler(req: any, res: any) {
   if (!isPostMethod(req, res)) return
+  if (!isAuthorized(req, res)) return
   const parsed = parseRecordedBillingBody(req.body)
   if (!validateRecordedBillingBody(parsed, res)) return
   const freeAvailable = await getFreeHourAvailability(parsed.email, res)

@@ -27,11 +27,15 @@ type SessionOpts = {
   startTime: string
   hours: number
   freeAvailable: boolean
-  cents: number
   req: any
   res: any
   joinUrl?: string | null
 }
+
+// The booking is a €0 reservation: nothing is captured here and the free hour is
+// NOT burned. The single charge happens after the meeting is recorded, via
+// POST /api/bookings/recorded-billing (pro-rata per minute).
+const RESERVATION_UNIT_AMOUNT = 0
 
 function buildSessionParams(opts: SessionOpts, baseUrl: string) {
   const metadata: Record<string, string> = {
@@ -39,11 +43,13 @@ function buildSessionParams(opts: SessionOpts, baseUrl: string) {
     date: opts.date,
     start_time: opts.startTime,
     hours: String(opts.hours),
+    quoted_hours: String(opts.hours),
+    reservation: '1',
     free_hour_applied: String(opts.freeAvailable),
   }
   if (opts.joinUrl) metadata['join_url'] = opts.joinUrl
   // prettier-ignore
-  return { mode: 'payment' as const, currency: 'eur' as const, line_items: [{ price_data: { currency: 'eur' as const, product_data: { name: `Booking ${opts.date} ${opts.startTime} (${opts.hours}h)` }, unit_amount: opts.cents }, quantity: 1 as const }], customer_email: opts.email, metadata, success_url: `${baseUrl}/booking/success`, cancel_url: `${baseUrl}/booking/cancel` }
+  return { mode: 'payment' as const, currency: 'eur' as const, line_items: [{ price_data: { currency: 'eur' as const, product_data: { name: `Booking ${opts.date} ${opts.startTime} (${opts.hours}h)` }, unit_amount: RESERVATION_UNIT_AMOUNT }, quantity: 1 as const }], customer_email: opts.email, metadata, success_url: `${baseUrl}/booking/success`, cancel_url: `${baseUrl}/booking/cancel` }
 }
 
 async function createSession(opts: SessionOpts) {
@@ -63,11 +69,14 @@ function normalizeJoinUrl(joinUrl?: string | null): string | null {
   return null
 }
 
-function getValidatedCents(hours: number, freeAvailable: boolean, res: any): number | null {
+// priceCents is still the duration validator for the booking form: an invalid
+// duration must be rejected before any Stripe call. Its cents value is the legacy
+// fixed-hours quote, used for estimate/display only — never the captured amount.
+function isValidDuration(hours: number, freeAvailable: boolean, res: any): boolean {
   const priceRes = priceCents(hours, freeAvailable)
-  if (priceRes.ok) return priceRes.cents
+  if (priceRes.ok) return true
   res.status(400).json({ error: { code: 'INVALID_DURATION', message: priceRes.error.message } })
-  return null
+  return false
 }
 
 export async function createCheckout(
@@ -81,15 +90,13 @@ export async function createCheckout(
 ) {
   const freeAvailable = await getFreeAvailable(email, res)
   if (freeAvailable === null) return null
-  const cents = getValidatedCents(hours, freeAvailable, res)
-  if (cents === null) return null
+  if (!isValidDuration(hours, freeAvailable, res)) return null
   return createSession({
     email,
     date,
     startTime,
     hours,
     freeAvailable,
-    cents,
     req,
     res,
     joinUrl: normalizeJoinUrl(joinUrl),

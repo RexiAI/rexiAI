@@ -17,6 +17,9 @@ function getDurationError(hours: number): string | null {
   return null
 }
 
+// Legacy fixed-hours quote. Used for estimate/display and to validate the booked
+// duration only — it is NOT the amount captured at booking time (the reservation
+// is €0; the single charge is recordedBillingCents after the meeting).
 export function priceCents(hours: number, freeHourAvailable: boolean): PriceResult {
   const msg = getDurationError(hours)
   if (msg) return invalidDuration(msg)
@@ -37,6 +40,6 @@ export function validateActualMinutes(v: unknown): string | null {
   if (typeof v !== 'number' || !Number.isFinite(v) || !Number.isInteger(v))
     return 'actualMinutes must be an integer'
   if (v <= 0) return 'actualMinutes must be > 0'
-  if (v > 600) return 'actualMinutes too large'
+  if (v > 480) return 'actualMinutes must be at most 480 (8 hours)'
   return null
 }
