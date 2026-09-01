@@ -5,6 +5,8 @@ const webhookMocks = vi.hoisted(() => ({
   mockCreateEvent: vi.fn(),
   mockFind: vi.fn(),
   mockSendEmail: vi.fn(),
+  mockSendClientEmail: vi.fn(),
+  mockOverlap: vi.fn(),
   mockConstruct: vi.fn(),
 }))
 
@@ -12,8 +14,12 @@ vi.mock('../domain/freeHour', () => ({ markFreeHourUsed: webhookMocks.mockMark }
 vi.mock('../domain/gcal', () => ({
   createGCalEvent: webhookMocks.mockCreateEvent,
   findEventByBookingId: webhookMocks.mockFind,
+  findOverlappingBookingId: webhookMocks.mockOverlap,
 }))
-vi.mock('../domain/email', () => ({ sendOperatorEmail: webhookMocks.mockSendEmail }))
+vi.mock('../domain/email', () => ({
+  sendOperatorEmail: webhookMocks.mockSendEmail,
+  sendClientEmail: webhookMocks.mockSendClientEmail,
+}))
 vi.mock('stripe', () => ({
   default: vi.fn(function (this: unknown) {
     return {
@@ -41,6 +47,8 @@ describe('AC-008', () => {
     webhookMocks.mockCreateEvent.mockResolvedValue({ alreadyExists: false })
     webhookMocks.mockFind.mockResolvedValue(false)
     webhookMocks.mockSendEmail.mockResolvedValue(undefined)
+    webhookMocks.mockSendClientEmail.mockResolvedValue(undefined)
+    webhookMocks.mockOverlap.mockResolvedValue(null)
   })
 
   function makeEvent(overrides: any = {}) {

@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const billingMocks = vi.hoisted(() => ({
   mockSessionCreate: vi.fn(),
+  mockSessionRetrieve: vi.fn(),
   mockFreeHourAvailable: vi.fn(),
   mockCreateTeamsMeeting: vi.fn(),
   mockHasConflict: vi.fn(),
@@ -11,7 +12,12 @@ const billingMocks = vi.hoisted(() => ({
 
 vi.mock('../domain/stripeClient', () => ({
   getStripe: () => ({
-    checkout: { sessions: { create: billingMocks.mockSessionCreate } },
+    checkout: {
+      sessions: {
+        create: billingMocks.mockSessionCreate,
+        retrieve: billingMocks.mockSessionRetrieve,
+      },
+    },
   }),
 }))
 
@@ -71,6 +77,7 @@ describe('AC-015', () => {
     for (const k of ENV_KEYS) savedEnv[k] = process.env[k]
     vi.clearAllMocks()
     billingMocks.mockSessionCreate.mockReset()
+    billingMocks.mockSessionRetrieve.mockReset()
     billingMocks.mockFreeHourAvailable.mockReset()
     billingMocks.mockCreateTeamsMeeting.mockReset()
     billingMocks.mockHasConflict.mockReset()
@@ -86,6 +93,20 @@ describe('AC-015', () => {
     billingMocks.mockSessionCreate.mockResolvedValue({
       url: 'https://checkout.stripe.com/pay/cs_test_015',
       id: 'cs_test_015',
+    })
+    // Recorded billing now resolves the reservation behind bookingId before it
+    // will charge anything (see api/bookings/recorded-billing.ts). 2 quoted
+    // hours bounds these fixtures' 90 submitted minutes.
+    billingMocks.mockSessionRetrieve.mockResolvedValue({
+      id: 'bk_1',
+      customer_email: 'returning@example.com',
+      metadata: {
+        email: 'returning@example.com',
+        date: '2027-03-01',
+        start_time: '10:00',
+        quoted_hours: '2',
+        reservation: '1',
+      },
     })
   })
 

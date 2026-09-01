@@ -75,6 +75,48 @@ export async function createGCalEvent(
   return { alreadyExists: false }
 }
 
+function eventBookingId(item: any): string | null {
+  const id = item?.extendedProperties?.private?.rexi_booking_id
+  return typeof id === 'string' && id ? id : null
+}
+
+function pickForeignBookingId(items: any[], bookingId: string): string | null {
+  for (const item of items) {
+    const other = eventBookingId(item)
+    if (other && other !== bookingId) return other
+  }
+  return null
+}
+
+/**
+ * The bookingId of an already-scheduled event overlapping [start, start+hours),
+ * excluding this booking's own event — or null when the slot is clear.
+ *
+ * BEST-EFFORT, NOT A GUARANTEE: this is a read against the calendar, so two
+ * webhooks racing for the same slot can both read "clear" before either
+ * inserts. Without a transactional store there is no way to close that window
+ * from here; the check narrows it and makes the common case visible to the
+ * operator instead of silently double-booking.
+ */
+export async function findOverlappingBookingId(
+  input: { bookingId: string; date: string; startTime: string; hours: number },
+  client?: ReturnType<typeof getCalendarClient>
+): Promise<string | null> {
+  const cal = client ?? getCalendarClient()
+  const { calendarId } = getCalendarConfig()
+  const timezone = getConfiguredTimezone()
+  const start = zonedToUtc(timezone, input.date, input.startTime)
+  const end = new Date(start.getTime() + input.hours * 3600000)
+  const res: any = await (cal.events as any).list({
+    calendarId,
+    timeMin: start.toISOString(),
+    timeMax: end.toISOString(),
+    singleEvents: true,
+    maxResults: 50,
+  })
+  return pickForeignBookingId((res?.data?.items ?? []) as any[], input.bookingId)
+}
+
 // Export for testing the auth construction
 export function _testGetCalendarConfig() {
   return getCalendarConfig()

@@ -1,6 +1,8 @@
 import { timingSafeEqual } from 'crypto'
 
+import { findReservation, type Reservation } from '../../src/domain/bookingLookup.js'
 import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
+import { getRecordedMinutes } from '../../src/domain/meetingDuration.js'
 import { recordedBillingCents, validateActualMinutes } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
 import { isValidEmail } from '../../src/domain/validation.js'
@@ -95,6 +97,68 @@ async function getFreeHourAvailability(email: string, res: any): Promise<boolean
   }
 }
 
+// GUARD (a): the caller supplies actualMinutes, so nothing but the reservation
+// itself bounds what can be billed. A 1h booking must never turn into an 8h
+// charge. 15 minutes of grace absorbs the legitimate overrun of a meeting that
+// starts late or runs a little long.
+const OVERRUN_GRACE_MINUTES = 15
+
+// GUARD (b): advisory only. Graph disagreeing by more than this is worth a
+// human look, never an automatic refusal — see src/domain/meetingDuration.ts.
+const DURATION_MISMATCH_TOLERANCE_MINUTES = 10
+
+function maxBillableMinutes(reservation: Reservation): number {
+  return reservation.quotedHours * 60 + OVERRUN_GRACE_MINUTES
+}
+
+/** The reservation this charge is bounded by, or null when the response is already sent. */
+async function resolveReservation(
+  parsed: ParsedRecordedBody,
+  res: any
+): Promise<Reservation | null> {
+  const reservation = await findReservation(parsed.bookingId)
+  if (!reservation) {
+    // Never bill an unknown booking: a Stripe outage lands here too, and
+    // refusing is the safe direction for a money-moving endpoint.
+    res.status(404).json({ error: { code: 'BOOKING_NOT_FOUND', message: 'Unknown bookingId' } })
+    return null
+  }
+  if ((parsed.actualMinutes as number) > maxBillableMinutes(reservation)) {
+    res.status(409).json({
+      error: {
+        code: 'MINUTES_EXCEED_BOOKING',
+        message: `actualMinutes exceeds the booked ${reservation.quotedHours}h plus ${OVERRUN_GRACE_MINUTES}min grace`,
+      },
+    })
+    return null
+  }
+  return reservation
+}
+
+type DurationMismatch = { submitted: number; observed: number }
+
+function isMismatch(submitted: number, observed: number): boolean {
+  return Math.abs(submitted - observed) > DURATION_MISMATCH_TOLERANCE_MINUTES
+}
+
+/** Advisory Graph cross-check. A null observation is a no-op by design. */
+async function checkObservedDuration(
+  reservation: Reservation,
+  submitted: number
+): Promise<DurationMismatch | null> {
+  if (!reservation.joinUrl) return null
+  const observed = await getRecordedMinutes(reservation.joinUrl)
+  if (observed === null || !isMismatch(submitted, observed)) return null
+  // eslint-disable-next-line no-console
+  console.warn(`[recorded-billing] duration mismatch: submitted=${submitted} observed=${observed}`)
+  return { submitted, observed }
+}
+
+function withMismatch(body: Record<string, unknown>, mismatch: DurationMismatch | null) {
+  if (!mismatch) return body
+  return { ...body, durationMismatch: mismatch }
+}
+
 function getFreeMinutes(freeAvailable: boolean): number {
   if (freeAvailable) return 60
   return 0
@@ -184,56 +248,68 @@ async function createRecordedCheckout(
   }
 }
 
-function sendFreeCheckoutResponse(freeAvailable: boolean, res: any): void {
-  res.status(200).json({
-    amountCents: 0,
-    billableMinutes: 0,
-    freeMinutes: getFreeMinutes(freeAvailable),
-    checkoutUrl: null,
-    freeHourApplied: freeAvailable,
-  })
+function sendFreeCheckoutResponse(
+  freeAvailable: boolean,
+  mismatch: DurationMismatch | null,
+  res: any
+): void {
+  res.status(200).json(
+    withMismatch(
+      {
+        amountCents: 0,
+        billableMinutes: 0,
+        freeMinutes: getFreeMinutes(freeAvailable),
+        checkoutUrl: null,
+        freeHourApplied: freeAvailable,
+      },
+      mismatch
+    )
+  )
 }
 
 async function handlePaidCheckout(
   parsed: ParsedRecordedBody,
   amount: number,
   freeAvailable: boolean,
-  req: any,
-  res: any
+  ctx: { req: any; res: any; mismatch: DurationMismatch | null }
 ): Promise<void> {
   const billableMinutes = getBillableMinutes(parsed.actualMinutes as number, freeAvailable)
   const freeMinutes = getFreeMinutes(freeAvailable)
-  const baseUrl = getBaseUrl(req)
+  const baseUrl = getBaseUrl(ctx.req)
   const session = await createRecordedCheckout(
     parsed,
     amount,
     billableMinutes,
     freeAvailable,
     baseUrl,
-    res
+    ctx.res
   )
   if (!session) return
-  res.status(200).json({
-    amountCents: amount,
-    billableMinutes,
-    freeMinutes,
-    checkoutUrl: (session as any).url,
-    sessionId: (session as any).id,
-  })
+  ctx.res.status(200).json(
+    withMismatch(
+      {
+        amountCents: amount,
+        billableMinutes,
+        freeMinutes,
+        checkoutUrl: (session as any).url,
+        sessionId: (session as any).id,
+      },
+      ctx.mismatch
+    )
+  )
 }
 
 async function handleCheckoutResult(
   parsed: ParsedRecordedBody,
   amount: number,
   freeAvailable: boolean,
-  req: any,
-  res: any
+  ctx: { req: any; res: any; mismatch: DurationMismatch | null }
 ): Promise<void> {
   if (amount <= 0) {
-    sendFreeCheckoutResponse(freeAvailable, res)
+    sendFreeCheckoutResponse(freeAvailable, ctx.mismatch, ctx.res)
     return
   }
-  await handlePaidCheckout(parsed, amount, freeAvailable, req, res)
+  await handlePaidCheckout(parsed, amount, freeAvailable, ctx)
 }
 
 export default async function handler(req: any, res: any) {
@@ -241,8 +317,11 @@ export default async function handler(req: any, res: any) {
   if (!isAuthorized(req, res)) return
   const parsed = parseRecordedBillingBody(req.body)
   if (!validateRecordedBillingBody(parsed, res)) return
+  const reservation = await resolveReservation(parsed, res)
+  if (!reservation) return
+  const mismatch = await checkObservedDuration(reservation, parsed.actualMinutes as number)
   const freeAvailable = await getFreeHourAvailability(parsed.email, res)
   if (freeAvailable === null) return
   const amount = recordedBillingCents(parsed.actualMinutes as number, freeAvailable)
-  await handleCheckoutResult(parsed, amount, freeAvailable, req, res)
+  await handleCheckoutResult(parsed, amount, freeAvailable, { req, res, mismatch })
 }

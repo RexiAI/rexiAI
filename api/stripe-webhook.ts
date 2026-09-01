@@ -1,11 +1,12 @@
 import Stripe from 'stripe'
 
 import { createCalendarEvent } from '../src/domain/calendar.js'
-import { sendOperatorEmail } from '../src/domain/email.js'
-import { isFreeHourAvailable, markFreeHourUsed } from '../src/domain/freeHour.js'
-import { findEventByBookingId } from '../src/domain/gcal.js'
+import { sendClientEmail, sendOperatorEmail } from '../src/domain/email.js'
+import { markFreeHourUsed } from '../src/domain/freeHour.js'
+import { findEventByBookingId, findOverlappingBookingId } from '../src/domain/gcal.js'
 import { getCalendarProvider } from '../src/domain/providers.js'
 import { getStripe } from '../src/domain/stripeClient.js'
+import { markProcessed, wasProcessed } from '../src/domain/webhookDedup.js'
 
 function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
@@ -13,8 +14,15 @@ function errMsg(e: unknown): string {
 
 const emailSentForBooking = new Set<string>()
 
+// Cheap first-level short-circuit for retries that land on the same warm
+// lambda. It is NOT authoritative: Vercel gives every cold start and every
+// concurrent invocation a fresh process, so the durable marker in Stripe
+// customer metadata (webhookDedup) is what actually prevents duplicates.
+const processedEventIds = new Set<string>()
+
 export function _resetEmailSent() {
   emailSentForBooking.clear()
+  processedEventIds.clear()
 }
 
 function validateMethod(req: any, res: any): boolean {
@@ -122,6 +130,7 @@ type BookingData =
       joinUrl: string | null
       recordedBilling: true
       actualMinutes: number
+      freeHourApplied: boolean
     }
   | {
       bookingId: string
@@ -133,6 +142,7 @@ type BookingData =
       joinUrl: string | null
       recordedBilling: false
       actualMinutes: number
+      freeHourApplied: boolean
     }
 
 function getRawBookingFields(session: Stripe.Checkout.Session) {
@@ -149,6 +159,7 @@ function getRawBookingFields(session: Stripe.Checkout.Session) {
     joinUrl: joinUrlRaw ? joinUrlRaw : null,
     recordedBilling: metadata['recorded_billing'] === '1',
     actualMinutes: parseInt(getActualMinutesRaw(metadata), 10),
+    freeHourApplied: metadata['free_hour_applied'] === 'true',
   }
 }
 
@@ -191,6 +202,7 @@ function buildRecordedBillingData(
     joinUrl: raw.joinUrl,
     recordedBilling: true,
     actualMinutes: raw.actualMinutes,
+    freeHourApplied: raw.freeHourApplied,
   }
 }
 
@@ -209,6 +221,7 @@ function buildStandardBookingData(
     joinUrl: raw.joinUrl,
     recordedBilling: false,
     actualMinutes: 0,
+    freeHourApplied: raw.freeHourApplied,
   }
 }
 
@@ -237,6 +250,7 @@ async function trySendEmail(
     bookingId: string
     joinUrl?: string | null
     kind?: 'reservation' | 'charge'
+    slotConflictWith?: string | null
   },
   res: any
 ): Promise<boolean> {
@@ -249,6 +263,7 @@ async function trySendEmail(
       amountCents: data.amountTotal,
       joinUrl: data.joinUrl ?? null,
       ...(data.kind ? { kind: data.kind } : {}),
+      ...(data.slotConflictWith ? { slotConflictWith: data.slotConflictWith } : {}),
     })
     emailSentForBooking.add(data.bookingId)
     return true
@@ -258,14 +273,58 @@ async function trySendEmail(
   }
 }
 
-async function tryMarkFree(email: string, res: any): Promise<boolean> {
+/**
+ * The client confirmation is intentionally NOT allowed to fail the webhook.
+ * Returning 5xx here would make Stripe retry the whole event, re-running the
+ * operator-side effects (calendar insert, operator mail) for a problem that is
+ * purely on the client-mail path. The failure is logged and swallowed instead.
+ *
+ * NOTE: with the Resend sandbox sender this call fails for every real client
+ * address by design — see sendClientEmail in src/domain/email.ts.
+ */
+async function trySendClientEmail(data: {
+  email: string
+  date: string
+  startTime: string
+  hours: number
+  joinUrl?: string | null
+}): Promise<void> {
   try {
-    await markFreeHourUsed(email)
-    return true
+    await sendClientEmail({
+      clientEmail: data.email,
+      date: data.date,
+      startTime: data.startTime,
+      hours: Number.isFinite(data.hours) ? data.hours : 1,
+      joinUrl: data.joinUrl ?? null,
+    })
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error(`[stripe-webhook] client confirmation email failed: ${errMsg(e)}`)
+  }
+}
+
+type MarkFreeOutcome = { ok: boolean; burned: boolean }
+
+async function tryMarkFree(email: string, res: any): Promise<MarkFreeOutcome> {
+  try {
+    const result = await markFreeHourUsed(email)
+    // `burned: false` means another request consumed the free hour first.
+    return { ok: true, burned: result?.burned ?? true }
   } catch (e) {
     res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errMsg(e) } })
-    return false
+    return { ok: false, burned: false }
   }
+}
+
+// A checkout session priced with the free hour whose burn was lost to another
+// request: the client was charged the discounted amount but the discount was
+// already spent. Stripe must not retry (the charge is final), so answer 200 and
+// flag it instead.
+// TODO(follow-up): surface freeHourConflict in the operator notification body;
+// sendOperatorEmail lives in src/domain/email.ts, outside this change's scope.
+function conflictBody(freeHourApplied: boolean, burned: boolean): Record<string, unknown> {
+  if (freeHourApplied && !burned) return { received: true, freeHourConflict: true }
+  return { received: true }
 }
 
 function resolveCalendarTimezone(explicit?: string): string {
@@ -331,16 +390,16 @@ async function handleExistingBooking(
 }
 
 async function handleRecordedBilling(
-  data: { bookingId: string; email: string; amountTotal: number },
+  data: { bookingId: string; email: string; amountTotal: number; freeHourApplied: boolean },
   res: any
 ): Promise<boolean> {
-  // Only burn free hour if it was available at checkout time (metadata free_hour_applied) and not already burned.
-  // Check Stripe customer flag to avoid double burn.
+  // markFreeHourUsed is itself a compare-and-set, so no separate availability
+  // probe is needed: it burns only when nobody else already did.
+  let burned = true
   try {
-    const available = await isFreeHourAvailable(data.email)
-    if (available) {
-      if (!(await tryMarkFree(data.email, res))) return true
-    }
+    const mark = await tryMarkFree(data.email, res)
+    if (!mark.ok) return true
+    burned = mark.burned
   } catch {
     // if lookup fails, don't block webhook
   }
@@ -362,8 +421,50 @@ async function handleRecordedBilling(
     ))
   )
     return true
-  res.status(200).json({ received: true, recordedBilling: true })
+  res.status(200).json({ ...conflictBody(data.freeHourApplied, burned), recordedBilling: true })
   return true
+}
+
+/**
+ * Authoritative-ish slot check at the point the calendar event is written.
+ *
+ * api/bookings.ts re-checks the slot just before creating the Stripe session,
+ * but that is still check-then-act: two clients can both pass it. This probe
+ * runs later, against the calendar that actually holds the bookings, and
+ * catches the case where a DIFFERENT bookingId already occupies the range.
+ *
+ * BEST-EFFORT, NOT A GUARANTEE — documented in findOverlappingBookingId. Two
+ * webhooks processed concurrently can still both read "clear". When it does
+ * fire, the money is already captured, so the correct answer is 200 plus a
+ * flag: Stripe must not retry, and the operator must be told to refund.
+ * A probe failure is swallowed: it must never block a paid booking.
+ */
+async function detectSlotConflict(d: {
+  bookingId: string
+  date: string
+  startTime: string
+  hours: number
+}): Promise<string | null> {
+  try {
+    return await findOverlappingBookingId({
+      bookingId: d.bookingId,
+      date: d.date,
+      startTime: d.startTime,
+      hours: normalizeBookingHours(d.hours),
+    })
+  } catch {
+    return null
+  }
+}
+
+function bookingBody(
+  freeHourApplied: boolean,
+  burned: boolean,
+  slotConflictWith: string | null
+): Record<string, unknown> {
+  const base = conflictBody(freeHourApplied, burned)
+  if (slotConflictWith) return { ...base, slotConflict: true }
+  return base
 }
 
 async function handleNewBooking(
@@ -374,10 +475,13 @@ async function handleNewBooking(
   if (d.recordedBilling) {
     return handleRecordedBilling(d as any, res)
   }
-  if (!(await tryMarkFree(d.email, res))) return true
+  const mark = await tryMarkFree(d.email, res)
+  if (!mark.ok) return true
+  const slotConflictWith = await detectSlotConflict(d)
   if (!(await tryCreateEvent(d as any, res))) return true
-  if (!(await trySendEmail(d as any, res))) return true
-  res.status(200).json({ received: true })
+  if (!(await trySendEmail({ ...(d as any), slotConflictWith }, res))) return true
+  await trySendClientEmail(d)
+  res.status(200).json(bookingBody(d.freeHourApplied, mark.burned, slotConflictWith))
   return true
 }
 
@@ -409,14 +513,74 @@ async function handleStandardSession(data: BookingData, res: any): Promise<void>
   await handleNewBooking(data, res)
 }
 
-async function handleCheckoutSession(session: Stripe.Checkout.Session, res: any): Promise<void> {
-  const data = extractBookingData(session, res)
-  if (!data) return
+async function dispatchSession(
+  data: BookingData,
+  session: Stripe.Checkout.Session,
+  res: any
+): Promise<void> {
   if (data.recordedBilling) {
     await handleRecordedSession(data, session, res)
     return
   }
   await handleStandardSession(data, res)
+}
+
+/** Records the status the handler answered with, and forwards it unchanged. */
+function statusRecorder(res: any): { res: any; code: () => number } {
+  let code = 0
+  const proxy = {
+    status(c: number) {
+      code = c
+      res.status(c)
+      return proxy
+    },
+    json(body: unknown) {
+      res.json(body)
+      return proxy
+    },
+  }
+  return { res: proxy, code: () => code }
+}
+
+async function isDuplicateEvent(email: string, eventId: string, res: any): Promise<boolean | null> {
+  if (processedEventIds.has(eventId)) return true
+  try {
+    return await wasProcessed(email, eventId)
+  } catch (e) {
+    // Fail safe: never assume "already processed" on a lookup outage. A 5xx
+    // makes Stripe retry, which is preferable to dropping a paid booking.
+    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errMsg(e) } })
+    return null
+  }
+}
+
+async function recordProcessed(email: string, eventId: string): Promise<void> {
+  processedEventIds.add(eventId)
+  try {
+    await markProcessed(email, eventId)
+  } catch {
+    // The response has already been sent and the side effects already happened;
+    // a failed marker only risks a duplicate on a later retry, which the
+    // per-booking guards still narrow.
+  }
+}
+
+async function handleCheckoutSession(
+  session: Stripe.Checkout.Session,
+  res: any,
+  eventId: string
+): Promise<void> {
+  const data = extractBookingData(session, res)
+  if (!data) return
+  const duplicate = await isDuplicateEvent(data.email, eventId, res)
+  if (duplicate === null) return
+  if (duplicate) {
+    res.status(200).json({ received: true, deduped: true })
+    return
+  }
+  const tracked = statusRecorder(res)
+  await dispatchSession(data, session, tracked.res)
+  if (tracked.code() === 200) await recordProcessed(data.email, eventId)
 }
 
 function isRelevantCheckoutEvent(event: Stripe.Event, res: any): boolean {
@@ -432,5 +596,5 @@ export default async function handler(req: any, res: any) {
   if (!event) return
   if (!isRelevantCheckoutEvent(event, res)) return
   const session = event.data.object as Stripe.Checkout.Session
-  await handleCheckoutSession(session, res)
+  await handleCheckoutSession(session, res, event.id)
 }

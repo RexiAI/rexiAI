@@ -1,3 +1,4 @@
+import { checkRateLimit, getClientIp } from '../src/domain/rateLimit.js'
 import { createTeamsMeeting, type TeamsMeetingResult } from '../src/domain/teams.js'
 
 import { hasConflict } from './bookings/calendar.js'
@@ -11,6 +12,18 @@ function isPostMethod(req: any, res: any): boolean {
   }
   return true
 }
+
+// Runs before validation and before any Stripe or Graph call, so a spam burst
+// costs nothing downstream. Best-effort only — see src/domain/rateLimit.ts.
+function enforceRateLimit(req: any, res: any): boolean {
+  const result = checkRateLimit(`bookings:${getClientIp(req)}`)
+  if (result.allowed) return true
+  res.setHeader?.('Retry-After', String(result.retryAfterSeconds))
+  res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests' } })
+  return false
+}
+
+type BookingInput = { email: string; date: string; startTime: string; hours: number }
 
 async function resolveTeamsMeeting(input: {
   date: string
@@ -59,14 +72,18 @@ function buildBookingResponse(checkout: { url: string | null }, meeting: TeamsMe
   return { checkoutUrl: checkout.url, joinUrl: toOptionalJoinUrl(meeting) }
 }
 
-export default async function handler(req: any, res: any) {
-  if (!isPostMethod(req, res)) return
+/** Method, rate limit, field validation and the first slot probe. */
+async function runPreflight(req: any, res: any) {
+  if (!isPostMethod(req, res)) return null
+  if (!enforceRateLimit(req, res)) return null
   const input = prepareBookingInput(req, res)
-  if (!input) return
-  if (await checkSlotConflict(input, res)) return
-  const meeting = await resolveTeamsMeeting(input)
-  if (rejectOnTeamsError(meeting, res)) return
-  const checkout = await createCheckout(
+  if (!input) return null
+  if (await checkSlotConflict(input, res)) return null
+  return input
+}
+
+function reserve(input: BookingInput, meeting: TeamsMeetingResult, req: any, res: any) {
+  return createCheckout(
     input.email,
     input.date,
     input.startTime,
@@ -75,6 +92,23 @@ export default async function handler(req: any, res: any) {
     res,
     toOptionalJoinUrl(meeting)
   )
+}
+
+/**
+ * The second slot probe is deliberately AFTER the Teams round trip. Creating the
+ * meeting is the slow step, and it is exactly the window in which a competing
+ * booking lands. Re-checking there narrows check-then-act from "seconds" to "one
+ * Stripe call" — it does NOT eliminate it. Without a transactional slot store two
+ * requests can still interleave between that probe and sessions.create; the
+ * webhook's overlap detection is the backstop that makes the case visible.
+ */
+export default async function handler(req: any, res: any) {
+  const input = await runPreflight(req, res)
+  if (!input) return
+  const meeting = await resolveTeamsMeeting(input)
+  if (rejectOnTeamsError(meeting, res)) return
+  if (await checkSlotConflict(input, res)) return
+  const checkout = await reserve(input, meeting, req, res)
   if (!checkout) return
   return res.status(200).json(buildBookingResponse(checkout, meeting))
 }
