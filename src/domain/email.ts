@@ -1,5 +1,6 @@
-import { getMicrosoftAccessToken, getMicrosoftConfig } from './microsoftAuth.js'
-import { getEmailProvider } from './providers.js'
+// Email is Resend-only: the mailbox is Godaddy-hosted (info@rexi-ai.com), and
+// Graph mail (Mail.Send) is not used. The provider-agnostic calendar layer is
+// separate — see calendar.ts.
 import { getConfiguredTimezone } from './time.js'
 
 export interface OperatorEmailInput {
@@ -58,7 +59,7 @@ function buildLines(input: OperatorEmailInput): BodyLine[] {
     { label: 'Duración', value: `${input.hours} horas` },
     amountLine(input),
   ]
-  if (input.joinUrl) lines.push({ label: 'Teams', value: input.joinUrl })
+  if (input.joinUrl) lines.push({ label: 'Reunión', value: input.joinUrl })
   if (input.slotConflictWith) {
     lines.push({
       value: `ATENCIÓN: conflicto de franja — ya existe una reserva (${input.slotConflictWith}) que solapa este horario. Revisar y reembolsar manualmente.`,
@@ -123,48 +124,10 @@ async function sendViaResend(input: OperatorEmailInput, fetchImpl: typeof fetch)
   }
 }
 
-async function sendViaMicrosoft(input: OperatorEmailInput, fetchImpl: typeof fetch): Promise<void> {
-  const cfg = getMicrosoftConfig()
-  if (!cfg) throw new Error('Microsoft Graph not configured')
-  const token = await getMicrosoftAccessToken(fetchImpl)
-  const { subject, html } = buildBody(input)
-  const to = process.env['EMAIL_TO'] || cfg.userId
-  const from = process.env['EMAIL_FROM'] || cfg.userId
-  const res = await fetchImpl(
-    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(cfg.userId)}/sendMail`,
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: {
-          subject,
-          body: { contentType: 'HTML', content: html },
-          toRecipients: [{ emailAddress: { address: to } }],
-          from: { emailAddress: { address: from } },
-        },
-        saveToSentItems: true,
-      }),
-    }
-  )
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '')
-    throw new Error(`Graph sendMail failed: ${res.status} ${errText}`)
-  }
-}
-
 export async function sendOperatorEmail(
   input: OperatorEmailInput,
   fetchImpl: typeof fetch = fetch
 ): Promise<void> {
-  const provider = getEmailProvider()
-  if (provider === 'microsoft365') {
-    const cfg = getMicrosoftConfig()
-    if (!cfg) {
-      // fallback to gmail when Microsoft not configured (backward compat)
-      return sendViaResend(input, fetchImpl)
-    }
-    return sendViaMicrosoft(input, fetchImpl)
-  }
   return sendViaResend(input, fetchImpl)
 }
 
@@ -195,7 +158,7 @@ function buildClientLines(input: ClientEmailInput): BodyLine[] {
     { label: `Hora (${timezone})`, value: input.startTime },
     { label: 'Duración', value: `${input.hours} horas` },
   ]
-  if (input.joinUrl) lines.push({ label: 'Enlace de Teams', value: input.joinUrl })
+  if (input.joinUrl) lines.push({ label: 'Enlace de la reunión', value: input.joinUrl })
   return [...lines, ...billingModelLines()]
 }
 
@@ -244,48 +207,9 @@ async function sendClientViaResend(
   }
 }
 
-async function sendClientViaMicrosoft(
-  input: ClientEmailInput,
-  fetchImpl: typeof fetch
-): Promise<void> {
-  const cfg = getMicrosoftConfig()
-  if (!cfg) throw new Error('Microsoft Graph not configured')
-  const token = await getMicrosoftAccessToken(fetchImpl)
-  const { subject, html } = buildClientBody(input)
-  const from = process.env['EMAIL_FROM'] || cfg.userId
-  const res = await fetchImpl(
-    `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(cfg.userId)}/sendMail`,
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: {
-          subject,
-          body: { contentType: 'HTML', content: html },
-          toRecipients: [{ emailAddress: { address: input.clientEmail } }],
-          from: { emailAddress: { address: from } },
-        },
-        saveToSentItems: true,
-      }),
-    }
-  )
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '')
-    throw new Error(`Graph client sendMail failed: ${res.status} ${errText}`)
-  }
-}
-
-/**
- * Confirmation to the CLIENT address (input.clientEmail), never EMAIL_TO.
- * Throws on failure; the webhook caller logs and continues so a mail problem
- * cannot make Stripe retry and duplicate the operator-side effects.
- */
 export async function sendClientEmail(
   input: ClientEmailInput,
   fetchImpl: typeof fetch = fetch
 ): Promise<void> {
-  if (getEmailProvider() === 'microsoft365' && getMicrosoftConfig()) {
-    return sendClientViaMicrosoft(input, fetchImpl)
-  }
   return sendClientViaResend(input, fetchImpl)
 }

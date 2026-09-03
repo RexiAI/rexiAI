@@ -26,8 +26,8 @@ vi.mock('../domain/freeHour', () => ({
   markFreeHourUsed: vi.fn(),
 }))
 
-vi.mock('../domain/teams', () => ({
-  createTeamsMeeting: billingMocks.mockCreateTeamsMeeting,
+vi.mock('../domain/meeting', () => ({
+  createMeetingLink: billingMocks.mockCreateTeamsMeeting,
 }))
 
 // Only the conflict probe is stubbed; the slot-coverage helpers stay real so the
@@ -218,11 +218,11 @@ describe('AC-015', () => {
     expect(args.metadata.recorded_billing).toBe('1')
   })
 
-  it('AC-015-07: Teams failure aborts the booking with 502 and leaves no orphan reservation', async () => {
+  it('AC-015-07: Meeting failure aborts the booking with 502 and leaves no orphan reservation', async () => {
     process.env['CALENDAR_PROVIDER'] = 'microsoft'
     billingMocks.mockCreateTeamsMeeting.mockResolvedValue({
       status: 'error',
-      message: 'Graph responded 500',
+      message: 'meeting error',
     })
     const res = makeRes()
     await bookingsHandler(
@@ -236,13 +236,12 @@ describe('AC-015', () => {
     )
     expect(res.status).toHaveBeenCalledWith(502)
     expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ error: expect.objectContaining({ code: 'TEAMS_ERROR' }) })
+      expect.objectContaining({ error: expect.objectContaining({ code: 'MEETING_ERROR' }) })
     )
     expect(billingMocks.mockSessionCreate).not.toHaveBeenCalled()
   })
 
-  it('AC-015-08: Skipped Teams provider still books a zero-euro reservation without a join URL', async () => {
-    process.env['CALENDAR_PROVIDER'] = 'google'
+  it('AC-015-08: Skipped meeting provider still books a zero-euro reservation without a join URL', async () => {
     billingMocks.mockCreateTeamsMeeting.mockResolvedValue({ status: 'skipped' })
     const res = makeRes()
     await bookingsHandler(

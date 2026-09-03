@@ -13,18 +13,18 @@ describe('AC-014', () => {
     else process.env['EMAIL_PROVIDER'] = origEmail
   })
 
-  it('AC-014-01: provider defaults to gmail/google when env unset (backward compat)', () => {
+  it('AC-014-01: provider is microsoft (google removed) and email defaults to gmail when env unset', () => {
     delete process.env['CALENDAR_PROVIDER']
     delete process.env['EMAIL_PROVIDER']
-    expect(getCalendarProvider()).toBe('google')
+    expect(getCalendarProvider()).toBe('microsoft')
     expect(getEmailProvider()).toBe('gmail')
     process.env['CALENDAR_PROVIDER'] = 'microsoft'
     expect(getCalendarProvider()).toBe('microsoft')
-    process.env['EMAIL_PROVIDER'] = 'microsoft365'
-    expect(getEmailProvider()).toBe('microsoft365')
-    // fallback aliases
+    // stale values resolve to the only remaining providers
     process.env['CALENDAR_PROVIDER'] = 'google'
-    expect(getCalendarProvider()).toBe('google')
+    expect(getCalendarProvider()).toBe('microsoft')
+    process.env['EMAIL_PROVIDER'] = 'microsoft365'
+    expect(getEmailProvider()).toBe('gmail')
   })
 
   it('AC-014-02: pro-rata per minute at 50 cents/min with 60 min free once', () => {

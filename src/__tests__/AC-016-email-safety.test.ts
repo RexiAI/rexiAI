@@ -5,15 +5,6 @@ import { isValidEmail } from '../domain/validation'
 
 import fs from 'fs'
 
-const msMocks = vi.hoisted(() => ({
-  mockToken: vi.fn(),
-}))
-
-vi.mock('../domain/microsoftAuth.js', () => ({
-  getMicrosoftConfig: () => ({ userId: 'operator@example.com', tenantId: 't', clientId: 'c' }),
-  getMicrosoftAccessToken: msMocks.mockToken,
-}))
-
 const yamlContent = `
 timezone: Europe/Madrid
 weekly:
@@ -55,7 +46,6 @@ describe('AC-016', () => {
     delete process.env['AVAILABILITY_TIMEZONE']
     delete process.env['TIMEZONE']
     vi.spyOn(fs, 'readFileSync').mockReturnValue(yamlContent as any)
-    msMocks.mockToken.mockResolvedValue('graph-token')
   })
 
   afterEach(() => {
@@ -70,13 +60,12 @@ describe('AC-016', () => {
     expect(payload.html).not.toContain('onerror=alert(1)>')
   })
 
-  it('AC-016-01: microsoft365 sender also escapes HTML metacharacters', async () => {
+  it('AC-016-01: a stale microsoft365 provider value still sends via Resend and escapes HTML', async () => {
     process.env['EMAIL_PROVIDER'] = 'microsoft365'
     const payload = await capturePayload({ ...baseInput, clientEmail: HOSTILE_EMAIL })
-    const html = payload.message.body.content
-    expect(payload.message.body.contentType).toBe('HTML')
-    expect(html).not.toContain('<img')
-    expect(html).toContain('&lt;img')
+    expect(payload.html).not.toContain('<img')
+    expect(payload.html).toContain('&lt;img')
+    expect(payload.html).not.toContain('onerror=alert(1)>')
   })
 
   it('AC-016-02: text/plain payload is not double-escaped', async () => {

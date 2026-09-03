@@ -12,10 +12,13 @@ const dedupMocks = vi.hoisted(() => ({
   mockCustomerUpdate: vi.fn(),
 }))
 
-vi.mock('../domain/gcal', () => ({
-  createGCalEvent: dedupMocks.mockCreateEvent,
-  findEventByBookingId: dedupMocks.mockFind,
-  findOverlappingBookingId: dedupMocks.mockOverlap,
+vi.mock('../domain/microsoftGraph', () => ({
+  microsoftGraph: {
+    createEvent: dedupMocks.mockCreateEvent,
+    findEventByBookingId: dedupMocks.mockFind,
+    findOverlappingBookingId: dedupMocks.mockOverlap,
+    getBusyIntervals: vi.fn(),
+  },
 }))
 vi.mock('../domain/email', () => ({
   sendOperatorEmail: dedupMocks.mockSendEmail,

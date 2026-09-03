@@ -1,50 +1,13 @@
-import { google } from 'googleapis'
-
-import { createCalendarAuth } from '../../src/domain/googleAuth.js'
+import { getBusyIntervals } from '../../src/domain/calendar.js'
 import { getConfiguredTimezone, zonedToUtc } from '../../src/domain/time.js'
-
-async function queryFreeBusy(calendarId: string, slotStart: Date, slotEnd: Date, auth: any) {
-  const cal = google.calendar({ version: 'v3', auth } as any)
-  const res: any = await (cal.freebusy as any).query({
-    requestBody: {
-      timeMin: slotStart.toISOString(),
-      timeMax: slotEnd.toISOString(),
-      items: [{ id: calendarId }],
-    },
-  })
-  return (res.data.calendars?.[calendarId]?.busy ?? []) as { start: string; end: string }[]
-}
-
-function getCalendarEnv(): { calendarId: string; serviceJson: string } | null {
-  const calendarId = process.env['GOOGLE_CALENDAR_ID']
-  const serviceJson = process.env['GOOGLE_SERVICE_ACCOUNT_JSON']
-  if (!calendarId) return null
-  if (!serviceJson) return null
-  if (serviceJson.includes('REPLACE_ME')) return null
-  return { calendarId, serviceJson }
-}
-
-async function fetchConflictBusy(
-  calendarId: string,
-  serviceJson: string,
-  date: string,
-  startTime: string,
-  hours: number
-) {
-  const auth = createCalendarAuth(serviceJson)
-  const timezone = getConfiguredTimezone()
-  const slotStart = zonedToUtc(timezone, date, startTime)
-  const slotEnd = new Date(slotStart.getTime() + hours * 3600000)
-  return { slotStart, slotEnd, busy: await queryFreeBusy(calendarId, slotStart, slotEnd, auth) }
-}
 
 function isOverlapping(
   slotStart: Date,
   slotEnd: Date,
-  busy: { start: string; end: string }[]
+  busy: { start: Date; end: Date }[]
 ): boolean {
   for (const b of busy) {
-    if (slotStart < new Date(b.end) && slotEnd > new Date(b.start)) return true
+    if (slotStart < b.end && slotEnd > b.start) return true
   }
   return false
 }
@@ -54,18 +17,15 @@ export async function hasConflict(
   startTime: string,
   hours: number
 ): Promise<boolean> {
-  const env = getCalendarEnv()
-  if (!env) return false
+  const timezone = getConfiguredTimezone()
+  const slotStart = zonedToUtc(timezone, date, startTime)
+  const slotEnd = new Date(slotStart.getTime() + hours * 3600000)
   try {
-    const { slotStart, slotEnd, busy } = await fetchConflictBusy(
-      env.calendarId,
-      env.serviceJson,
-      date,
-      startTime,
-      hours
-    )
+    const busy = await getBusyIntervals(date, timezone)
     return isOverlapping(slotStart, slotEnd, busy)
   } catch {
+    // A calendar outage must never block a booking; the webhook's overlap
+    // detection is the backstop that surfaces conflicts after the fact.
     return false
   }
 }

@@ -1,9 +1,8 @@
 import Stripe from 'stripe'
 
-import { createCalendarEvent } from '../src/domain/calendar.js'
+import { createCalendarEvent, findEventByBookingId, findOverlappingBookingId } from '../src/domain/calendar.js'
 import { sendClientEmail, sendOperatorEmail } from '../src/domain/email.js'
 import { markFreeHourUsed } from '../src/domain/freeHour.js'
-import { findEventByBookingId, findOverlappingBookingId } from '../src/domain/gcal.js'
 import { getCalendarProvider } from '../src/domain/providers.js'
 import { getStripe } from '../src/domain/stripeClient.js'
 import { markProcessed, wasProcessed } from '../src/domain/webhookDedup.js'

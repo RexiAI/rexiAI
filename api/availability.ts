@@ -1,39 +1,21 @@
-import { google } from 'googleapis'
-
 import {
   loadAvailabilityConfig,
   computeSlotsForDate,
   isPastDate,
 } from '../src/domain/availability.js'
-import { createCalendarAuth } from '../src/domain/googleAuth.js'
+import { getBusyIntervals as getCalendarBusyIntervals } from '../src/domain/calendar.js'
 import { zonedToUtc } from '../src/domain/time.js'
-
-async function queryBusy(calendarId: string, dayStart: Date, endOfDay: Date, auth: any) {
-  const cal = google.calendar({ version: 'v3', auth } as any)
-  const res: any = await (cal.freebusy as any).query({
-    requestBody: {
-      timeMin: dayStart.toISOString(),
-      timeMax: endOfDay.toISOString(),
-      items: [{ id: calendarId }],
-    },
-  })
-  const busy = (res.data.calendars?.[calendarId]?.busy ?? []) as { start: string; end: string }[]
-  return busy.map((b) => ({ start: new Date(b.start), end: new Date(b.end) }))
-}
 
 async function getBusyIntervals(
   dateStr: string,
   timezone: string
 ): Promise<{ start: Date; end: Date }[]> {
-  const calendarId = process.env['GOOGLE_CALENDAR_ID']
-  const serviceJson = process.env['GOOGLE_SERVICE_ACCOUNT_JSON']
-  if (!calendarId || !serviceJson || serviceJson.includes('REPLACE_ME')) return []
   try {
-    const auth = createCalendarAuth(serviceJson)
-    const dayStart = zonedToUtc(timezone, dateStr, '00:00')
-    const endOfDay = new Date(dayStart.getTime() + 24 * 3600000)
-    return await queryBusy(calendarId, dayStart, endOfDay, auth)
+    return await getCalendarBusyIntervals(dateStr, timezone)
   } catch {
+    // A calendar outage degrades availability to "all slots open" rather than
+    // hiding the whole endpoint; the slot-conflict backstop still catches
+    // double bookings at the webhook.
     return []
   }
 }

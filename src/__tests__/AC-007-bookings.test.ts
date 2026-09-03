@@ -4,10 +4,8 @@ const stripeMocks = vi.hoisted(() => ({
   mockCreate: vi.fn(),
   mockList: vi.fn(),
 }))
-const gcalMocks = vi.hoisted(() => ({
-  mockFreeBusy: vi.fn(),
-  mockList: vi.fn(),
-  mockInsert: vi.fn(),
+const calendarMocks = vi.hoisted(() => ({
+  mockHasConflict: vi.fn(),
 }))
 
 vi.mock('stripe', () => ({
@@ -20,19 +18,12 @@ vi.mock('stripe', () => ({
   }),
 }))
 
-vi.mock('googleapis', () => ({
-  google: {
-    auth: {
-      JWT: class {
-        constructor() {}
-      } as any,
-    },
-    calendar: vi.fn().mockImplementation(() => ({
-      freebusy: { query: gcalMocks.mockFreeBusy },
-      events: { list: gcalMocks.mockList, insert: gcalMocks.mockInsert },
-    })),
-  },
-}))
+// Only the conflict probe is stubbed; the slot-coverage helpers stay real so the
+// booking validation path under test is the production one.
+vi.mock('../../api/bookings/calendar', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../api/bookings/calendar')>()
+  return { ...actual, hasConflict: calendarMocks.mockHasConflict }
+})
 
 import bookingsHandler from '../../api/bookings'
 
@@ -51,15 +42,10 @@ describe('AC-007', () => {
     vi.clearAllMocks()
     stripeMocks.mockCreate.mockReset()
     stripeMocks.mockList.mockReset()
-    gcalMocks.mockFreeBusy.mockReset()
+    calendarMocks.mockHasConflict.mockReset()
     process.env['STRIPE_SECRET_KEY'] = 'sk_test_dummy'
-    process.env['GOOGLE_CALENDAR_ID'] = 'test-cal'
-    process.env['GOOGLE_SERVICE_ACCOUNT_JSON'] = JSON.stringify({
-      client_email: 'a@b',
-      private_key: 'k',
-    })
     vi.spyOn(fs, 'readFileSync').mockReturnValue(yamlContent as any)
-    gcalMocks.mockFreeBusy.mockResolvedValue({ data: { calendars: { 'test-cal': { busy: [] } } } })
+    calendarMocks.mockHasConflict.mockResolvedValue(false)
     stripeMocks.mockList.mockResolvedValue({ data: [] })
     stripeMocks.mockCreate.mockResolvedValue({
       url: 'https://checkout.stripe.com/pay/cs_test_123',
@@ -140,9 +126,6 @@ describe('AC-007', () => {
       vi.clearAllMocks()
       stripeMocks.mockCreate.mockReset()
       vi.spyOn(fs, 'readFileSync').mockReturnValue(yamlContent as any)
-      gcalMocks.mockFreeBusy.mockResolvedValue({
-        data: { calendars: { 'test-cal': { busy: [] } } },
-      })
       stripeMocks.mockList.mockResolvedValue({ data: [] })
       const req: any = {
         method: 'POST',
@@ -178,20 +161,7 @@ describe('AC-007', () => {
   })
 
   it('AC-007-08: Conflicting existing booking rejected', async () => {
-    gcalMocks.mockFreeBusy.mockResolvedValue({
-      data: {
-        calendars: {
-          'test-cal': {
-            busy: [
-              {
-                start: new Date('2027-03-01T09:00:00.000Z').toISOString(),
-                end: new Date('2027-03-01T10:00:00.000Z').toISOString(),
-              },
-            ],
-          },
-        },
-      },
-    })
+    calendarMocks.mockHasConflict.mockResolvedValue(true)
     const req: any = {
       method: 'POST',
       body: { email: 'a@b.com', date: '2027-03-01', startTime: '10:00', hours: 1 },

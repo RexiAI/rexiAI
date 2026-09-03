@@ -11,10 +11,13 @@ const webhookMocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../domain/freeHour', () => ({ markFreeHourUsed: webhookMocks.mockMark }))
-vi.mock('../domain/gcal', () => ({
-  createGCalEvent: webhookMocks.mockCreateEvent,
-  findEventByBookingId: webhookMocks.mockFind,
-  findOverlappingBookingId: webhookMocks.mockOverlap,
+vi.mock('../domain/microsoftGraph', () => ({
+  microsoftGraph: {
+    createEvent: webhookMocks.mockCreateEvent,
+    findEventByBookingId: webhookMocks.mockFind,
+    findOverlappingBookingId: webhookMocks.mockOverlap,
+    getBusyIntervals: vi.fn(),
+  },
 }))
 vi.mock('../domain/email', () => ({
   sendOperatorEmail: webhookMocks.mockSendEmail,
@@ -146,7 +149,7 @@ describe('AC-008', () => {
     const ev = makeEvent()
     webhookMocks.mockConstruct.mockReturnValue(ev)
     webhookMocks.mockFind.mockResolvedValue(false)
-    webhookMocks.mockCreateEvent.mockRejectedValue(new Error('gcal fail'))
+    webhookMocks.mockCreateEvent.mockRejectedValue(new Error('graph fail'))
     const req: any = {
       method: 'POST',
       headers: { 'stripe-signature': 'sig' },

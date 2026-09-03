@@ -13,7 +13,6 @@
     "test": "vitest run --exclude '.standards/**'"
   },
   "dependencies": {
-    "googleapis": "^176.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "stripe": "^22.5.0",

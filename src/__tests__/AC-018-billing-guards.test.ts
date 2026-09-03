@@ -39,17 +39,16 @@ vi.mock('../domain/freeHour', () => ({
   isFreeHourAvailable: guardMocks.mockFreeHourAvailable,
   markFreeHourUsed: guardMocks.mockMarkFreeHour,
 }))
-vi.mock('../domain/teams', () => ({ createTeamsMeeting: guardMocks.mockCreateTeamsMeeting }))
+vi.mock('../domain/meeting', () => ({
+  createMeetingLink: guardMocks.mockCreateTeamsMeeting,
+}))
 vi.mock('../domain/meetingDuration', () => ({
   getRecordedMinutes: guardMocks.mockRecordedMinutes,
 }))
-vi.mock('../domain/gcal', () => ({
-  createGCalEvent: vi.fn(),
-  findEventByBookingId: guardMocks.mockFind,
-  findOverlappingBookingId: guardMocks.mockOverlap,
-}))
 vi.mock('../domain/calendar', () => ({
   createCalendarEvent: guardMocks.mockCreateCalendarEvent,
+  findEventByBookingId: guardMocks.mockFind,
+  findOverlappingBookingId: guardMocks.mockOverlap,
 }))
 vi.mock('../domain/email', () => ({
   sendOperatorEmail: guardMocks.mockSendOperatorEmail,

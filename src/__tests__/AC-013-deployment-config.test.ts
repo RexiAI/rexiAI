@@ -19,8 +19,8 @@ describe('AC-013', () => {
     const required = [
       'STRIPE_SECRET_KEY',
       'STRIPE_WEBHOOK_SECRET',
-      'GOOGLE_CALENDAR_ID',
-      'GOOGLE_SERVICE_ACCOUNT_JSON',
+      'MICROSOFT_CLIENT_ID',
+      'MICROSOFT_REFRESH_TOKEN',
       'RESEND_API_KEY',
       'EMAIL_FROM',
       'EMAIL_TO',
