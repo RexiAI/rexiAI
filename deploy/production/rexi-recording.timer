@@ -1,0 +1,13 @@
+# Run the recording processor every 5 min. Persistent=true catches up a missed
+# run after the host was down (a recording made during downtime still gets billed).
+[Unit]
+Description=RexiAI recording→billing processor (every 5m)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target
