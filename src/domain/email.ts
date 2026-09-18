@@ -213,3 +213,63 @@ export async function sendClientEmail(
 ): Promise<void> {
   return sendClientViaResend(input, fetchImpl)
 }
+
+export interface PaymentLinkEmailInput {
+  clientEmail: string
+  amountCents: number
+  checkoutUrl: string
+  billableMinutes: number
+}
+
+function buildPaymentLinkBody(input: PaymentLinkEmailInput): {
+  subject: string
+  text: string
+  html: string
+} {
+  // Pro-rata makes half-euro totals routine, so always 2 decimals — never round.
+  const amountEuro = (input.amountCents / 100).toFixed(2)
+  const subject = `RexiAI — pago de tu sesión (${amountEuro} EUR)`
+  const lines: BodyLine[] = [
+    { value: 'Tu reunión con RexiAI ha finalizado. Puedes pagar en el siguiente enlace:' },
+    { label: 'Importe', value: `${amountEuro} EUR (${input.billableMinutes} min facturados)` },
+    // The checkout URL is escaped by renderHtml like every other value, so its
+    // & / % / # characters cannot break out into markup.
+    { label: 'Enlace de pago', value: input.checkoutUrl },
+    { value: 'Si tienes cualquier problema con el pago, responde a este correo.' },
+  ]
+  return { subject, text: renderText(lines), html: renderHtml(lines) }
+}
+
+async function sendPaymentLinkViaResend(
+  input: PaymentLinkEmailInput,
+  fetchImpl: typeof fetch
+): Promise<void> {
+  const { apiKey, from } = getEmailConfig()
+  // Client-facing: the Resend sandbox sender cannot deliver to arbitrary
+  // customers — same constraint as sendClientEmail.
+  assertClientSenderUsable(from)
+  const { subject, text, html } = buildPaymentLinkBody(input)
+  const res = await fetchImpl('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from, to: input.clientEmail, subject, text, html }),
+  })
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '')
+    throw new Error(`Resend payment-link email failed: ${res.status} ${errText}`)
+  }
+}
+
+/**
+ * Emails the customer their post-meeting payment link (the recorded-billing
+ * Checkout URL). The caller treats this as best effort: a delivery failure must
+ * not undo the charge — the Checkout session already exists and the recording
+ * processor also surfaces the URL. Requires a verified Resend sending domain
+ * (see assertClientSenderUsable).
+ */
+export async function sendPaymentLinkEmail(
+  input: PaymentLinkEmailInput,
+  fetchImpl: typeof fetch = fetch
+): Promise<void> {
+  return sendPaymentLinkViaResend(input, fetchImpl)
+}

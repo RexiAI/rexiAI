@@ -1,5 +1,5 @@
 import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
-import { priceCents } from '../../src/domain/pricing.js'
+import { priceCents, PRODUCT_TAX_CODE } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
 
 import { errMsg } from './config.js'
@@ -48,8 +48,13 @@ function buildSessionParams(opts: SessionOpts, baseUrl: string) {
     free_hour_applied: String(opts.freeAvailable),
   }
   if (opts.joinUrl) metadata['join_url'] = opts.joinUrl
+  // Managed Payments is disabled: RexiAI is live 1-1 coaching, which Stripe
+  // categorically excludes from Managed Payments (professional services / human
+  // intervention are unsupported categories). On an account where Managed
+  // Payments is on by default, session creation fails without this. EU VAT is
+  // then the merchant's concern via Stripe Tax — see PRODUCT_TAX_CODE in pricing.ts.
   // prettier-ignore
-  return { mode: 'payment' as const, currency: 'eur' as const, line_items: [{ price_data: { currency: 'eur' as const, product_data: { name: `Booking ${opts.date} ${opts.startTime} (${opts.hours}h)` }, unit_amount: RESERVATION_UNIT_AMOUNT }, quantity: 1 as const }], customer_email: opts.email, metadata, success_url: `${baseUrl}/booking/success`, cancel_url: `${baseUrl}/booking/cancel` }
+  return { mode: 'payment' as const, managed_payments: { enabled: false }, automatic_tax: { enabled: true }, currency: 'eur' as const, line_items: [{ price_data: { currency: 'eur' as const, product_data: { name: `Booking ${opts.date} ${opts.startTime} (${opts.hours}h)`, tax_code: PRODUCT_TAX_CODE }, unit_amount: RESERVATION_UNIT_AMOUNT }, quantity: 1 as const }], customer_email: opts.email, metadata, success_url: `${baseUrl}/booking/success`, cancel_url: `${baseUrl}/booking/cancel` }
 }
 
 async function createSession(opts: SessionOpts) {

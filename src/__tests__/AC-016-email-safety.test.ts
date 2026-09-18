@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
-import { sendOperatorEmail, type OperatorEmailInput } from '../domain/email'
+import {
+  sendOperatorEmail,
+  sendPaymentLinkEmail,
+  type OperatorEmailInput,
+  type PaymentLinkEmailInput,
+} from '../domain/email'
 import { isValidEmail } from '../domain/validation'
 
 import fs from 'fs'
@@ -31,6 +36,17 @@ async function capturePayload(input: OperatorEmailInput): Promise<any> {
     return { ok: true, status: 200, text: async () => '' } as any
   }) as unknown as typeof fetch
   await sendOperatorEmail(input, fetchImpl)
+  return calls[calls.length - 1]
+}
+
+/** Runs sendPaymentLinkEmail against a stub fetch and returns the parsed payload. */
+async function capturePaymentPayload(input: PaymentLinkEmailInput): Promise<any> {
+  const calls: any[] = []
+  const fetchImpl = vi.fn(async (_url: string, init: any) => {
+    calls.push(JSON.parse(init.body))
+    return { ok: true, status: 200, text: async () => '' } as any
+  }) as unknown as typeof fetch
+  await sendPaymentLinkEmail(input, fetchImpl)
   return calls[calls.length - 1]
 }
 
@@ -104,5 +120,32 @@ describe('AC-016', () => {
     expect(isValidEmail('a"b@c.com')).toBe(false)
     expect(isValidEmail('a,b@c.com')).toBe(false)
     expect(isValidEmail('user+tag@sub.example.co.uk')).toBe(true)
+  })
+
+  it('payment-link: goes to the client, escapes the checkout URL in html, keeps it raw in text, 2-decimal amount', async () => {
+    const url = 'https://checkout.stripe.com/c/pay/cs_1?a=1&b=2#frag'
+    const payload = await capturePaymentPayload({
+      clientEmail: 'client@example.com',
+      amountCents: 50,
+      checkoutUrl: url,
+      billableMinutes: 1,
+    })
+    expect(payload.to).toBe('client@example.com')
+    expect(payload.text).toContain(url) // raw, clickable in plain text
+    expect(payload.text).toContain('0.50 EUR') // 2 decimals, never "1 EUR"/"0.5"
+    expect(payload.html).toContain('&amp;') // & escaped in html…
+    expect(payload.html).not.toContain('?a=1&b=2') // …so the raw & cannot break out
+  })
+
+  it('payment-link: refuses the Resend sandbox sender (cannot deliver to customers)', async () => {
+    process.env['EMAIL_FROM'] = 'onboarding@resend.dev'
+    await expect(
+      sendPaymentLinkEmail({
+        clientEmail: 'client@example.com',
+        amountCents: 50,
+        checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_1',
+        billableMinutes: 1,
+      })
+    ).rejects.toThrow(/sandbox sender/)
   })
 })

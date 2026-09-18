@@ -17,6 +17,7 @@ const guardMocks = vi.hoisted(() => ({
   mockCreateCalendarEvent: vi.fn(),
   mockSendOperatorEmail: vi.fn(),
   mockSendClientEmail: vi.fn(),
+  mockSendPaymentLinkEmail: vi.fn(),
 }))
 
 // One stub serves both the API handlers (checkout sessions) and the webhook
@@ -53,6 +54,7 @@ vi.mock('../domain/calendar', () => ({
 vi.mock('../domain/email', () => ({
   sendOperatorEmail: guardMocks.mockSendOperatorEmail,
   sendClientEmail: guardMocks.mockSendClientEmail,
+  sendPaymentLinkEmail: guardMocks.mockSendPaymentLinkEmail,
 }))
 vi.mock('../../api/bookings/calendar', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api/bookings/calendar')>()
@@ -180,6 +182,7 @@ describe('AC-018', () => {
     guardMocks.mockCreateCalendarEvent.mockResolvedValue({ alreadyExists: false })
     guardMocks.mockSendOperatorEmail.mockResolvedValue(undefined)
     guardMocks.mockSendClientEmail.mockResolvedValue(undefined)
+    guardMocks.mockSendPaymentLinkEmail.mockResolvedValue(undefined)
   })
 
   afterEach(() => {

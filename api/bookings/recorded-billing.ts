@@ -1,9 +1,10 @@
 import { timingSafeEqual } from 'crypto'
 
 import { findReservation, type Reservation } from '../../src/domain/bookingLookup.js'
+import { sendPaymentLinkEmail } from '../../src/domain/email.js'
 import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
 import { getRecordedMinutes } from '../../src/domain/meetingDuration.js'
-import { recordedBillingCents, validateActualMinutes } from '../../src/domain/pricing.js'
+import { recordedBillingCents, validateActualMinutes, PRODUCT_TAX_CODE } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
 import { isValidEmail } from '../../src/domain/validation.js'
 
@@ -180,9 +181,10 @@ function buildRecordedLineItems(
     {
       price_data: {
         currency: 'eur' as const,
-        product_data: {
-          name: `RexiAI recorded ${parsed.actualMinutes as number}min (${billableMinutes}min billable)`,
-        },
+      product_data: {
+        name: `RexiAI recorded ${parsed.actualMinutes as number}min (${billableMinutes}min billable)`,
+        tax_code: PRODUCT_TAX_CODE,
+      },
         unit_amount: amount,
       },
       quantity: 1 as const,
@@ -214,6 +216,14 @@ function buildRecordedSessionParams(
 ) {
   return {
     mode: 'payment' as const,
+    // RexiAI is live 1-1 coaching — categorically ineligible for Stripe Managed
+    // Payments (professional services / human intervention are excluded), so it
+    // must be disabled or session creation fails on a Managed-Payments account.
+    // EU VAT is handled by Stripe Tax instead (automatic_tax below), which
+    // requires a tax registration in the Stripe dashboard + collects the
+    // customer's billing address at Checkout. See docs/recording-pipeline.md.
+    managed_payments: { enabled: false },
+    automatic_tax: { enabled: true },
     currency: 'eur' as const,
     line_items: buildRecordedLineItems(parsed, amount, billableMinutes),
     customer_email: parsed.email,
@@ -285,6 +295,21 @@ async function handlePaidCheckout(
     ctx.res
   )
   if (!session) return
+  // Best-effort: email the customer their payment link. A delivery failure must
+  // not undo the charge — the Checkout session already exists and the recording
+  // processor also surfaces the URL. Needs a verified Resend sending domain;
+  // until then this logs a warning and moves on (see docs/recording-pipeline.md).
+  try {
+    await sendPaymentLinkEmail({
+      clientEmail: parsed.email,
+      amountCents: amount,
+      checkoutUrl: (session as any).url,
+      billableMinutes,
+    })
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(`[recorded-billing] payment-link email failed: ${errMsg(e)}`)
+  }
   ctx.res.status(200).json(
     withMismatch(
       {

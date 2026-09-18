@@ -2,6 +2,16 @@ export type PriceSuccess = { ok: true; cents: number }
 export type PriceError = { ok: false; error: { code: string; message: string } }
 export type PriceResult = PriceSuccess | PriceError
 
+// Stripe Managed Payments (enabled by default on the account) requires every
+// product to carry a tax code, or Checkout session creation fails with "the
+// product tax code is missing". txcd_20060048 = "Consulting Services" (the
+// provision of expertise or strategic advice) — the category that fits RexiAI
+// coaching bookings. Source: https://docs.stripe.com/tax/tax-codes
+// TODO(billing): confirm this code with the accountant before going live — it
+// drives how Stripe Tax calculates EU VAT on every reservation and recording
+// charge.
+export const PRODUCT_TAX_CODE = 'txcd_20060048'
+
 const PRICE_PER_HOUR = 3000
 
 function invalidDuration(message: string): PriceError {
