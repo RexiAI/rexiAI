@@ -79,5 +79,33 @@ module.exports = [
       '@typescript-eslint/explicit-function-return-type': 'off',
     },
   },
+  {
+    // Node CLI scripts (scripts/*.mjs) run outside the browser and the
+    // serverless request context: they legitimately use Node + web globals and
+    // log to console. Without this block they fall under js.configs.recommended
+    // with no globals defined, so process/console/fetch trip no-undef.
+    files: ['**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        Buffer: 'readonly',
+        TextEncoder: 'readonly',
+        TextDecoder: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
   prettier,
 ]
