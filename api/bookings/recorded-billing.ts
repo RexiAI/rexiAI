@@ -4,7 +4,11 @@ import { findReservation, type Reservation } from '../../src/domain/bookingLooku
 import { sendPaymentLinkEmail } from '../../src/domain/email.js'
 import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
 import { getRecordedMinutes } from '../../src/domain/meetingDuration.js'
-import { recordedBillingCents, validateActualMinutes, PRODUCT_TAX_CODE } from '../../src/domain/pricing.js'
+import {
+  recordedBillingCents,
+  validateActualMinutes,
+  PRODUCT_TAX_CODE,
+} from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
 import { isValidEmail } from '../../src/domain/validation.js'
 
@@ -181,10 +185,10 @@ function buildRecordedLineItems(
     {
       price_data: {
         currency: 'eur' as const,
-      product_data: {
-        name: `RexiAI recorded ${parsed.actualMinutes as number}min (${billableMinutes}min billable)`,
-        tax_code: PRODUCT_TAX_CODE,
-      },
+        product_data: {
+          name: `RexiAI recorded ${parsed.actualMinutes as number}min (${billableMinutes}min billable)`,
+          tax_code: PRODUCT_TAX_CODE,
+        },
         unit_amount: amount,
       },
       quantity: 1 as const,

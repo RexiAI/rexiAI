@@ -37,7 +37,9 @@ loadEnv()
 
 const room = process.argv[2] || 'rexitest'
 const email = process.argv[3] || 'rexi-billing-test@example.com'
-const PORT = Number((process.env['APP_BASE_URL'] || 'http://localhost:3000').split(':').pop() || 3000)
+const PORT = Number(
+  (process.env['APP_BASE_URL'] || 'http://localhost:3000').split(':').pop() || 3000
+)
 
 function recordingsDir() {
   return (
@@ -101,7 +103,10 @@ const server = http.createServer(async (req, res) => {
     body = {}
   }
   try {
-    await recordedBilling({ method: req.method, headers: req.headers, body, query: {} }, makeRes(res))
+    await recordedBilling(
+      { method: req.method, headers: req.headers, body, query: {} },
+      makeRes(res)
+    )
   } catch (e) {
     res.writeHead(500, { 'content-type': 'application/json' })
     res.end(JSON.stringify({ error: { code: 'HANDLER_ERROR', message: String(e) } }))
@@ -119,7 +124,10 @@ if (!process.env['STRIPE_SECRET_KEY']?.startsWith('sk_test')) {
 }
 
 const stripe = new Stripe(process.env['STRIPE_SECRET_KEY'])
-const base = (process.env['MEETING_BASE_URL'] || 'https://host.docker.internal:8443').replace(/\/+$/, '')
+const base = (process.env['MEETING_BASE_URL'] || 'https://host.docker.internal:8443').replace(
+  /\/+$/,
+  ''
+)
 const joinUrl = `${base}/${room}`
 
 await new Promise((r) => server.listen(PORT, r))
@@ -139,7 +147,14 @@ try {
 
   // 2. Create the reservation through the real checkout code path.
   const mockReq = { headers: { host: `localhost:${PORT}` } }
-  const mockRes = { status() { return this }, json(o) { console.error('[e2e] checkout error:', JSON.stringify(o)) } }
+  const mockRes = {
+    status() {
+      return this
+    },
+    json(o) {
+      console.error('[e2e] checkout error:', JSON.stringify(o))
+    },
+  }
   const session = await createCheckout(email, '2026-09-20', '10:00', 1, mockReq, mockRes, joinUrl)
   if (!session?.id) {
     console.error('[e2e] FAILED to create reservation — see error above')

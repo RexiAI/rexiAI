@@ -83,7 +83,12 @@ function parseGraphDateTime(dt: { dateTime?: string; timeZone?: string } | undef
 }
 
 function collectBusy(
-  value: Array<{ start?: { dateTime?: string; timeZone?: string }; end?: { dateTime?: string; timeZone?: string } }> | undefined
+  value:
+    | Array<{
+        start?: { dateTime?: string; timeZone?: string }
+        end?: { dateTime?: string; timeZone?: string }
+      }>
+    | undefined
 ): CalendarSlot[] {
   const busy: CalendarSlot[] = []
   for (const item of value ?? []) {
@@ -236,7 +241,10 @@ export async function getBusyIntervals(
     throw new Error(`Graph calendarView failed: ${res.status} ${text}`)
   }
   const data = (await res.json()) as {
-    value?: Array<{ start?: { dateTime?: string; timeZone?: string }; end?: { dateTime?: string; timeZone?: string } }>
+    value?: Array<{
+      start?: { dateTime?: string; timeZone?: string }
+      end?: { dateTime?: string; timeZone?: string }
+    }>
   }
   return mergeBusySlots(collectBusy(data.value))
 }

@@ -25,7 +25,9 @@ const AUTHORIZE_URL = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/a
 function loadDotEnv(name) {
   const p = join(process.cwd(), '.env')
   if (!existsSync(p)) return undefined
-  const line = readFileSync(p, 'utf8').split('\n').find((l) => l.startsWith(`${name}=`))
+  const line = readFileSync(p, 'utf8')
+    .split('\n')
+    .find((l) => l.startsWith(`${name}=`))
   if (!line) return undefined
   const v = line.slice(name.length + 1).trim()
   return v && !v.includes('REPLACE_ME') ? v : undefined
@@ -87,9 +89,9 @@ const server = http.createServer(async (req, res) => {
     console.error('Redirect had no code parameter')
     process.exit(1)
   }
-  res.writeHead(200, { 'Content-Type': 'text/html' }).end(
-    '<p>Consent captured. You can close this tab and return to the terminal.</p>'
-  )
+  res
+    .writeHead(200, { 'Content-Type': 'text/html' })
+    .end('<p>Consent captured. You can close this tab and return to the terminal.</p>')
   server.close()
   try {
     const j = await exchange(code)
@@ -106,7 +108,10 @@ const server = http.createServer(async (req, res) => {
 })
 
 server.listen(PORT, () => {})
-setTimeout(() => {
-  console.error('Timed out waiting for the redirect.')
-  process.exit(1)
-}, 5 * 60 * 1000)
+setTimeout(
+  () => {
+    console.error('Timed out waiting for the redirect.')
+    process.exit(1)
+  },
+  5 * 60 * 1000
+)

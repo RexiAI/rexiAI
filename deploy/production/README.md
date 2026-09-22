@@ -34,6 +34,7 @@ bash setup-jitsi-host.sh \
      --repo git@github.com:RexiAI/<app>.git \
      --public-ip 203.0.113.10
 ```
+
 Installs Docker + compose plugin, `node` (for the timer path) + `ffmpeg`, ensures ≥6 GB
 effective RAM (adds a 4 GB swapfile if short), opens **80, 443, 4443/tcp + 10000/udp** in
 ufw, clones `docker-jitsi-meet` (→ `/opt/docker-jitsi-meet`) and the RexiAI app (→ `/opt/rexiAI`).
@@ -54,6 +55,7 @@ sudo chmod 600 /etc/rexi-recording.env
 bash deploy-jitsi.sh --domain meet.rexi-ai.com --public-ip 203.0.113.10 --email you@rexi-ai.com \
      --app-base-url https://rexi-ai.com
 ```
+
 It renders `.env` (only if absent) from `jitsi.env.example`, generates XMPP passwords,
 starts the stack + Jibri, installs + starts `rexi-recording.timer`, then prints verification.
 Idempotent: re-run after `git pull` in `/opt/rexiAI` to update the processor or images.
@@ -96,17 +98,19 @@ docker compose -f docker-compose.yml -f jibri.yml logs -f jibri   # recording se
 ```
 
 ## Rollback / update
+
 - Update Jitsi images: `cd /opt/docker-jitsi-meet && git pull && docker compose -f docker-compose.yml -f jibri.yml pull && docker compose -f docker-compose.yml -f jibri.yml up -d`.
 - Update the processor: `cd /opt/rexiAI && git pull && systemctl restart rexi-recording.service`.
 - Full stop: `docker compose -f docker-compose.yml -f jibri.yml down`.
 
 ## Secrets checklist (never committed — this dir only has *.example)
-| Where | Keys |
-|---|---|
-| `/etc/rexi-recording.env` (0600) | `STRIPE_SECRET_KEY`, `RECORDED_BILLING_TOKEN`, `APP_BASE_URL`, `MEETING_BASE_URL` |
-| docker-jitsi-meet `.env` | the six XMPP passwords (`./gen-passwords.sh`) |
-| Vercel | `STRIPE_SECRET_KEY`(live), `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `RECORDED_BILLING_TOKEN`, `MICROSOFT_*` |
-| Resend dashboard | verify `rexi-ai.com` → set `EMAIL_FROM` to a verified sender (else customer/payment emails are refused) |
+
+| Where                            | Keys                                                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `/etc/rexi-recording.env` (0600) | `STRIPE_SECRET_KEY`, `RECORDED_BILLING_TOKEN`, `APP_BASE_URL`, `MEETING_BASE_URL`                             |
+| docker-jitsi-meet `.env`         | the six XMPP passwords (`./gen-passwords.sh`)                                                                 |
+| Vercel                           | `STRIPE_SECRET_KEY`(live), `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `RECORDED_BILLING_TOKEN`, `MICROSOFT_*` |
+| Resend dashboard                 | verify `rexi-ai.com` → set `EMAIL_FROM` to a verified sender (else customer/payment emails are refused)       |
 
 > The processor never stores the `checkoutUrl` beyond the billing response; the
 > `recorded-billing` endpoint emails it to the customer. Until a Resend verified

@@ -16,9 +16,7 @@ export interface MeetingInput {
   subject: string
 }
 
-export type MeetingResult =
-  | { status: 'ok'; joinUrl: string }
-  | { status: 'error'; message: string }
+export type MeetingResult = { status: 'ok'; joinUrl: string } | { status: 'error'; message: string }
 
 export async function createMeetingLink(_input: MeetingInput): Promise<MeetingResult> {
   const base = (process.env['MEETING_BASE_URL'] || 'https://meet.jit.si').replace(/\/+$/, '')

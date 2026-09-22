@@ -1,6 +1,10 @@
 import Stripe from 'stripe'
 
-import { createCalendarEvent, findEventByBookingId, findOverlappingBookingId } from '../src/domain/calendar.js'
+import {
+  createCalendarEvent,
+  findEventByBookingId,
+  findOverlappingBookingId,
+} from '../src/domain/calendar.js'
 import { sendClientEmail, sendOperatorEmail } from '../src/domain/email.js'
 import { markFreeHourUsed } from '../src/domain/freeHour.js'
 import { getCalendarProvider } from '../src/domain/providers.js'

@@ -13,17 +13,17 @@ lookups in `api/bookings/calendar.ts` + `api/availability.ts` are gone).
 
 ## Account split
 
-| Concern | Account | Mechanism |
-| --- | --- | --- |
-| Calendar (booking events, dedup, overlap, availability) | `buenopachecodani@hotmail.es` (personal MSA) | Microsoft Graph delegated, `/me/events` |
-| Meetings (client join link) | none — Jitsi room | `MEETING_BASE_URL` + random room per booking |
-| Email (operator + client notifications) | `info@rexi-ai.com` (Godaddy) | Resend (`EMAIL_PROVIDER=gmail`) |
+| Concern                                                 | Account                                      | Mechanism                                    |
+| ------------------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
+| Calendar (booking events, dedup, overlap, availability) | `buenopachecodani@hotmail.es` (personal MSA) | Microsoft Graph delegated, `/me/events`      |
+| Meetings (client join link)                             | none — Jitsi room                            | `MEETING_BASE_URL` + random room per booking |
+| Email (operator + client notifications)                 | `info@rexi-ai.com` (Godaddy)                 | Resend (`EMAIL_PROVIDER=gmail`)              |
 
 ## 1. Azure app registration (personal accounts)
 
 1. https://portal.azure.com → Microsoft Entra ID → App registrations → **RexiAI**.
 2. **Authentication** → **Supported account types** →
-   *Accounts in any organizational directory and personal Microsoft accounts*.
+   _Accounts in any organizational directory and personal Microsoft accounts_.
    If saving fails with `Property api.requestedAccessTokenVersion is invalid`,
    first set **Manifest** → `api.requestedAccessTokenVersion: 2` and save.
 3. **API permissions** → Add a permission → Microsoft Graph →

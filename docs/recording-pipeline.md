@@ -62,17 +62,18 @@ from a clean serverless model.
 **The recording pipeline is the one thing serverless cannot do**, for three
 structural reasons:
 
-| Serverless constraint | Why recording breaks it |
-|---|---|
-| Request-driven | A recording finishes on **Jibri's** schedule (a file appears), not on an inbound HTTP request. Nothing invokes a function when Jibri is done. |
-| Ephemeral, isolated filesystem | The MP4 lives on the **Jitsi host's** disk. A Vercel function cannot see it. |
-| No arbitrary host binaries | Measuring duration needs **ffprobe** on the Jitsi host. |
+| Serverless constraint          | Why recording breaks it                                                                                                                       |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Request-driven                 | A recording finishes on **Jibri's** schedule (a file appears), not on an inbound HTTP request. Nothing invokes a function when Jibri is done. |
+| Ephemeral, isolated filesystem | The MP4 lives on the **Jitsi host's** disk. A Vercel function cannot see it.                                                                  |
+| No arbitrary host binaries     | Measuring duration needs **ffprobe** on the Jitsi host.                                                                                       |
 
 So the recording→billing bridge must run **on the Jitsi host**, co-located with
 Jibri + the recordings + ffprobe. That is `scripts/process-recording.mjs`.
 
 **But "host-side worker" ≠ "the web needs a backend server."** It is a small
 **batch/job runner**, not a web backend:
+
 - It can be a **cron job / systemd timer** (`--scan` every few minutes) — no
   daemon, no new framework, no new database.
 - Or Jibri's **`finalize-script`** can trigger it once per recording (the
@@ -123,13 +124,13 @@ cannot provide. Keep serverless for the web; run the processor beside Jibri.
 ### Two real bugs found by live-API testing (mock tests missed both)
 
 1. **Stripe Managed Payments incompatibility.** The account has Managed Payments
-   on by default, which requires an *eligible* product tax code. RexiAI is **live
+   on by default, which requires an _eligible_ product tax code. RexiAI is **live
    1-1 coaching**, which Stripe categorically excludes from Managed Payments
    ("professional services" + "human intervention … doesn't qualify" — see
    docs.stripe.com/payments/managed-payments/eligibility). No tax code fixes it.
    **Fix applied:** `managed_payments: { enabled: false }` on both Checkout
    sessions (`checkout.ts`, `recorded-billing.ts`), plus `tax_code: PRODUCT_TAX_CODE`
-   (`txcd_20060048` Consulting) for Stripe Tax. Without this, *no* Stripe session
+   (`txcd_20060048` Consulting) for Stripe Tax. Without this, _no_ Stripe session
    could be created — bookings were broken in production, not just recording.
 2. **`.mjs` scripts failed lint** (`no-undef` on `process`/`console`/`fetch`) —
    the eslint globals block excluded `.mjs`. Fixed with a Node-globals override.
@@ -172,7 +173,7 @@ live there). Three options, in order of preference:
    guard). Cron's PATH is minimal, so pin `NODE_BIN`.
 2. **Jibri `finalize-script`** (event-driven, fires once per recording): set
    `JIBRI_FINALIZE_RECORDING_SCRIPT_PATH` to a script that calls the processor with
-   `--jibri-dir "$1"`. **Caveat:** the hook runs *inside* the jibri container,
+   `--jibri-dir "$1"`. **Caveat:** the hook runs _inside_ the jibri container,
    which has no node/repo/`.env` — so it must call out to the host (e.g. a tiny
    host listener, or write a marker the cron picks up). Given that, the cron
    `--scan` is simpler and already covers it.

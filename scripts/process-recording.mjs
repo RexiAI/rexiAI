@@ -84,13 +84,17 @@ function findMp4(dir) {
 // ffprobe → duration in whole minutes (ceil, min 1).
 async function probeMinutes(file) {
   const { stdout } = await execFileAsync('ffprobe', [
-    '-v', 'error',
-    '-show_entries', 'format=duration',
-    '-of', 'default=noprint_wrappers=1:nokey=1',
+    '-v',
+    'error',
+    '-show_entries',
+    'format=duration',
+    '-of',
+    'default=noprint_wrappers=1:nokey=1',
     file,
   ])
   const secs = Number.parseFloat(stdout.trim())
-  if (!Number.isFinite(secs) || secs <= 0) throw new Error(`ffprobe returned no duration for ${file}`)
+  if (!Number.isFinite(secs) || secs <= 0)
+    throw new Error(`ffprobe returned no duration for ${file}`)
   return Math.max(1, Math.ceil(secs / 60))
 }
 
@@ -99,10 +103,14 @@ async function probeMinutes(file) {
 async function hasAudioStream(file) {
   try {
     const { stdout } = await execFileAsync('ffprobe', [
-      '-v', 'error',
-      '-select_streams', 'a',
-      '-show_entries', 'stream=codec_type',
-      '-of', 'default=noprint_wrappers=1:nokey=1',
+      '-v',
+      'error',
+      '-select_streams',
+      'a',
+      '-show_entries',
+      'stream=codec_type',
+      '-of',
+      'default=noprint_wrappers=1:nokey=1',
       file,
     ])
     return stdout.includes('audio')
@@ -154,7 +162,8 @@ async function findReservationByRoom(room) {
 async function postRecordedBilling({ bookingId, email, actualMinutes }) {
   const base = (process.env['APP_BASE_URL'] || 'http://localhost:3000').replace(/\/+$/, '')
   const token = process.env['RECORDED_BILLING_TOKEN']
-  if (!token) throw new Error('RECORDED_BILLING_TOKEN is not set (endpoint fails closed without it)')
+  if (!token)
+    throw new Error('RECORDED_BILLING_TOKEN is not set (endpoint fails closed without it)')
   const res = await fetch(`${base}${BILLING_PATH}`, {
     method: 'POST',
     headers: {
@@ -209,10 +218,14 @@ async function processOne({ room, mp4, dryRun }) {
   const reservation = await findReservationByRoom(resolvedRoom)
   if (!reservation) {
     console.error(`    SKIP: no Stripe reservation found for room ${resolvedRoom}.`)
-    console.error('          (Is this a real booking? Test rooms like /rexitest have no reservation.)')
+    console.error(
+      '          (Is this a real booking? Test rooms like /rexitest have no reservation.)'
+    )
     return false
   }
-  console.log(`    reservation: ${reservation.bookingId} | ${reservation.email} | quoted ${reservation.quotedHours}h`)
+  console.log(
+    `    reservation: ${reservation.bookingId} | ${reservation.email} | quoted ${reservation.quotedHours}h`
+  )
 
   if (minutes > MAX_MINUTES) {
     console.error(`    SKIP: ${minutes} min exceeds the ${MAX_MINUTES} min ceiling.`)
@@ -234,16 +247,23 @@ async function processOne({ room, mp4, dryRun }) {
   }
   const amount = body?.amountCents ?? 0
   const url = body?.checkoutUrl
-  console.log(`    BILLED: ${amount} cents (${body?.billableMinutes ?? 0} billable min, ${body?.freeMinutes ?? 0} free min applied)`)
+  console.log(
+    `    BILLED: ${amount} cents (${body?.billableMinutes ?? 0} billable min, ${body?.freeMinutes ?? 0} free min applied)`
+  )
   if (url) {
     console.log(`    checkoutUrl: ${url}`)
-    console.log('    → recorded-billing emails this link to the customer (needs a verified Resend domain); printed here as a record/fallback.')
+    console.log(
+      '    → recorded-billing emails this link to the customer (needs a verified Resend domain); printed here as a record/fallback.'
+    )
   } else {
     console.log('    → €0 (free hour covered it); no payment link needed.')
   }
   // Mark processed so --scan never double-bills (the endpoint is not idempotent).
   try {
-    writeFileSync(path.join(path.dirname(mp4), BILLED_MARKER), `${new Date().toISOString()} ${minutes}min ${amount}c\n`)
+    writeFileSync(
+      path.join(path.dirname(mp4), BILLED_MARKER),
+      `${new Date().toISOString()} ${minutes}min ${amount}c\n`
+    )
   } catch {
     /* marker is best-effort */
   }

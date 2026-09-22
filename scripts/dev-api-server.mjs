@@ -80,7 +80,11 @@ const server = http.createServer(async (req, res) => {
     await handler(mockReq, makeRes(res))
   } catch (e) {
     res.writeHead(500, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ error: { code: 'HANDLER_ERROR', message: e instanceof Error ? e.message : String(e) } }))
+    res.end(
+      JSON.stringify({
+        error: { code: 'HANDLER_ERROR', message: e instanceof Error ? e.message : String(e) },
+      })
+    )
   }
 })
 
