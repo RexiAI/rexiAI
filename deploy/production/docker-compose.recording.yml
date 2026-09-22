@@ -1,0 +1,23 @@
+# ALTERNATIVE to the host systemd timer: run the recording processor as a sidecar
+# container. On the VPS, from the RexiAI app checkout:
+#   APP_DIR=/opt/rexiAI; cd $APP_DIR
+#   RECORDINGS_DIR=$HOME/.jitsi-meet-cfg/storage/jibri/recordings \
+#     docker compose --env-file /etc/rexi-recording.env -f deploy/production/docker-compose.recording.yml up -d
+# Shares the recordings bind-mount + writes .rexi-billed markers there (same as the
+# timer). Uses the container's own loop (Dockerfile loop.sh), no host cron.
+services:
+  rexi-recording-processor:
+    build:
+      context: ../..
+      dockerfile: deploy/production/recording-processor/Dockerfile
+    image: rexi/recording-processor:latest
+    restart: unless-stopped
+    environment:
+      - APP_BASE_URL
+      - MEETING_BASE_URL
+      - STRIPE_SECRET_KEY
+      - RECORDED_BILLING_TOKEN
+      - RECORDINGS_DIR=/storage/jibri/recordings
+      - SCAN_INTERVAL_SEC=300
+    volumes:
+      - ${RECORDINGS_DIR:-~/.jitsi-meet-cfg/storage/jibri/recordings}:/storage/jibri/recordings

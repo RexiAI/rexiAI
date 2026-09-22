@@ -1,0 +1,175 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const stripeMocks = vi.hoisted(() => ({
+  mockCreate: vi.fn(),
+  mockList: vi.fn(),
+}))
+const calendarMocks = vi.hoisted(() => ({
+  mockHasConflict: vi.fn(),
+}))
+
+vi.mock('stripe', () => ({
+  default: vi.fn(function (this: unknown) {
+    return {
+      customers: { list: stripeMocks.mockList },
+      checkout: { sessions: { create: stripeMocks.mockCreate } },
+      webhooks: { constructEvent: vi.fn() },
+    }
+  }),
+}))
+
+// Only the conflict probe is stubbed; the slot-coverage helpers stay real so the
+// booking validation path under test is the production one.
+vi.mock('../../api/bookings/calendar', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../api/bookings/calendar')>()
+  return { ...actual, hasConflict: calendarMocks.mockHasConflict }
+})
+
+import bookingsHandler from '../../api/bookings'
+
+import fs from 'fs'
+
+const yamlContent = `
+timezone: Europe/Madrid
+weekly:
+  monday:
+    - {start: "09:00", end: "13:00"}
+exceptions: {}
+`
+
+describe('AC-007', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    stripeMocks.mockCreate.mockReset()
+    stripeMocks.mockList.mockReset()
+    calendarMocks.mockHasConflict.mockReset()
+    process.env['STRIPE_SECRET_KEY'] = 'sk_test_dummy'
+    vi.spyOn(fs, 'readFileSync').mockReturnValue(yamlContent as any)
+    calendarMocks.mockHasConflict.mockResolvedValue(false)
+    stripeMocks.mockList.mockResolvedValue({ data: [] })
+    stripeMocks.mockCreate.mockResolvedValue({
+      url: 'https://checkout.stripe.com/pay/cs_test_123',
+      id: 'cs_test_123',
+    })
+  })
+
+  it('AC-007-01: First-timer one-hour booking creates a zero-euro checkout session', async () => {
+    const req: any = {
+      method: 'POST',
+      body: { email: 'first@example.com', date: '2027-03-01', startTime: '10:00', hours: 1 },
+      headers: { host: 'example.com', 'x-forwarded-proto': 'https' },
+    }
+    const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
+    await bookingsHandler(req, res)
+    expect(res.status).toHaveBeenCalledWith(200)
+    expect(stripeMocks.mockCreate).toHaveBeenCalled()
+    const args = stripeMocks.mockCreate.mock.calls[0][0]
+    const unitAmount = args.line_items[0].price_data.unit_amount
+    expect(unitAmount).toBe(0)
+    expect(args.metadata.free_hour_applied).toBe('true')
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ checkoutUrl: expect.stringContaining('https://') })
+    )
+  })
+
+  it('AC-007-02: First-timer two-hour booking creates a zero-euro reservation', async () => {
+    // Charging happens post-meeting via /api/bookings/recorded-billing (pro-rata per
+    // minute), so the reservation captures nothing at booking time.
+    stripeMocks.mockList.mockResolvedValue({ data: [] })
+    const req: any = {
+      method: 'POST',
+      body: { email: 'first@example.com', date: '2027-03-01', startTime: '10:00', hours: 2 },
+      headers: { host: 'example.com' },
+    }
+    const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
+    await bookingsHandler(req, res)
+    const args = stripeMocks.mockCreate.mock.calls[0][0]
+    expect(args.line_items[0].price_data.unit_amount).toBe(0)
+    expect(args.metadata.reservation).toBe('1')
+    expect(args.metadata.quoted_hours).toBe('2')
+    expect(args.metadata.free_hour_applied).toBe('true')
+  })
+
+  it('AC-007-03: Returning client reservation is also zero-euro', async () => {
+    // Charging happens post-meeting via /api/bookings/recorded-billing (pro-rata per
+    // minute), so the reservation captures nothing at booking time.
+    stripeMocks.mockList.mockResolvedValue({
+      data: [{ id: 'cus_1', metadata: { rexi_free_hour_used: '1' } }],
+    })
+    const req: any = {
+      method: 'POST',
+      body: { email: 'returning@example.com', date: '2027-03-01', startTime: '10:00', hours: 2 },
+      headers: { host: 'example.com' },
+    }
+    const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
+    await bookingsHandler(req, res)
+    const args = stripeMocks.mockCreate.mock.calls[0][0]
+    expect(args.line_items[0].price_data.unit_amount).toBe(0)
+    expect(args.metadata.reservation).toBe('1')
+    expect(args.metadata.quoted_hours).toBe('2')
+    expect(args.metadata.free_hour_applied).toBe('false')
+  })
+
+  it('AC-007-04: Invalid email rejected without calling Stripe', async () => {
+    const req: any = {
+      method: 'POST',
+      body: { email: 'not-an-email', date: '2027-03-01', startTime: '10:00', hours: 1 },
+    }
+    const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
+    await bookingsHandler(req, res)
+    expect(res.status).toHaveBeenCalledWith(400)
+    expect(stripeMocks.mockCreate).not.toHaveBeenCalled()
+  })
+
+  it('AC-007-05: Invalid durations rejected without calling Stripe', async () => {
+    for (const h of [0, 5, 2.5]) {
+      vi.clearAllMocks()
+      stripeMocks.mockCreate.mockReset()
+      vi.spyOn(fs, 'readFileSync').mockReturnValue(yamlContent as any)
+      stripeMocks.mockList.mockResolvedValue({ data: [] })
+      const req: any = {
+        method: 'POST',
+        body: { email: 'a@b.com', date: '2027-03-01', startTime: '10:00', hours: h },
+      }
+      const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
+      await bookingsHandler(req, res)
+      expect(res.status).toHaveBeenCalledWith(400)
+      expect(stripeMocks.mockCreate).not.toHaveBeenCalled()
+    }
+  })
+
+  it('AC-007-06: Off-grid start time rejected', async () => {
+    const req: any = {
+      method: 'POST',
+      body: { email: 'a@b.com', date: '2027-03-01', startTime: '09:15', hours: 1 },
+    }
+    const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
+    await bookingsHandler(req, res)
+    expect(res.status).toHaveBeenCalledWith(400)
+    expect(stripeMocks.mockCreate).not.toHaveBeenCalled()
+  })
+
+  it('AC-007-07: Start outside availability rejected', async () => {
+    const req: any = {
+      method: 'POST',
+      body: { email: 'a@b.com', date: '2027-03-01', startTime: '18:00', hours: 1 },
+    }
+    const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
+    await bookingsHandler(req, res)
+    expect(res.status).toHaveBeenCalledWith(400)
+    expect(stripeMocks.mockCreate).not.toHaveBeenCalled()
+  })
+
+  it('AC-007-08: Conflicting existing booking rejected', async () => {
+    calendarMocks.mockHasConflict.mockResolvedValue(true)
+    const req: any = {
+      method: 'POST',
+      body: { email: 'a@b.com', date: '2027-03-01', startTime: '10:00', hours: 1 },
+      headers: { host: 'example.com' },
+    }
+    const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
+    await bookingsHandler(req, res)
+    expect(res.status).toHaveBeenCalledWith(409)
+    expect(stripeMocks.mockCreate).not.toHaveBeenCalled()
+  })
+})

@@ -7,18 +7,83 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# The reusable workflow (ci-react.yml) declares `packages: write` at its top
-# level. A caller must grant at least what the callee requests — the callee can
-# never escalate beyond the caller's grant, and this repo's default
-# GITHUB_TOKEN permissions are read-only. Without this block every run dies as a
-# startup_failure before any job is created.
+# Inline jobs — no `needs` between lint/test/build so every job reports independently.
+# Previous reusable workflow had `build: needs: [lint, unit-test]` which hid build/test
+# results when lint failed (SKIPPED). Fixed per clean-code standards: parallel feedback.
 permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  frontend-ci:
-    uses: RexiAI/my-engineering-standards/.github/workflows/ci-react.yml@main
-    with:
-      node-version-file: .nvmrc
-      deploy-on-main: false
+  unit-test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm test -- --passWithNoTests
+
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run format:check --if-present
+
+  build:
+    name: Build
+    # Runs in parallel with unit-test and lint — no needs between them.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  docker:
+    name: Docker Build & Push
+    needs: [build]
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Preflight — Dockerfile must exist at repo root
+        run: test -f Dockerfile || { echo "::error::no Dockerfile at repo root — see templates/Dockerfile.node"; exit 1; }
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,prefix=,suffix=,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

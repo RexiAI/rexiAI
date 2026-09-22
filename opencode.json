@@ -16,5 +16,15 @@
     ".standards/language-specific/java/",
     ".standards/language-specific/go/",
     ".standards/language-specific/javascript/"
-  ]
+  ],
+  "skills": {
+    "paths": [".agents/skills"]
+  },
+  "mcp": {
+    "stripe": {
+      "type": "remote",
+      "url": "https://mcp.stripe.com",
+      "enabled": true
+    }
+  }
 }
