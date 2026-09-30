@@ -1,11 +1,16 @@
-import { computeSlotsForDate, isPastDate } from '../../src/domain/availability.js'
+import {
+  computeSlotsForDate,
+  isPastDate,
+  type AvailabilityConfig,
+} from '../../src/domain/availability.js'
 import { priceCents } from '../../src/domain/pricing.js'
 import { isValidEmail } from '../../src/domain/validation.js'
+import type { ApiRequest, ApiResponse } from '../httpTypes.js'
 
 import { getWindowsForDate, isCovered } from './calendar.js'
 import { loadConfigOrError } from './config.js'
 
-function validateEmail(email: string, res: any): boolean {
+function validateEmail(email: string, res: ApiResponse): boolean {
   if (!isValidEmail(email)) {
     res.status(400).json({ error: { code: 'INVALID_EMAIL', message: 'Invalid email' } })
     return false
@@ -13,7 +18,7 @@ function validateEmail(email: string, res: any): boolean {
   return true
 }
 
-function validateDate(date: string, res: any): boolean {
+function validateDate(date: string, res: ApiResponse): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     res.status(400).json({ error: { code: 'INVALID_DATE', message: 'Invalid date' } })
     return false
@@ -34,7 +39,7 @@ function validateDate(date: string, res: any): boolean {
   return true
 }
 
-function validateTime(startTime: string, res: any): boolean {
+function validateTime(startTime: string, res: ApiResponse): boolean {
   if (typeof startTime !== 'string' || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(startTime)) {
     res.status(400).json({ error: { code: 'INVALID_TIME', message: 'Invalid startTime' } })
     return false
@@ -42,7 +47,7 @@ function validateTime(startTime: string, res: any): boolean {
   return true
 }
 
-function validateHours(raw: unknown, res: any): number | null {
+function validateHours(raw: unknown, res: ApiResponse): number | null {
   if (typeof raw !== 'number' || !Number.isInteger(raw)) {
     const priceCheck = priceCents(Number(raw), true)
     if (!priceCheck.ok) {
@@ -66,11 +71,11 @@ function validateHours(raw: unknown, res: any): number | null {
 }
 
 function validateSlotCoverage(
-  config: any,
+  config: AvailabilityConfig,
   date: string,
   startTime: string,
   hours: number,
-  res: any
+  res: ApiResponse
 ): boolean {
   const slots = computeSlotsForDate(config, date)
   if (!slots.includes(startTime)) {
@@ -92,27 +97,33 @@ function validateSlotCoverage(
   return true
 }
 
-function loadAndValidateSlot(date: string, startTime: string, hours: number, res: any): boolean {
+function loadAndValidateSlot(
+  date: string,
+  startTime: string,
+  hours: number,
+  res: ApiResponse
+): boolean {
   const config = loadConfigOrError(res)
   if (!config) return false
   return validateSlotCoverage(config, date, startTime, hours, res)
 }
 
-function extractBookingFields(body: any): {
+function extractBookingFields(body: unknown): {
   email: string
   date: string
   startTime: string
   hoursRaw: unknown
 } {
-  const email = typeof body.email === 'string' ? body.email.trim() : ''
-  const date = typeof body.date === 'string' ? body.date : ''
-  const startTime = typeof body.startTime === 'string' ? body.startTime : ''
-  return { email, date, startTime, hoursRaw: body.hours }
+  const b = (body ?? {}) as Record<string, unknown>
+  const email = typeof b.email === 'string' ? b.email.trim() : ''
+  const date = typeof b.date === 'string' ? b.date : ''
+  const startTime = typeof b.startTime === 'string' ? b.startTime : ''
+  return { email, date, startTime, hoursRaw: b.hours }
 }
 
 function validateInput(
-  body: any,
-  res: any
+  body: unknown,
+  res: ApiResponse
 ): { email: string; date: string; startTime: string; hours: number } | null {
   const { email, date, startTime, hoursRaw } = extractBookingFields(body)
   if (!validateEmail(email, res)) return null
@@ -123,7 +134,7 @@ function validateInput(
   return { email, date, startTime, hours }
 }
 
-export function prepareBookingInput(req: any, res: any) {
+export function prepareBookingInput(req: ApiRequest, res: ApiResponse) {
   const input = validateInput(req.body ?? {}, res)
   if (!input) return null
   if (!loadAndValidateSlot(input.date, input.startTime, input.hours, res)) return null

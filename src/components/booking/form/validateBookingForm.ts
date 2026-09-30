@@ -1,3 +1,5 @@
+import type { Dictionary } from '../../../i18n/dictionary'
+
 export function todayMadrid(): string {
   const fmt = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Madrid',
@@ -13,7 +15,7 @@ export function isValidHours(h: number): boolean {
 }
 
 export function validateBookingForm(
-  dict: any,
+  dict: Dictionary,
   v: { date: string; selectedSlot: string; email: string; hours: number }
 ): Record<string, string> {
   const e: Record<string, string> = {}

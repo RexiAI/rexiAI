@@ -1,3 +1,4 @@
+import { type AvailabilityConfig } from '../../src/domain/availability.js'
 import { getBusyIntervals } from '../../src/domain/calendar.js'
 import { getConfiguredTimezone, zonedToUtc } from '../../src/domain/time.js'
 
@@ -43,7 +44,7 @@ function getDowForDate(date: string): string {
   }
 }
 
-export function getWindowsForDate(config: any, date: string) {
+export function getWindowsForDate(config: AvailabilityConfig, date: string) {
   if (date in config.exceptions) return config.exceptions[date] as { start: string; end: string }[]
   const dow = getDowForDate(date)
   return (config.weekly[dow] ?? []) as { start: string; end: string }[]

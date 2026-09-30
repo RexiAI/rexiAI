@@ -3,8 +3,8 @@
 // implementation (currently the Microsoft Graph adapter in microsoftGraph.ts).
 // Adding a second provider = one new case in resolveAdapter().
 
-import { getCalendarProvider, type CalendarProvider } from './providers.js'
 import { microsoftGraph } from './microsoftGraph.js'
+import { getCalendarProvider, type CalendarProvider } from './providers.js'
 
 export interface CreateCalendarEventInput {
   provider?: CalendarProvider

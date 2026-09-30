@@ -11,6 +11,8 @@ import { getCalendarProvider } from '../src/domain/providers.js'
 import { getStripe } from '../src/domain/stripeClient.js'
 import { markProcessed, wasProcessed } from '../src/domain/webhookDedup.js'
 
+import type { ApiRequest, ApiResponse } from './httpTypes.js'
+
 function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
@@ -28,7 +30,7 @@ export function _resetEmailSent() {
   processedEventIds.clear()
 }
 
-function validateMethod(req: any, res: any): boolean {
+function validateMethod(req: ApiRequest, res: ApiResponse): boolean {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
     return false
@@ -36,7 +38,7 @@ function validateMethod(req: any, res: any): boolean {
   return true
 }
 
-function getSignature(req: any): string | undefined {
+function getSignature(req: ApiRequest): string | undefined {
   return req.headers?.['stripe-signature'] as string | undefined
 }
 
@@ -44,7 +46,11 @@ function getWebhookSecret(): string | undefined {
   return process.env['STRIPE_WEBHOOK_SECRET']
 }
 
-function validateSignature(sig: string | undefined, secret: string | undefined, res: any): boolean {
+function validateSignature(
+  sig: string | undefined,
+  secret: string | undefined,
+  res: ApiResponse
+): boolean {
   if (!secret || !sig) {
     res.status(400).json({ error: { code: 'INVALID_SIGNATURE', message: 'Missing signature' } })
     return false
@@ -52,7 +58,7 @@ function validateSignature(sig: string | undefined, secret: string | undefined, 
   return true
 }
 
-function buildPayload(req: any): string {
+function buildPayload(req: ApiRequest): string {
   const rawBody = req.bodyRaw ?? req.body ?? ''
   if (typeof rawBody === 'string') return rawBody
   return JSON.stringify(rawBody)
@@ -63,7 +69,7 @@ function constructStripeEvent(payload: string, sig: string, secret: string): Str
   return stripe.webhooks.constructEvent(payload, sig, secret)
 }
 
-function getVerifiedEvent(req: any, res: any): Stripe.Event | null {
+function getVerifiedEvent(req: ApiRequest, res: ApiResponse): Stripe.Event | null {
   if (!validateMethod(req, res)) return null
   const sig = getSignature(req)
   const secret = getWebhookSecret()
@@ -100,7 +106,12 @@ function getAmountTotal(session: Stripe.Checkout.Session): number {
   return 0
 }
 
-function hasRequiredFields(email: string, date: string, startTime: string, res: any): boolean {
+function hasRequiredFields(
+  email: string,
+  date: string,
+  startTime: string,
+  res: ApiResponse
+): boolean {
   if (!email) {
     res
       .status(400)
@@ -180,7 +191,7 @@ function resolveOrigBookingId(metadata: Record<string, string>, fallback: string
 
 function buildRecordedBillingData(
   raw: ReturnType<typeof getRawBookingFields>,
-  res: any
+  res: ApiResponse
 ): BookingData | null {
   const origBookingId = resolveOrigBookingId(raw.metadata, raw.bookingId)
   if (!raw.email) {
@@ -211,7 +222,7 @@ function buildRecordedBillingData(
 
 function buildStandardBookingData(
   raw: ReturnType<typeof getRawBookingFields>,
-  res: any
+  res: ApiResponse
 ): BookingData | null {
   if (!hasRequiredFields(raw.email, raw.date, raw.startTime, res)) return null
   return {
@@ -228,13 +239,16 @@ function buildStandardBookingData(
   }
 }
 
-function extractBookingData(session: Stripe.Checkout.Session, res: any): BookingData | null {
+function extractBookingData(
+  session: Stripe.Checkout.Session,
+  res: ApiResponse
+): BookingData | null {
   const raw = getRawBookingFields(session)
   if (raw.recordedBilling) return buildRecordedBillingData(raw, res)
   return buildStandardBookingData(raw, res)
 }
 
-async function checkAlreadyExists(bookingId: string, res: any): Promise<boolean | null> {
+async function checkAlreadyExists(bookingId: string, res: ApiResponse): Promise<boolean | null> {
   try {
     return await findEventByBookingId(bookingId)
   } catch (e) {
@@ -255,7 +269,7 @@ async function trySendEmail(
     kind?: 'reservation' | 'charge'
     slotConflictWith?: string | null
   },
-  res: any
+  res: ApiResponse
 ): Promise<boolean> {
   try {
     await sendOperatorEmail({
@@ -308,7 +322,7 @@ async function trySendClientEmail(data: {
 
 type MarkFreeOutcome = { ok: boolean; burned: boolean }
 
-async function tryMarkFree(email: string, res: any): Promise<MarkFreeOutcome> {
+async function tryMarkFree(email: string, res: ApiResponse): Promise<MarkFreeOutcome> {
   try {
     const result = await markFreeHourUsed(email)
     // `burned: false` means another request consumed the free hour first.
@@ -354,7 +368,7 @@ async function tryCreateEvent(
     joinUrl?: string | null
     timezone?: string
   },
-  res: any
+  res: ApiResponse
 ): Promise<boolean> {
   try {
     const timezone = resolveCalendarTimezone(data.timezone)
@@ -379,14 +393,14 @@ async function tryCreateEvent(
 
 async function handleExistingBooking(
   data: ReturnType<typeof extractBookingData> & {},
-  res: any
+  res: ApiResponse
 ): Promise<boolean> {
   const d = data!
   if (emailSentForBooking.has(d.bookingId)) {
     res.status(200).json({ received: true, deduped: true })
     return true
   }
-  if (await trySendEmail(d as any, res)) {
+  if (await trySendEmail(d, res)) {
     res.status(200).json({ received: true, dedupedEmailSent: true })
   }
   return true
@@ -394,7 +408,7 @@ async function handleExistingBooking(
 
 async function handleRecordedBilling(
   data: { bookingId: string; email: string; amountTotal: number; freeHourApplied: boolean },
-  res: any
+  res: ApiResponse
 ): Promise<boolean> {
   // markFreeHourUsed is itself a compare-and-set, so no separate availability
   // probe is needed: it burns only when nobody else already did.
@@ -419,7 +433,7 @@ async function handleRecordedBilling(
         // Recorded-billing sessions are the actual post-meeting charge, even
         // when the pro-rata total happens to land on zero.
         kind: 'charge' as const,
-      } as any,
+      },
       res
     ))
   )
@@ -472,17 +486,17 @@ function bookingBody(
 
 async function handleNewBooking(
   data: ReturnType<typeof extractBookingData> & {},
-  res: any
+  res: ApiResponse
 ): Promise<boolean> {
   const d = data!
   if (d.recordedBilling) {
-    return handleRecordedBilling(d as any, res)
+    return handleRecordedBilling(d, res)
   }
   const mark = await tryMarkFree(d.email, res)
   if (!mark.ok) return true
   const slotConflictWith = await detectSlotConflict(d)
-  if (!(await tryCreateEvent(d as any, res))) return true
-  if (!(await trySendEmail({ ...(d as any), slotConflictWith }, res))) return true
+  if (!(await tryCreateEvent(d, res))) return true
+  if (!(await trySendEmail({ ...d, slotConflictWith }, res))) return true
   await trySendClientEmail(d)
   res.status(200).json(bookingBody(d.freeHourApplied, mark.burned, slotConflictWith))
   return true
@@ -495,7 +509,7 @@ function getRecordedDedupKey(data: BookingData, session: Stripe.Checkout.Session
 async function handleRecordedSession(
   data: BookingData,
   session: Stripe.Checkout.Session,
-  res: any
+  res: ApiResponse
 ): Promise<void> {
   const dedupKey = getRecordedDedupKey(data, session)
   if (emailSentForBooking.has(dedupKey)) {
@@ -506,7 +520,7 @@ async function handleRecordedSession(
   emailSentForBooking.add(dedupKey)
 }
 
-async function handleStandardSession(data: BookingData, res: any): Promise<void> {
+async function handleStandardSession(data: BookingData, res: ApiResponse): Promise<void> {
   const alreadyExists = await checkAlreadyExists(data.bookingId, res)
   if (alreadyExists === null) return
   if (alreadyExists) {
@@ -519,7 +533,7 @@ async function handleStandardSession(data: BookingData, res: any): Promise<void>
 async function dispatchSession(
   data: BookingData,
   session: Stripe.Checkout.Session,
-  res: any
+  res: ApiResponse
 ): Promise<void> {
   if (data.recordedBilling) {
     await handleRecordedSession(data, session, res)
@@ -529,7 +543,7 @@ async function dispatchSession(
 }
 
 /** Records the status the handler answered with, and forwards it unchanged. */
-function statusRecorder(res: any): { res: any; code: () => number } {
+function statusRecorder(res: ApiResponse): { res: ApiResponse; code: () => number } {
   let code = 0
   const proxy = {
     status(c: number) {
@@ -545,7 +559,11 @@ function statusRecorder(res: any): { res: any; code: () => number } {
   return { res: proxy, code: () => code }
 }
 
-async function isDuplicateEvent(email: string, eventId: string, res: any): Promise<boolean | null> {
+async function isDuplicateEvent(
+  email: string,
+  eventId: string,
+  res: ApiResponse
+): Promise<boolean | null> {
   if (processedEventIds.has(eventId)) return true
   try {
     return await wasProcessed(email, eventId)
@@ -570,7 +588,7 @@ async function recordProcessed(email: string, eventId: string): Promise<void> {
 
 async function handleCheckoutSession(
   session: Stripe.Checkout.Session,
-  res: any,
+  res: ApiResponse,
   eventId: string
 ): Promise<void> {
   const data = extractBookingData(session, res)
@@ -586,7 +604,7 @@ async function handleCheckoutSession(
   if (tracked.code() === 200) await recordProcessed(data.email, eventId)
 }
 
-function isRelevantCheckoutEvent(event: Stripe.Event, res: any): boolean {
+function isRelevantCheckoutEvent(event: Stripe.Event, res: ApiResponse): boolean {
   if (event.type !== 'checkout.session.completed') {
     res.status(200).json({ received: true })
     return false
@@ -594,7 +612,7 @@ function isRelevantCheckoutEvent(event: Stripe.Event, res: any): boolean {
   return true
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: ApiRequest, res: ApiResponse) {
   const event = getVerifiedEvent(req, res)
   if (!event) return
   if (!isRelevantCheckoutEvent(event, res)) return

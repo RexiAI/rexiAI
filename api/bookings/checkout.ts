@@ -1,10 +1,11 @@
 import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
 import { priceCents, PRODUCT_TAX_CODE } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
+import type { ApiRequest, ApiResponse } from '../httpTypes.js'
 
 import { errMsg } from './config.js'
 
-async function getFreeAvailable(email: string, res: any): Promise<boolean | null> {
+async function getFreeAvailable(email: string, res: ApiResponse): Promise<boolean | null> {
   try {
     return await isFreeHourAvailable(email)
   } catch (e) {
@@ -13,7 +14,7 @@ async function getFreeAvailable(email: string, res: any): Promise<boolean | null
   }
 }
 
-function getBaseUrl(req: any): string {
+function getBaseUrl(req: ApiRequest): string {
   const host = req.headers?.host
   const h = host ? host : 'example.com'
   const protocol = req.headers?.['x-forwarded-proto']
@@ -27,8 +28,8 @@ type SessionOpts = {
   startTime: string
   hours: number
   freeAvailable: boolean
-  req: any
-  res: any
+  req: ApiRequest
+  res: ApiResponse
   joinUrl?: string | null
 }
 
@@ -77,7 +78,7 @@ function normalizeJoinUrl(joinUrl?: string | null): string | null {
 // priceCents is still the duration validator for the booking form: an invalid
 // duration must be rejected before any Stripe call. Its cents value is the legacy
 // fixed-hours quote, used for estimate/display only — never the captured amount.
-function isValidDuration(hours: number, freeAvailable: boolean, res: any): boolean {
+function isValidDuration(hours: number, freeAvailable: boolean, res: ApiResponse): boolean {
   const priceRes = priceCents(hours, freeAvailable)
   if (priceRes.ok) return true
   res.status(400).json({ error: { code: 'INVALID_DURATION', message: priceRes.error.message } })
@@ -89,8 +90,8 @@ export async function createCheckout(
   date: string,
   startTime: string,
   hours: number,
-  req: any,
-  res: any,
+  req: ApiRequest,
+  res: ApiResponse,
   joinUrl?: string | null
 ) {
   const freeAvailable = await getFreeAvailable(email, res)

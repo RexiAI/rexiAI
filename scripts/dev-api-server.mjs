@@ -90,6 +90,5 @@ const server = http.createServer(async (req, res) => {
 
 const PORT = Number(process.env.PORT || 3000)
 server.listen(PORT, () => {
-  // eslint-disable-next-line no-console
   console.log(`[dev-api] http://localhost:${PORT}  routes: ${Object.keys(routes).join(', ')}`)
 })

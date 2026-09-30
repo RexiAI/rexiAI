@@ -6,6 +6,8 @@ import {
 import { getBusyIntervals as getCalendarBusyIntervals } from '../src/domain/calendar.js'
 import { zonedToUtc } from '../src/domain/time.js'
 
+import type { ApiRequest, ApiResponse } from './httpTypes.js'
+
 async function getBusyIntervals(
   dateStr: string,
   timezone: string
@@ -42,7 +44,7 @@ function isValidDateFormat(date: string): boolean {
   return iso === date
 }
 
-function validateDateParam(req: any, res: any): string | null {
+function validateDateParam(req: ApiRequest, res: ApiResponse): string | null {
   const date = req.query?.date as string | undefined
   if (!date) {
     res.status(400).json({ error: { code: 'MISSING_DATE', message: 'Missing date parameter' } })
@@ -61,7 +63,7 @@ function validateDateParam(req: any, res: any): string | null {
   return date
 }
 
-function loadConfigOrError(res: any) {
+function loadConfigOrError(res: ApiResponse) {
   try {
     return loadAvailabilityConfig()
   } catch (e) {
@@ -72,7 +74,7 @@ function loadConfigOrError(res: any) {
   }
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (req.method !== 'GET') {
     return res
       .status(405)

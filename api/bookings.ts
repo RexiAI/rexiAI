@@ -1,11 +1,12 @@
-import { checkRateLimit, getClientIp } from '../src/domain/rateLimit.js'
 import { createMeetingLink, type MeetingResult } from '../src/domain/meeting.js'
+import { checkRateLimit, getClientIp } from '../src/domain/rateLimit.js'
 
 import { hasConflict } from './bookings/calendar.js'
 import { createCheckout } from './bookings/checkout.js'
 import { prepareBookingInput } from './bookings/validation.js'
+import type { ApiRequest, ApiResponse } from './httpTypes.js'
 
-function isPostMethod(req: any, res: any): boolean {
+function isPostMethod(req: ApiRequest, res: ApiResponse): boolean {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
     return false
@@ -15,7 +16,7 @@ function isPostMethod(req: any, res: any): boolean {
 
 // Runs before validation and before any Stripe or Graph call, so a spam burst
 // costs nothing downstream. Best-effort only — see src/domain/rateLimit.ts.
-function enforceRateLimit(req: any, res: any): boolean {
+function enforceRateLimit(req: ApiRequest, res: ApiResponse): boolean {
   const result = checkRateLimit(`bookings:${getClientIp(req)}`)
   if (result.allowed) return true
   res.setHeader?.('Retry-After', String(result.retryAfterSeconds))
@@ -41,7 +42,7 @@ async function resolveMeeting(input: {
 
 // A meeting failure must abort before the Stripe session is created, otherwise
 // the client holds a reservation for a meeting that has no room to join.
-function rejectOnMeetingError(meeting: MeetingResult, res: any): boolean {
+function rejectOnMeetingError(meeting: MeetingResult, res: ApiResponse): boolean {
   if (meeting.status !== 'error') return false
   res.status(502).json({
     error: {
@@ -54,7 +55,7 @@ function rejectOnMeetingError(meeting: MeetingResult, res: any): boolean {
 
 async function checkSlotConflict(
   input: { date: string; startTime: string; hours: number },
-  res: any
+  res: ApiResponse
 ): Promise<boolean> {
   if (await hasConflict(input.date, input.startTime, input.hours)) {
     res.status(409).json({ error: { code: 'SLOT_CONFLICT', message: 'Slot already booked' } })
@@ -73,7 +74,7 @@ function buildBookingResponse(checkout: { url: string | null }, meeting: Meeting
 }
 
 /** Method, rate limit, field validation and the first slot probe. */
-async function runPreflight(req: any, res: any) {
+async function runPreflight(req: ApiRequest, res: ApiResponse) {
   if (!isPostMethod(req, res)) return null
   if (!enforceRateLimit(req, res)) return null
   const input = prepareBookingInput(req, res)
@@ -82,7 +83,7 @@ async function runPreflight(req: any, res: any) {
   return input
 }
 
-function reserve(input: BookingInput, meeting: MeetingResult, req: any, res: any) {
+function reserve(input: BookingInput, meeting: MeetingResult, req: ApiRequest, res: ApiResponse) {
   return createCheckout(
     input.email,
     input.date,
@@ -102,7 +103,7 @@ function reserve(input: BookingInput, meeting: MeetingResult, req: any, res: any
  * requests can still interleave between that probe and sessions.create; the
  * webhook's overlap detection is the backstop that makes the case visible.
  */
-export default async function handler(req: any, res: any) {
+export default async function handler(req: ApiRequest, res: ApiResponse) {
   const input = await runPreflight(req, res)
   if (!input) return
   const meeting = await resolveMeeting(input)

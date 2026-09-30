@@ -1,3 +1,5 @@
+import type { Dictionary } from '../../i18n/dictionary'
+
 import { DateField } from './fields/DateField'
 import { DurationField } from './fields/DurationField'
 import { EmailField } from './fields/EmailField'
@@ -11,7 +13,7 @@ export function BookingLayout({
   loading,
   handleSubmit,
 }: {
-  dict: any
+  dict: Dictionary
   fields: BookingFields
   slots: string[]
   loading: boolean

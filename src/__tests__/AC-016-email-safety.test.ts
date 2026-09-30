@@ -1,3 +1,5 @@
+import fs from 'fs'
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 import {
@@ -7,8 +9,6 @@ import {
   type PaymentLinkEmailInput,
 } from '../domain/email'
 import { isValidEmail } from '../domain/validation'
-
-import fs from 'fs'
 
 const yamlContent = `
 timezone: Europe/Madrid

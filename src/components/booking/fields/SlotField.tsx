@@ -1,3 +1,4 @@
+import type { Dictionary } from '../../../i18n/dictionary'
 import { useI18n } from '../../../i18n/I18nContext'
 
 function SlotPill({
@@ -57,7 +58,7 @@ type SlotFieldProps = {
   conflictError: string
 }
 
-function getSlotBody(props: SlotFieldProps, dict: any): React.ReactNode {
+function getSlotBody(props: SlotFieldProps, dict: Dictionary): React.ReactNode {
   if (props.loading) return <p>{dict.booking.form.slotLoading}</p>
   if (props.slots.length === 0 && props.date) return <p>{dict.booking.form.slotEmpty}</p>
   if (props.slots.length > 0)

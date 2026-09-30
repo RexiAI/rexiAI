@@ -11,6 +11,7 @@ import {
 } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
 import { isValidEmail } from '../../src/domain/validation.js'
+import type { ApiRequest, ApiResponse } from '../httpTypes.js'
 
 function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
@@ -25,7 +26,7 @@ function equalsConstantTime(a: string, b: string): boolean {
   return timingSafeEqual(bufA, bufB)
 }
 
-function getBearerToken(req: any): string {
+function getBearerToken(req: ApiRequest): string {
   const header = req.headers?.['authorization']
   if (typeof header !== 'string') return ''
   if (!header.startsWith('Bearer ')) return ''
@@ -34,7 +35,7 @@ function getBearerToken(req: any): string {
 
 // Fail closed: this endpoint captures money, so an unconfigured token means the
 // endpoint is unavailable, never open. Runs before body parsing and before Stripe.
-function isAuthorized(req: any, res: any): boolean {
+function isAuthorized(req: ApiRequest, res: ApiResponse): boolean {
   const expected = process.env['RECORDED_BILLING_TOKEN']
   if (!expected) {
     res
@@ -49,7 +50,7 @@ function isAuthorized(req: any, res: any): boolean {
   return true
 }
 
-function getBaseUrl(req: any): string {
+function getBaseUrl(req: ApiRequest): string {
   const host = req.headers?.host
   const h = host ? host : 'example.com'
   const protocol = req.headers?.['x-forwarded-proto']
@@ -57,7 +58,7 @@ function getBaseUrl(req: any): string {
   return `${p}://${h}`
 }
 
-function isPostMethod(req: any, res: any): boolean {
+function isPostMethod(req: ApiRequest, res: ApiResponse): boolean {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
     return false
@@ -67,14 +68,14 @@ function isPostMethod(req: any, res: any): boolean {
 
 type ParsedRecordedBody = { bookingId: string; email: string; actualMinutes: unknown }
 
-function parseRecordedBillingBody(body: any): ParsedRecordedBody {
-  const b = body ?? {}
+function parseRecordedBillingBody(body: unknown): ParsedRecordedBody {
+  const b = (body ?? {}) as Record<string, unknown>
   const bookingId = typeof b.bookingId === 'string' ? b.bookingId.trim() : ''
   const email = typeof b.email === 'string' ? b.email.trim() : ''
   return { bookingId, email, actualMinutes: b.actualMinutes }
 }
 
-function validateRecordedBillingBody(parsed: ParsedRecordedBody, res: any): boolean {
+function validateRecordedBillingBody(parsed: ParsedRecordedBody, res: ApiResponse): boolean {
   if (!parsed.bookingId) {
     res
       .status(400)
@@ -93,7 +94,7 @@ function validateRecordedBillingBody(parsed: ParsedRecordedBody, res: any): bool
   return true
 }
 
-async function getFreeHourAvailability(email: string, res: any): Promise<boolean | null> {
+async function getFreeHourAvailability(email: string, res: ApiResponse): Promise<boolean | null> {
   try {
     return await isFreeHourAvailable(email)
   } catch (e) {
@@ -119,7 +120,7 @@ function maxBillableMinutes(reservation: Reservation): number {
 /** The reservation this charge is bounded by, or null when the response is already sent. */
 async function resolveReservation(
   parsed: ParsedRecordedBody,
-  res: any
+  res: ApiResponse
 ): Promise<Reservation | null> {
   const reservation = await findReservation(parsed.bookingId)
   if (!reservation) {
@@ -243,7 +244,7 @@ async function createRecordedCheckout(
   billableMinutes: number,
   freeAvailable: boolean,
   baseUrl: string,
-  res: any
+  res: ApiResponse
 ): Promise<{ url: string; id: string } | null> {
   try {
     const stripe = getStripe()
@@ -265,7 +266,7 @@ async function createRecordedCheckout(
 function sendFreeCheckoutResponse(
   freeAvailable: boolean,
   mismatch: DurationMismatch | null,
-  res: any
+  res: ApiResponse
 ): void {
   res.status(200).json(
     withMismatch(
@@ -285,7 +286,7 @@ async function handlePaidCheckout(
   parsed: ParsedRecordedBody,
   amount: number,
   freeAvailable: boolean,
-  ctx: { req: any; res: any; mismatch: DurationMismatch | null }
+  ctx: { req: ApiRequest; res: ApiResponse; mismatch: DurationMismatch | null }
 ): Promise<void> {
   const billableMinutes = getBillableMinutes(parsed.actualMinutes as number, freeAvailable)
   const freeMinutes = getFreeMinutes(freeAvailable)
@@ -307,7 +308,7 @@ async function handlePaidCheckout(
     await sendPaymentLinkEmail({
       clientEmail: parsed.email,
       amountCents: amount,
-      checkoutUrl: (session as any).url,
+      checkoutUrl: session.url,
       billableMinutes,
     })
   } catch (e) {
@@ -320,8 +321,8 @@ async function handlePaidCheckout(
         amountCents: amount,
         billableMinutes,
         freeMinutes,
-        checkoutUrl: (session as any).url,
-        sessionId: (session as any).id,
+        checkoutUrl: session.url,
+        sessionId: session.id,
       },
       ctx.mismatch
     )
@@ -332,7 +333,7 @@ async function handleCheckoutResult(
   parsed: ParsedRecordedBody,
   amount: number,
   freeAvailable: boolean,
-  ctx: { req: any; res: any; mismatch: DurationMismatch | null }
+  ctx: { req: ApiRequest; res: ApiResponse; mismatch: DurationMismatch | null }
 ): Promise<void> {
   if (amount <= 0) {
     sendFreeCheckoutResponse(freeAvailable, ctx.mismatch, ctx.res)
@@ -341,7 +342,7 @@ async function handleCheckoutResult(
   await handlePaidCheckout(parsed, amount, freeAvailable, ctx)
 }
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: ApiRequest, res: ApiResponse) {
   if (!isPostMethod(req, res)) return
   if (!isAuthorized(req, res)) return
   const parsed = parseRecordedBillingBody(req.body)

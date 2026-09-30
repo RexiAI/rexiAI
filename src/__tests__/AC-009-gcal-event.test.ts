@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 
-import { DEDUP_PROPERTY_ID, createGraphEvent } from '../domain/microsoftGraph'
 import { getMicrosoftConfig } from '../domain/microsoftAuth'
+import { DEDUP_PROPERTY_ID, createGraphEvent } from '../domain/microsoftGraph'
 import { madridToUtc } from '../domain/time'
 
 function setMsEnv() {
