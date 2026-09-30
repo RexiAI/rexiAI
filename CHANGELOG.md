@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/RexiAI/rexiAI/compare/v1.0.1...v1.0.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* **deps:** bump brace-expansion to 1.1.21 (high/medium DoS advisories) ([#41](https://github.com/RexiAI/rexiAI/issues/41)) ([aa0fe04](https://github.com/RexiAI/rexiAI/commit/aa0fe04cdd0501848e3176d5917330a49a680dbd))
+
 ## [1.0.1](https://github.com/RexiAI/rexiAI/compare/v1.0.0...v1.0.1) (2026-09-22)
 
 
