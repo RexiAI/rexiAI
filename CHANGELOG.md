@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/RexiAI/rexiAI/compare/v1.0.0...v1.0.1) (2026-09-22)
+
+
+### Bug Fixes
+
+* **deps:** bump js-yaml to 4.3.2 (high severity, GHSA-2883-xcg3-v3hh) ([#35](https://github.com/RexiAI/rexiAI/issues/35)) ([66aa2b9](https://github.com/RexiAI/rexiAI/commit/66aa2b9c59566e598d5431ad1a93d65f4861088b))
+
 # 1.0.0 (2026-08-25)
 
 
