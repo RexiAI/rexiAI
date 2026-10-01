@@ -235,6 +235,10 @@ function buildRecordedSessionParams(
     metadata: buildRecordedMetadata(parsed, billableMinutes, freeAvailable),
     success_url: `${baseUrl}/booking/success`,
     cancel_url: `${baseUrl}/booking/cancel`,
+    // Stripe's SessionCreateParams is strict about the inline price_data
+    // literal; the object is assembled from typed helpers and passed straight
+    // to checkout.sessions.create().
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any
 }
 

@@ -1,3 +1,5 @@
+import fs from 'fs'
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const stripeMocks = vi.hoisted(() => ({
@@ -26,8 +28,6 @@ vi.mock('../../api/bookings/calendar', async (importOriginal) => {
 })
 
 import bookingsHandler from '../../api/bookings'
-
-import fs from 'fs'
 
 const yamlContent = `
 timezone: Europe/Madrid

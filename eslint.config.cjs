@@ -80,6 +80,23 @@ module.exports = [
     },
   },
   {
+    // Production code (api/ + src/, excluding tests) must be explicit-any-free —
+    // enforced as an error so it can't regress. The two intentional exceptions
+    // (the Stripe apiVersion pin and the inline Checkout session params) carry
+    // justified eslint-disable comments at the cast site.
+    files: ['api/**/*.ts', 'src/**/*.ts', 'src/**/*.tsx'],
+    ignores: ['src/__tests__/**'],
+    rules: { '@typescript-eslint/no-explicit-any': 'error' },
+  },
+  {
+    // Test mocks legitimately cast to any (vi.fn() stubs, mock req/res). Keeping
+    // the rule off here is deliberate: fully typed mocks add churn without
+    // catching real defects, and the production surface they exercise is already
+    // any-free + strict above.
+    files: ['src/__tests__/**/*.{ts,tsx}'],
+    rules: { '@typescript-eslint/no-explicit-any': 'off' },
+  },
+  {
     // Node CLI scripts (scripts/*.mjs) run outside the browser and the
     // serverless request context: they legitimately use Node + web globals and
     // log to console. Without this block they fall under js.configs.recommended

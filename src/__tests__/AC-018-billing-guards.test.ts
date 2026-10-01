@@ -1,3 +1,5 @@
+import fs from 'fs'
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const guardMocks = vi.hoisted(() => ({
@@ -60,8 +62,6 @@ vi.mock('../../api/bookings/calendar', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../api/bookings/calendar')>()
   return { ...actual, hasConflict: guardMocks.mockHasConflict }
 })
-
-import fs from 'fs'
 
 import bookingsHandler from '../../api/bookings'
 import recordedBillingHandler from '../../api/bookings/recorded-billing'
