@@ -1,3 +1,4 @@
+import { useSiteConfig } from '../../hooks/useSiteConfig'
 import { useI18n } from '../../i18n/I18nContext'
 import '../BookingWidget.css'
 
@@ -9,6 +10,7 @@ import { useResetOnDate } from './hooks/useResetOnDate'
 
 export function BookingWidget() {
   const { dict } = useI18n()
+  const { billingEnabled } = useSiteConfig()
   const fields = useBookingFields()
   const { slots, loading } = useAvailability(fields.date)
   useResetOnDate(fields)
@@ -16,6 +18,7 @@ export function BookingWidget() {
   return (
     <BookingLayout
       dict={dict}
+      billingEnabled={billingEnabled}
       fields={fields}
       slots={slots}
       loading={loading}

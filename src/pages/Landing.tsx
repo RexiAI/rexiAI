@@ -1,5 +1,7 @@
 import { BookingWidget } from '../components/BookingWidget'
+import { FreeModeBanner } from '../components/FreeModeBanner'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
+import { useSiteConfig } from '../hooks/useSiteConfig'
 import { useI18n } from '../i18n/I18nContext'
 
 import { ResultViews } from './ResultViews'
@@ -7,11 +9,13 @@ import { isCancelPath, isSuccessPath } from './routing'
 
 export function Landing() {
   const { dict } = useI18n()
+  const { billingEnabled } = useSiteConfig()
   const result = isSuccessPath() || isCancelPath()
   if (result) return <ResultViews />
 
   return (
     <div className="landing">
+      {!billingEnabled && <FreeModeBanner dict={dict} />}
       <nav className="nav">
         <div className="nav-links">
           <span className="nav-brand">RexiAI</span>

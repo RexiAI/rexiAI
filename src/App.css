@@ -304,3 +304,54 @@
   background: var(--color-zinc-900);
   color: var(--color-white);
 }
+
+/* Free-mode promo banner — shown only when charging is disabled
+   (BILLING_ENABLED=false → GET /api/config). Struck price + FREE badge +
+   "limited time" copy, with honest fine print that custom builds are quoted. */
+.free-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-zinc-900);
+  color: var(--color-white);
+}
+
+.free-banner__badge {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--color-green-600);
+  color: var(--color-white);
+  font-weight: 700;
+  font-size: var(--text-sm2);
+  letter-spacing: 0.05em;
+}
+
+.free-banner__text {
+  min-width: 0;
+}
+
+.free-banner__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.free-banner__was {
+  margin-right: var(--space-2);
+  color: var(--color-zinc-500);
+  font-weight: 400;
+}
+
+.free-banner__body {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-sm2);
+  color: var(--color-zinc-200);
+}
+
+.free-banner__fineprint {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-zinc-500);
+}

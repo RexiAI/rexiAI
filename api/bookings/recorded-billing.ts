@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'crypto'
 
+import { isBillingEnabled } from '../../src/domain/billing.js'
 import { findReservation, type Reservation } from '../../src/domain/bookingLookup.js'
 import { sendPaymentLinkEmail } from '../../src/domain/email.js'
 import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
@@ -346,9 +347,29 @@ async function handleCheckoutResult(
   await handlePaidCheckout(parsed, amount, freeAvailable, ctx)
 }
 
+// Early exits: wrong method, bad auth, or billing disabled. Returns false when
+// the response is already sent and the handler must stop. The billing
+// kill-switch (BILLING_ENABLED=false) answers 200 "free" here so a disabled
+// deployment never reaches Stripe — mirroring the flag the SPA reads from
+// GET /api/config to drive the free-mode promo.
+function preflight(req: ApiRequest, res: ApiResponse): boolean {
+  if (!isPostMethod(req, res)) return false
+  if (!isAuthorized(req, res)) return false
+  if (!isBillingEnabled()) {
+    res.status(200).json({
+      amountCents: 0,
+      billableMinutes: 0,
+      freeMinutes: 0,
+      checkoutUrl: null,
+      billingDisabled: true,
+    })
+    return false
+  }
+  return true
+}
+
 export default async function handler(req: ApiRequest, res: ApiResponse) {
-  if (!isPostMethod(req, res)) return
-  if (!isAuthorized(req, res)) return
+  if (!preflight(req, res)) return
   const parsed = parseRecordedBillingBody(req.body)
   if (!validateRecordedBillingBody(parsed, res)) return
   const reservation = await resolveReservation(parsed, res)

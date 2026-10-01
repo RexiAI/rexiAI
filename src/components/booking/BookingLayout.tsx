@@ -8,12 +8,14 @@ import type { BookingFields } from './hooks/useBookingFields'
 
 export function BookingLayout({
   dict,
+  billingEnabled,
   fields,
   slots,
   loading,
   handleSubmit,
 }: {
   dict: Dictionary
+  billingEnabled: boolean
   fields: BookingFields
   slots: string[]
   loading: boolean
@@ -21,8 +23,20 @@ export function BookingLayout({
 }) {
   return (
     <div className="booking-card">
-      <p className="booking-pricing">{dict.booking.pricingRules}</p>
-      <p className="booking-pricing-example">{dict.booking.pricingExample}</p>
+      {billingEnabled ? (
+        <>
+          <p className="booking-pricing">{dict.booking.pricingRules}</p>
+          <p className="booking-pricing-example">{dict.booking.pricingExample}</p>
+        </>
+      ) : (
+        <>
+          <p className="booking-pricing booking-pricing--free">
+            <s className="booking-pricing__was">{dict.booking.pricingExample}</s>
+            <span className="booking-pricing__free">{dict.freeMode.badge}</span>
+          </p>
+          <p className="booking-pricing-note">{dict.freeMode.pricingNote}</p>
+        </>
+      )}
       <form onSubmit={handleSubmit} noValidate>
         <DateField date={fields.date} setDate={fields.setDate} error={fields.errors['date']} />
         <SlotField
@@ -41,7 +55,11 @@ export function BookingLayout({
           error={fields.errors['email']}
         />
         <button type="submit" disabled={fields.submitting} className="booking-submit">
-          {fields.submitting ? dict.booking.form.submitting : dict.booking.form.submit}
+          {fields.submitting
+            ? dict.booking.form.submitting
+            : billingEnabled
+              ? dict.booking.form.submit
+              : dict.freeMode.submit}
         </button>
       </form>
     </div>

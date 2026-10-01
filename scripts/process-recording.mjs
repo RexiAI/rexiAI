@@ -255,6 +255,8 @@ async function processOne({ room, mp4, dryRun }) {
     console.log(
       '    → recorded-billing emails this link to the customer (needs a verified Resend domain); printed here as a record/fallback.'
     )
+  } else if (body?.billingDisabled) {
+    console.log('    → billing DISABLED (BILLING_ENABLED=false): session is free, nothing charged.')
   } else {
     console.log('    → €0 (free hour covered it); no payment link needed.')
   }

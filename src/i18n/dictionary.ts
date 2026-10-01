@@ -86,6 +86,17 @@ export const es = {
     cancelBody: 'Has cancelado el proceso de pago. Puedes volver a intentarlo cuando quieras.',
     cancelAction: 'Volver a reservas',
   },
+  freeMode: {
+    badge: 'GRATIS',
+    bannerTitle: 'Todas las charlas y análisis, GRATIS',
+    bannerBody:
+      'Por tiempo limitado: las sesiones de consultoría y análisis no cuestan nada. Reserva tu hora y hablemos.',
+    bannerFineprint:
+      'Construirte algo a medida (SaaS, web o app) no es gratis: eso se presupuesta aparte.',
+    priceWas: '30 EUR/h',
+    submit: 'Reservar (gratis)',
+    pricingNote: 'Sesión gratuita: no se cobra nada ahora.',
+  },
   footer: {
     rights: 'Todos los derechos reservados',
   },
@@ -175,6 +186,17 @@ export const en = {
     cancelTitle: 'Booking cancelled',
     cancelBody: 'You cancelled the payment process. You can try again whenever you like.',
     cancelAction: 'Back to booking',
+  },
+  freeMode: {
+    badge: 'FREE',
+    bannerTitle: 'All talks and analysis, FREE',
+    bannerBody:
+      "For a limited time: consulting and analysis sessions cost nothing. Book your hour and let's talk.",
+    bannerFineprint:
+      'Building something custom for you (SaaS, web or app) is not free: that is quoted separately.',
+    priceWas: '30 EUR/h',
+    submit: 'Book (free)',
+    pricingNote: 'Free session: nothing is charged now.',
   },
   footer: {
     rights: 'All rights reserved',
