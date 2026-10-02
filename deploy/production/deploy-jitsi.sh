@@ -3,8 +3,8 @@
 # stack on the VPS. Idempotent: safe to re-run; updates images and config in place.
 #
 #   bash deploy/production/deploy-jitsi.sh --domain meet.rexi-ai.com \
-#        --public-ip 203.0.113.10 --email you@rexi-ai.com
-#        [--app-base-url https://rexi-ai.com] [--no-timer]
+#        --public-ip 203.0.113.10 --email you@rexi-ai.com \
+#        [--app-base-url https://rexi-ai.com] [--recordings-dir /path] [--no-timer]
 #
 # Prereqs: setup-jitsi-host.sh has run (docker, node, ffmpeg, repos present).
 # The app's Stripe/Resend secrets for the PROCESSOR live in /etc/rexi-recording.env
@@ -15,6 +15,10 @@ set -euo pipefail
 DOMAIN=""; PUBLIC_IP=""; EMAIL=""; APP_BASE_URL="https://rexi-ai.com"
 APP_DIR="${APP_DIR:-/opt/rexiAI}"; JITSI_DIR="${JITSI_DIR:-/opt/docker-jitsi-meet}"
 PROC_ENV="/etc/rexi-recording.env"; INSTALL_TIMER=1
+# Independent recordings folder (the RECORDINGS_DIR knob): Jibri writes here and
+# the processor scans here. Defaults to a dedicated dir, NOT under CONFIG, so the
+# videos can live on their own volume/backup path.
+RECORDINGS_DIR="${RECORDINGS_DIR:-$HOME/rexi-recordings}"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -22,6 +26,7 @@ while [[ $# -gt 0 ]]; do
     --public-ip) PUBLIC_IP="$2"; shift 2 ;;
     --email) EMAIL="$2"; shift 2 ;;
     --app-base-url) APP_BASE_URL="$2"; shift 2 ;;
+    --recordings-dir) RECORDINGS_DIR="$2"; shift 2 ;;
     --no-timer) INSTALL_TIMER=0; shift ;;
     *) echo "Unknown flag: $1"; exit 1 ;;
   esac
@@ -36,6 +41,8 @@ fi
 
 # ── 1. Jitsi .env (render from the template; preserve an existing one) ────────
 cd "$JITSI_DIR"
+# Always include the recordings override so RECORDINGS_DIR is honoured by jibri.
+COMPOSE="docker compose -f docker-compose.yml -f jibri.yml -f $APP_DIR/deploy/production/docker-compose.recordings.yml"
 if [ ! -f .env ]; then
   echo "[env] rendering .env from template (domain=$DOMAIN ip=$PUBLIC_IP)"
   sed -e "s#__DOMAIN__#$DOMAIN#g" -e "s#__PUBLIC_IP__#$PUBLIC_IP#g" -e "s#__EMAIL__#${EMAIL:-admin@$DOMAIN}#g" \
@@ -48,17 +55,23 @@ if [ ! -f .env ]; then
 else
   echo "[env] .env exists — leaving it. To change domain/IP re-run with it removed or edit by hand."
 fi
-# Ensure the recording dir is writable by jibri (uid 1000).
+# Point the jitsi .env at the independent recordings dir (the override mounts it
+# over jibri's /storage/recordings) and make it writable by jibri (uid 1000).
+grep -qE '^RECORDINGS_DIR=' .env && sed -i "s#^RECORDINGS_DIR=.*#RECORDINGS_DIR=$RECORDINGS_DIR#" .env \
+  || printf '\nRECORDINGS_DIR=%s\n' "$RECORDINGS_DIR" >> .env
+mkdir -p "$RECORDINGS_DIR"
+chown -R 1000:1000 "$RECORDINGS_DIR" 2>/dev/null || true
 chown -R 1000:1000 ~/.jitsi-meet-cfg/storage 2>/dev/null || true
 
 # ── 2. Pull latest images + start stack + Jibri ──────────────────────────────
 echo "[pull] updating jitsi images…"
-docker compose -f docker-compose.yml -f jibri.yml pull || true
-echo "[up] starting web/prosody/jicofo/jvb/jibri…"
-docker compose -f docker-compose.yml -f jibri.yml up -d
+$COMPOSE pull || true
+echo "[up] starting web/prosody/jicofo/jvb/jibri (recordings → $RECORDINGS_DIR)…"
+$COMPOSE up -d
 
 # ── 3. Recording processor (host systemd timer) ──────────────────────────────
-RECORDINGS_DIR="$HOME/.jitsi-meet-cfg/storage/jibri/recordings"
+# RECORDINGS_DIR (the processor's scan dir) is the same independent folder set
+# above — the --recordings-dir flag / default, not a CONFIG-derived path.
 if [ "$INSTALL_TIMER" = 1 ]; then
   if [ ! -f "$PROC_ENV" ]; then
     echo "[processor] creating $PROC_ENV from example — EDIT IT (Stripe live key, billing token), then re-run."
@@ -82,8 +95,8 @@ echo "[verify] web…"
 code=$(curl -sk -o /dev/null -w '%{http_code}' "https://$DOMAIN" || echo 000)
 echo "  https://$DOMAIN → $code   (000/3xx right after DNS/cert; expect 200 once LE issues)"
 echo "[verify] jibri in brewery…"
-docker compose -f docker-compose.yml -f jibri.yml logs jibri --tail 200 2>&1 | grep -q "Joined MUC: jibribrewery" \
-  && echo "  Jibri joined jibribrewery ✓" || echo "  (jibri not yet joined — check: docker compose -f jibri.yml logs jibri)"
+$COMPOSE logs jibri --tail 200 2>&1 | grep -q "Joined MUC: jibribrewery" \
+  && echo "  Jibri joined jibribrewery ✓" || echo "  (jibri not yet joined — check: $COMPOSE logs jibri)"
 [ "$INSTALL_TIMER" = 1 ] && { echo "[verify] processor timer:"; systemctl list-timers rexi-recording.timer --no-pager | head -3; }
 
 cat <<EOF

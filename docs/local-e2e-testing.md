@@ -27,15 +27,24 @@ measures it and produces the pro-rata **payment link** (the actual charge).
 ## 1. Prerequisites (one-time)
 
 1. **Docker Desktop** running, WSL integration enabled for `Ubuntu-24.04`.
-2. Repo `.env` (`~/projects/rexiAI/.env`) containing at least:
+2. Repo `.env` (`~/projects/rexiAI/.env`) — the processor reads this.
+   **Topology: the webpage/api lives on Vercel (`https://rexi-ai.vercel.app`);
+   THIS machine runs Jitsi, stores the recordings, and runs the processor.**
    ```dotenv
-   STRIPE_SECRET_KEY=sk_test_...            # test mode
-   RECORDED_BILLING_TOKEN=<openssl rand -hex 32>
-   MEETING_BASE_URL=https://host.docker.internal:8443
-   APP_BASE_URL=http://localhost:3000
+   STRIPE_SECRET_KEY=sk_test_...                 # MUST match the Vercel app's key (same account + mode)
+   RECORDED_BILLING_TOKEN=<openssl rand -hex 32> # MUST match Vercel's (the processor authenticates to it)
+   MEETING_BASE_URL=https://host.docker.internal:8443  # this machine's Jitsi (local; a public URL for real clients)
+   APP_BASE_URL=https://rexi-ai.vercel.app       # the processor bills via the Vercel api
+   RECORDINGS_DIR=/home/dbueno/rexi-recordings   # where Jibri writes AND the processor scans (must match the Jitsi .env)
    # optional (calendar event + busy-check); booking still works without it:
    MICROSOFT_CLIENT_ID=... ; MICROSOFT_CLIENT_SECRET=... ; MICROSOFT_REFRESH_TOKEN=...
    ```
+   > **Fully-local mode** (bill against the local dev-api-server instead of Vercel):
+   > set `APP_BASE_URL=http://localhost:3000` and run Terminal B.
+   > **Careful:** `STRIPE_SECRET_KEY` + `RECORDED_BILLING_TOKEN` here must equal the
+   > Vercel app's env, or the processor can't resolve reservations / gets 401. And
+   > billing is currently **disabled on Vercel** (`BILLING_ENABLED=false` → free
+   > mode); set it `true` in Vercel to actually charge.
 3. The Jitsi stack configured at `~/docker-jitsi-meet/.env`
    (`PUBLIC_URL=https://host.docker.internal:8443`,
    `JVB_ADVERTISE_IPS=127.0.0.1,<your-LAN-IP>`, `ENABLE_RECORDING=1`,
@@ -59,10 +68,17 @@ export PATH="/mnt/c/Program Files/Docker/Docker/resources/bin:$HOME/.nvm/version
 
 ```bash
 cd ~/docker-jitsi-meet
-docker compose -f docker-compose.yml -f jibri.yml up -d
+# The recordings override mounts RECORDINGS_DIR (from .env) as Jibri's output, so
+# recordings land in the dedicated folder the processor scans — not buried in CONFIG.
+docker compose -f docker-compose.yml -f jibri.yml \
+  -f ~/projects/rexiAI/deploy/production/docker-compose.recordings.yml up -d
 # wait ~20s, then verify all 5 are Up:
 docker compose -f docker-compose.yml -f jibri.yml ps
 ```
+
+> **Recordings folder** = `RECORDINGS_DIR` in `~/docker-jitsi-meet/.env`
+> (currently `/home/dbueno/rexi-recordings`). The processor's `RECORDINGS_DIR`
+> (repo `.env`) must match it. Change both to relocate the videos anywhere.
 
 **Terminal B — the API (serverless handlers, locally):**
 
