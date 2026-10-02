@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/RexiAI/rexiAI/compare/v1.0.2...v1.1.0) (2026-10-02)
+
+
+### Features
+
+* **001-landing-booking:** landing with i18n, availability, pricing, booking and deployment wiring ([#16](https://github.com/RexiAI/rexiAI/issues/16)) ([872e7ec](https://github.com/RexiAI/rexiAI/commit/872e7ecf0cf15e771505fb5e60629d082d0627ab))
+
 ## [1.0.2](https://github.com/RexiAI/rexiAI/compare/v1.0.1...v1.0.2) (2026-09-30)
 
 
