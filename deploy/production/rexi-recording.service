@@ -1,0 +1,16 @@
+# One-shot: process any finished Jibri recordings → bill each (idempotent).
+# Triggered by rexi-recording.timer. The processor is dependency-free node + the
+# system ffprobe, so no build/venv step. It reads /etc/rexi-recording.env.
+[Unit]
+Description=RexiAI recording→billing processor
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/rexiAI
+EnvironmentFile=/etc/rexi-recording.env
+ExecStart=/opt/rexiAI/scripts/recording-cron.sh
+# Never let one bad recording block the next; log and move on.
+TimeoutStartSec=300
+Nice=10
