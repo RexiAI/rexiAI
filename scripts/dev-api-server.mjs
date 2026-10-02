@@ -21,6 +21,7 @@ import availabilityHandler from '../api/availability.js'
 import bookingsHandler from '../api/bookings.js'
 import recordedBilling from '../api/bookings/recorded-billing.js'
 import configHandler from '../api/config.js'
+import webhookHandler from '../api/stripe-webhook.js'
 
 function loadEnv() {
   const envPath = path.resolve(process.cwd(), '.env')
@@ -41,17 +42,25 @@ const routes = {
   'GET /api/availability': availabilityHandler,
   'POST /api/bookings': bookingsHandler,
   'POST /api/bookings/recorded-billing': recordedBilling,
+  // Stripe webhook (forwarded by `stripe listen --forward-to localhost:3000/api/stripe-webhook`).
+  // Needs the RAW body for signature verification — see bodyRaw below.
+  'POST /api/stripe-webhook': webhookHandler,
 }
 
+// Returns both the raw body string (the Stripe webhook verifies its signature
+// over the exact bytes) and the JSON-parsed form (every other handler).
 async function readBody(req) {
   let raw = ''
   for await (const chunk of req) raw += chunk
-  if (!raw) return {}
-  try {
-    return JSON.parse(raw)
-  } catch {
-    return {}
+  let parsed = {}
+  if (raw) {
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      parsed = {}
+    }
   }
+  return { raw, parsed }
 }
 
 // Express/Vercel-shaped res shim: the handlers use res.status(n).json(o) and
@@ -81,12 +90,28 @@ const server = http.createServer(async (req, res) => {
   const urlPath = url.pathname
   const handler = routes[`${req.method} ${urlPath}`]
   if (!handler) {
+    // Non-/api paths (e.g. the post-payment /booking/success redirect) belong to
+    // the SPA on the Vite port — bounce the browser there so the success/cancel
+    // view renders instead of 404ing on the API server.
+    if (!urlPath.startsWith('/api')) {
+      const spa = `http://localhost:${process.env.SPA_PORT || 5173}${urlPath}${url.search}`
+      res.writeHead(302, { location: spa })
+      res.end()
+      return
+    }
     res.writeHead(404, { 'content-type': 'application/json' })
     res.end(JSON.stringify({ error: { code: 'NOT_FOUND', message: `${req.method} ${urlPath}` } }))
     return
   }
   const query = Object.fromEntries(url.searchParams)
-  const mockReq = { method: req.method, headers: req.headers, body: await readBody(req), query }
+  const { raw, parsed } = await readBody(req)
+  const mockReq = {
+    method: req.method,
+    headers: req.headers,
+    body: parsed,
+    bodyRaw: raw,
+    query,
+  }
   try {
     await handler(mockReq, makeRes(res))
   } catch (e) {
