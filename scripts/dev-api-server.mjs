@@ -9,13 +9,18 @@
 // (production runs the real Vercel serverless functions).
 //
 // Run: npx -y tsx scripts/dev-api-server.mjs   [PORT=3000]
+// Then `npm run dev` (Vite) proxies /api/* here — see vite.config.ts. Open the
+// Vite URL (http://localhost:5173) to browse the SPA against these handlers.
 // tsx resolves the .ts handlers (and their .js→.ts internal imports).
 
 import { existsSync, readFileSync } from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
 
+import availabilityHandler from '../api/availability.js'
+import bookingsHandler from '../api/bookings.js'
 import recordedBilling from '../api/bookings/recorded-billing.js'
+import configHandler from '../api/config.js'
 
 function loadEnv() {
   const envPath = path.resolve(process.cwd(), '.env')
@@ -29,8 +34,12 @@ function loadEnv() {
 }
 loadEnv()
 
-// "METHOD /path" → handler. Add more api/ routes here as needed.
+// "METHOD /path" → handler. These are the endpoints the SPA and the recording
+// processor call, so `vite dev` (proxied) and the processor both run against this.
 const routes = {
+  'GET /api/config': configHandler,
+  'GET /api/availability': availabilityHandler,
+  'POST /api/bookings': bookingsHandler,
   'POST /api/bookings/recorded-billing': recordedBilling,
 }
 
@@ -68,14 +77,16 @@ function makeRes(nodeRes) {
 }
 
 const server = http.createServer(async (req, res) => {
-  const urlPath = (req.url || '/').split('?')[0]
+  const url = new URL(req.url || '/', 'http://localhost')
+  const urlPath = url.pathname
   const handler = routes[`${req.method} ${urlPath}`]
   if (!handler) {
     res.writeHead(404, { 'content-type': 'application/json' })
     res.end(JSON.stringify({ error: { code: 'NOT_FOUND', message: `${req.method} ${urlPath}` } }))
     return
   }
-  const mockReq = { method: req.method, headers: req.headers, body: await readBody(req), query: {} }
+  const query = Object.fromEntries(url.searchParams)
+  const mockReq = { method: req.method, headers: req.headers, body: await readBody(req), query }
   try {
     await handler(mockReq, makeRes(res))
   } catch (e) {
