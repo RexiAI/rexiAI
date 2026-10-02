@@ -1,0 +1,22 @@
+# Independent recordings folder for Jibri.
+#
+# By default Jibri writes recordings under CONFIG (${CONFIG}/storage/jibri/
+# recordings). This overlay mounts RECORDINGS_DIR (an absolute host path) over
+# just the /storage/recordings subpath, so recordings can live ANYWHERE — an
+# external drive, a separate volume, a backup-synced folder — without moving the
+# rest of the Jitsi config. Logs stay under CONFIG.
+#
+# RECORDINGS_DIR must be the SAME path the recording processor scans (set it in
+# both the Jitsi .env and the processor env). It defaults to the in-CONFIG
+# location, so existing setups are unchanged if you don't set it.
+#
+# The host folder must be writable by uid 1000 (the container user):
+#   mkdir -p "$RECORDINGS_DIR" && sudo chown 1000:1000 "$RECORDINGS_DIR"
+#
+# Use:
+#   docker compose -f docker-compose.yml -f jibri.yml \
+#     -f <repo>/deploy/production/docker-compose.recordings.yml up -d
+services:
+  jibri:
+    volumes:
+      - ${RECORDINGS_DIR:-${CONFIG}/storage/jibri/recordings}:/storage/recordings:Z
