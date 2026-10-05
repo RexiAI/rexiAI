@@ -67,7 +67,7 @@ jobs:
       - name: Preflight — Dockerfile must exist at repo root
         run: test -f Dockerfile || { echo "::error::no Dockerfile at repo root — see templates/Dockerfile.node"; exit 1; }
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
