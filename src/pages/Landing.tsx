@@ -1,6 +1,7 @@
 import { BookingWidget } from '../components/BookingWidget'
 import { FreeModeBanner } from '../components/FreeModeBanner'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
+import { ServicesCarousel } from '../components/ServicesCarousel'
 import { useSiteConfig } from '../hooks/useSiteConfig'
 import { useI18n } from '../i18n/I18nContext'
 
@@ -45,25 +46,7 @@ export function Landing() {
         </div>
       </section>
 
-      <section id="services" className="services">
-        <h2 className="section-title">{dict.services.title}</h2>
-        <div className="services-grid">
-          {dict.services.items.map((s, idx) => (
-            <div key={s.id} className={`service-card${idx === 0 ? ' service-card--featured' : ''}`}>
-              <img
-                src={`https://picsum.photos/seed/rexiai-${s.id}/800/600`}
-                alt={s.title}
-                className="service-card__image"
-              />
-              <div className="service-card__body">
-                <h3 className="service-card__title">{s.title}</h3>
-                <p className="service-card__desc">{s.description}</p>
-                <p className="service-card__meta">{s.meta}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <ServicesCarousel />
 
       <section id="booking" className="booking">
         <div>
