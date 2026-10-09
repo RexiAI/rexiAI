@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/RexiAI/rexiAI/compare/v1.1.0...v1.2.0) (2026-10-09)
+
+
+### Features
+
+* **services:** responsive carousel with real SVG artwork; fix date helper and nav overflow ([#56](https://github.com/RexiAI/rexiAI/issues/56)) ([c91cef7](https://github.com/RexiAI/rexiAI/commit/c91cef78f7f0ab73e4759d56ffe28faf7abf51ac))
+
 # [1.1.0](https://github.com/RexiAI/rexiAI/compare/v1.0.2...v1.1.0) (2026-10-02)
 
 
