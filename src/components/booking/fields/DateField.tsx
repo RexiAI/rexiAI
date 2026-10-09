@@ -16,14 +16,16 @@ export function DateField({
       <label htmlFor="booking-date" className="booking-label">
         {dict.booking.form.dateLabel}
       </label>
-      <p className="field-helper">{dict.booking.form.dateLabel} helper</p>
+      <p id="help-date" className="field-helper">
+        {dict.booking.form.dateHelper}
+      </p>
       <input
         id="booking-date"
         type="date"
         value={date}
         min={todayMadrid()}
         onChange={(e) => setDate(e.target.value)}
-        aria-describedby={error ? 'err-date' : undefined}
+        aria-describedby={error ? 'err-date' : 'help-date'}
         className="booking-input"
       />
       {error ? (

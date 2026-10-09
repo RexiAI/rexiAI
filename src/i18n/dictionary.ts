@@ -18,6 +18,10 @@ export const es = {
   },
   services: {
     title: 'Servicios',
+    carouselPrev: 'Anterior',
+    carouselNext: 'Adelante',
+    carouselPosition: 'Ir a la posición',
+    carouselRole: 'carrusel',
     items: [
       {
         id: 'saas',
@@ -58,6 +62,7 @@ export const es = {
     pricingExample: '1h gratis · 2h 30 EUR · 3h 60 EUR · 4h 90 EUR',
     form: {
       dateLabel: 'Fecha',
+      dateHelper: 'Elige un día para ver los huecos disponibles (hora de Madrid)',
       slotLabel: 'Huecos disponibles',
       slotEmpty: 'Sin huecos ese día. Prueba otra fecha.',
       slotLoading: 'Cargando huecos...',
@@ -120,6 +125,10 @@ export const en = {
   },
   services: {
     title: 'Services',
+    carouselPrev: 'Previous',
+    carouselNext: 'Next',
+    carouselPosition: 'Go to position',
+    carouselRole: 'carousel',
     items: [
       {
         id: 'saas',
@@ -159,6 +168,7 @@ export const en = {
     pricingExample: '1h free · 2h 30 EUR · 3h 60 EUR · 4h 90 EUR',
     form: {
       dateLabel: 'Date',
+      dateHelper: 'Pick a day to see available slots (Madrid time)',
       slotLabel: 'Available slots',
       slotEmpty: 'No slots that day. Try another date.',
       slotLoading: 'Loading slots...',
