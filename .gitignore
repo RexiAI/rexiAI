@@ -44,3 +44,6 @@ coverage/
 
 # Stripe skills CLI vendor dir (tool-managed, third-party)
 .agents/
+
+# Playwright MCP session scratch (screenshots, console logs)
+.playwright-mcp/
