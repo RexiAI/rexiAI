@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/RexiAI/rexiAI/compare/v1.2.0...v1.3.0) (2026-10-10)
+
+
+### Features
+
+* **brand:** original RexiAI emblem and clickable home brand link ([#57](https://github.com/RexiAI/rexiAI/issues/57)) ([be38fff](https://github.com/RexiAI/rexiAI/commit/be38fff3b72962461a7ade96af97b889e07af7ec))
+
 # [1.2.0](https://github.com/RexiAI/rexiAI/compare/v1.1.0...v1.2.0) (2026-10-09)
 
 
