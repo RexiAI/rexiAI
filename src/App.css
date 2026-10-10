@@ -44,6 +44,13 @@
   text-decoration: none;
 }
 
+/* Circular clip trims the square corners around the emblem's ring. */
+.nav-brand__logo {
+  border-radius: var(--radius-full);
+  height: var(--space-6);
+  width: var(--space-6);
+}
+
 .nav-link {
   color: var(--color-zinc-600);
   font-size: var(--text-sm2);

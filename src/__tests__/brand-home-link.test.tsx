@@ -14,6 +14,7 @@ describe('nav brand home link', () => {
     render(<App />)
     const brand = screen.getByRole('link', { name: /RexiAI/ })
     expect(brand).toHaveAttribute('href', '/')
+    expect(brand.querySelector('img.nav-brand__logo')).toHaveAttribute('src', '/logo.png')
   })
 
   it('scrolls to the top on click instead of reloading the page', () => {

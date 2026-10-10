@@ -29,6 +29,7 @@ export function Landing() {
       <nav className="nav">
         <div className="nav-links">
           <a href="/" className="nav-brand" onClick={handleBrandClick}>
+            <img className="nav-brand__logo" src="/logo.png" alt="" />
             RexiAI
           </a>
           <a href="#services" className="nav-link">
