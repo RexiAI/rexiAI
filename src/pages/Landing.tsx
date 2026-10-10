@@ -1,3 +1,5 @@
+import type { MouseEvent } from 'react'
+
 import { BookingWidget } from '../components/BookingWidget'
 import { FreeModeBanner } from '../components/FreeModeBanner'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
@@ -14,12 +16,21 @@ export function Landing() {
   const result = isSuccessPath() || isCancelPath()
   if (result) return <ResultViews />
 
+  // The nav only renders on the home view, so a brand click never needs a real
+  // navigation — smooth-scroll back to the top instead of a full page reload.
+  function handleBrandClick(event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   return (
     <div className="landing">
       {!billingEnabled && <FreeModeBanner dict={dict} />}
       <nav className="nav">
         <div className="nav-links">
-          <span className="nav-brand">RexiAI</span>
+          <a href="/" className="nav-brand" onClick={handleBrandClick}>
+            RexiAI
+          </a>
           <a href="#services" className="nav-link">
             {dict.nav.services}
           </a>

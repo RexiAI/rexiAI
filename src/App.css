@@ -30,8 +30,18 @@
 }
 
 .nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-zinc-900);
   font-size: var(--text-lg);
   font-weight: 700;
+  text-decoration: none;
+}
+
+/* The global a:hover rule underlines every link; the brand must stay clean. */
+.nav-brand:hover {
+  text-decoration: none;
 }
 
 .nav-link {
