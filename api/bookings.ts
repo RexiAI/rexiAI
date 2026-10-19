@@ -1,8 +1,10 @@
+import { isBillingEnabled } from '../src/domain/billing.js'
 import { createMeetingLink, type MeetingResult } from '../src/domain/meeting.js'
 import { checkRateLimit, getClientIp } from '../src/domain/rateLimit.js'
 
 import { hasConflict } from './bookings/calendar.js'
 import { createCheckout } from './bookings/checkout.js'
+import { finishDirectBooking } from './bookings/direct.js'
 import { prepareBookingInput } from './bookings/validation.js'
 import type { ApiRequest, ApiResponse } from './httpTypes.js'
 
@@ -69,6 +71,13 @@ function toOptionalJoinUrl(meeting: MeetingResult): string | undefined {
   return undefined
 }
 
+// rejectOnMeetingError already 502'd any meeting failure upstream, so the join
+// URL is present whenever the direct branch runs; the empty fallback only
+// satisfies the type.
+function joinUrlOrEmpty(meeting: MeetingResult): string {
+  return toOptionalJoinUrl(meeting) ?? ''
+}
+
 function buildBookingResponse(checkout: { url: string | null }, meeting: MeetingResult) {
   return { checkoutUrl: checkout.url, joinUrl: toOptionalJoinUrl(meeting) }
 }
@@ -109,6 +118,11 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   const meeting = await resolveMeeting(input)
   if (rejectOnMeetingError(meeting, res)) return
   if (await checkSlotConflict(input, res)) return
+  // Billing kill-switch (BILLING_ENABLED=false): complete the booking directly —
+  // zero Stripe calls, side effects run synchronously (see api/bookings/direct.ts).
+  // rejectOnMeetingError above already 502'd any meeting failure, so the join URL
+  // exists here; the empty-string fallback only satisfies the type.
+  if (!isBillingEnabled()) return finishDirectBooking(input, joinUrlOrEmpty(meeting), res)
   const checkout = await reserve(input, meeting, req, res)
   if (!checkout) return
   return res.status(200).json(buildBookingResponse(checkout, meeting))

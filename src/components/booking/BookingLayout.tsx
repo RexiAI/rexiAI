@@ -1,5 +1,6 @@
 import type { Dictionary } from '../../i18n/dictionary'
 
+import { BookingConfirmation } from './BookingConfirmation'
 import { DateField } from './fields/DateField'
 import { DurationField } from './fields/DurationField'
 import { EmailField } from './fields/EmailField'
@@ -21,6 +22,16 @@ export function BookingLayout({
   loading: boolean
   handleSubmit: (e: React.FormEvent) => void
 }) {
+  // Confirmation is terminal for the session: it replaces the pricing block
+  // and the form inside the unchanged card chrome (15-design §Layout).
+  if (fields.confirmation) {
+    return (
+      <div className="booking-card">
+        <BookingConfirmation dict={dict} confirmation={fields.confirmation} />
+      </div>
+    )
+  }
+
   return (
     <div className="booking-card">
       {billingEnabled ? (

@@ -183,3 +183,85 @@
   color: var(--color-green-600);
   font-size: var(--text-xs);
 }
+
+/* Confirmation panel (direct booking, billing disabled): replaces the pricing
+   block and form inside the unchanged .booking-card chrome. Tokens only —
+   the CTA reuses the .booking-submit visual DNA. */
+.booking-confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.booking-confirmation__title {
+  color: var(--color-zinc-900);
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.booking-confirmation__details {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-1) var(--space-4);
+}
+
+.booking-confirmation__term {
+  color: var(--color-zinc-600);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.booking-confirmation__value {
+  color: var(--color-zinc-900);
+  font-size: var(--text-sm2);
+  font-weight: 500;
+}
+
+.booking-confirmation__cta {
+  width: 100%;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-full);
+  color: var(--color-white);
+  font-size: var(--text-sm2);
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  background: var(--color-zinc-900);
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.booking-confirmation__cta:hover {
+  color: var(--color-white);
+  text-decoration: none;
+  background: var(--color-zinc-600);
+}
+
+.booking-confirmation__cta:focus-visible {
+  outline: 2px solid var(--color-zinc-900);
+  outline-offset: 2px;
+}
+
+.booking-confirmation__note {
+  color: var(--color-zinc-600);
+  font-size: var(--text-sm);
+}
+
+/* One-shot entrance for the form → panel swap; gated for reduced motion
+   (15-design §Motion). Transform and opacity only. */
+@media (prefers-reduced-motion: no-preference) {
+  .booking-confirmation {
+    animation: booking-confirmation-enter 200ms ease-out;
+  }
+}
+
+@keyframes booking-confirmation-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

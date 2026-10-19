@@ -75,6 +75,13 @@ export const es = {
       required: 'Este campo es obligatorio',
       conflict: 'Ese hueco ya no está disponible. Elige otro.',
     },
+    confirmation: {
+      title: 'Reserva confirmada',
+      dateLabel: 'Fecha',
+      timeLabel: 'Hora',
+      joinLink: 'Unirse a la sesión',
+      note: 'Te hemos enviado la confirmación por email.',
+    },
   },
   contact: {
     title: '¿Hablamos?',
@@ -180,6 +187,13 @@ export const en = {
       submitting: 'Redirecting to Stripe...',
       required: 'This field is required',
       conflict: 'That slot is no longer available. Please choose another.',
+    },
+    confirmation: {
+      title: 'Booking confirmed',
+      dateLabel: 'Date',
+      timeLabel: 'Time',
+      joinLink: 'Join the session',
+      note: 'We have sent the confirmation to your email.',
     },
   },
   contact: {

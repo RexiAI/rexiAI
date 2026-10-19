@@ -13,11 +13,11 @@ lookups in `api/bookings/calendar.ts` + `api/availability.ts` are gone).
 
 ## Account split
 
-| Concern                                                 | Account                                      | Mechanism                                    |
-| ------------------------------------------------------- | -------------------------------------------- | -------------------------------------------- |
-| Calendar (booking events, dedup, overlap, availability) | `buenopachecodani@hotmail.es` (personal MSA) | Microsoft Graph delegated, `/me/events`      |
-| Meetings (client join link)                             | none — Jitsi room                            | `MEETING_BASE_URL` + random room per booking |
-| Email (operator + client notifications)                 | `info@rexi-ai.com` (Godaddy)                 | Resend (`EMAIL_PROVIDER=gmail`)              |
+| Concern                                                 | Account                                      | Mechanism                                                                         |
+| ------------------------------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------- |
+| Calendar (booking events, dedup, overlap, availability) | `buenopachecodani@hotmail.es` (personal MSA) | Microsoft Graph delegated, `/me/events`                                           |
+| Meetings (client join link)                             | none — Jitsi room                            | `MEETING_BASE_URL` + random room per booking                                      |
+| Email (operator + client notifications)                 | `info@rexi-ai.com` (Godaddy)                 | Resend (`EMAIL_PROVIDER` is removed config — hardcoded `gmail` in `providers.ts`) |
 
 ## 1. Azure app registration (personal accounts)
 
@@ -60,8 +60,8 @@ calls start failing with token errors, re-run the consent flow.
 ## 4. Environment variables
 
 ```bash
-CALENDAR_PROVIDER=microsoft
-EMAIL_PROVIDER=gmail            # Resend path — Godaddy mailbox, not Graph mail
+# EMAIL_PROVIDER and CALENDAR_PROVIDER are removed config: the providers are
+# hardcoded in src/domain/providers.ts and these vars are no longer read.
 MICROSOFT_CLIENT_ID=<client id>
 MICROSOFT_REFRESH_TOKEN=<from consent>
 MEETING_BASE_URL=https://meet.rexi-ai.com   # once Jitsi+Jibri is up
