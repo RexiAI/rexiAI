@@ -1408,5 +1408,5 @@ target="_blank" rel="noopener noreferrer">` rendered only when `joinUrl` is pres
   (`{ checkoutUrl: null, joinUrl, billingDisabled: true }`) is consumed, by Task 2.
 - Task 3 (`.env.example` plus `docs/microsoft-cutover.md` cleanup): config and docs only,
   no visual surface.
-PR: https://github.com/RexiAI/rexiAI/pull/68
-Commits: 6 at PR open (this record commit is the 7th)
+  PR: https://github.com/RexiAI/rexiAI/pull/68
+  Commits: 6 at PR open (this record commit is the 7th)
