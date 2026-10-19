@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/RexiAI/rexiAI/compare/v1.3.0...v1.4.0) (2026-10-19)
+
+
+### Features
+
+* **api:** book directly without Stripe when billing is disabled ([#68](https://github.com/RexiAI/rexiAI/issues/68)) ([494d7b0](https://github.com/RexiAI/rexiAI/commit/494d7b06a1306054319211cec7aea5efd36a4de6))
+
 # [1.3.0](https://github.com/RexiAI/rexiAI/compare/v1.2.0...v1.3.0) (2026-10-10)
 
 
