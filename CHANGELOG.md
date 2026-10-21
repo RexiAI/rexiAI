@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/RexiAI/rexiAI/compare/v1.5.1...v1.5.2) (2026-10-21)
+
+
+### Bug Fixes
+
+* **ci:** soft-skip docker job steps when no root Dockerfile exists ([#71](https://github.com/RexiAI/rexiAI/issues/71)) ([ea28d99](https://github.com/RexiAI/rexiAI/commit/ea28d994ccce486f4f551f5704802800e0cca5ed))
+
 ## [1.5.1](https://github.com/RexiAI/rexiAI/compare/v1.5.0...v1.5.1) (2026-10-21)
 
 
