@@ -185,8 +185,7 @@
 }
 
 /* Confirmation panel (direct booking, billing disabled): replaces the pricing
-   block and form inside the unchanged .booking-card chrome. Tokens only —
-   the CTA reuses the .booking-submit visual DNA. */
+   block and form inside the unchanged .booking-card chrome. Tokens only. */
 .booking-confirmation {
   display: flex;
   flex-direction: column;
@@ -215,31 +214,6 @@
   color: var(--color-zinc-900);
   font-size: var(--text-sm2);
   font-weight: 500;
-}
-
-.booking-confirmation__cta {
-  width: 100%;
-  padding: var(--space-3) var(--space-6);
-  border-radius: var(--radius-full);
-  color: var(--color-white);
-  font-size: var(--text-sm2);
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
-  background: var(--color-zinc-900);
-  cursor: pointer;
-  transition: background 150ms;
-}
-
-.booking-confirmation__cta:hover {
-  color: var(--color-white);
-  text-decoration: none;
-  background: var(--color-zinc-600);
-}
-
-.booking-confirmation__cta:focus-visible {
-  outline: 2px solid var(--color-zinc-900);
-  outline-offset: 2px;
 }
 
 .booking-confirmation__note {

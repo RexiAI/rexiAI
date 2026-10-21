@@ -74,10 +74,11 @@ describe.each([
     within(panel as HTMLElement).getByText(dict.booking.confirmation.timeLabel)
     within(panel as HTMLElement).getByText('2027-03-01')
     within(panel as HTMLElement).getByText('10:00')
-    const link = within(panel as HTMLElement).getByRole('link', {
-      name: dict.booking.confirmation.joinLink,
-    })
-    expect(link.getAttribute('href')).toBe(JOIN_URL)
+    // Owner-authorized inversion (spec 003 Ask D / Decision 5): the join CTA
+    // is gone — the customer joins only via the email link. Absence of the CTA
+    // is now asserted in place of the old getByRole('link') + href expectation.
+    expect(within(panel as HTMLElement).queryAllByRole('link')).toHaveLength(0)
+    expect((panel as HTMLElement).innerHTML).not.toContain(JOIN_URL)
     within(panel as HTMLElement).getByText(dict.booking.confirmation.note)
 
     // No route change, no /booking/success navigation.
