@@ -10,6 +10,10 @@ import type { ConfirmationState } from './hooks/useBookingFields'
  * string comes from dict.booking.confirmation — no hardcoded copy, no internal
  * state words. The h3 takes focus once so a keyboard user whose Enter submit
  * unmounted the form does not lose the tab order (15-design §Semantics/a11y).
+ *
+ * Spec 003 Ask D: the panel deliberately renders NO join link — the customer
+ * joins only via the email's link. ConfirmationState keeps joinUrl (the API
+ * contract, AC-002-16); only this rendering stopped consuming it.
  */
 export function BookingConfirmation({
   dict,
@@ -35,16 +39,6 @@ export function BookingConfirmation({
         <dt className="booking-confirmation__term">{dict.booking.confirmation.timeLabel}</dt>
         <dd className="booking-confirmation__value">{confirmation.startTime}</dd>
       </dl>
-      {confirmation.joinUrl ? (
-        <a
-          className="booking-confirmation__cta"
-          href={confirmation.joinUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {dict.booking.confirmation.joinLink}
-        </a>
-      ) : null}
       <p className="booking-confirmation__note">{dict.booking.confirmation.note}</p>
     </div>
   )

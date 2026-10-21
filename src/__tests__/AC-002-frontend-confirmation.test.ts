@@ -92,9 +92,12 @@ describe('AC-002 frontend confirmation state', () => {
   })
 
   it('AC-002-17: Both dictionaries define booking.confirmation title and joinLink', () => {
+    // Owner-authorized change (spec 003 Decision 6): 'joinLink' is removed
+    // from both dictionaries, so this list pins the remaining keys. The
+    // scenario ID is preserved verbatim for traceability.
     for (const dict of [es, en]) {
       const confirmation = dict.booking.confirmation
-      for (const key of ['title', 'joinLink', 'dateLabel', 'timeLabel', 'note'] as const) {
+      for (const key of ['title', 'dateLabel', 'timeLabel', 'note'] as const) {
         expect(typeof confirmation[key]).toBe('string')
         expect(confirmation[key].length).toBeGreaterThan(0)
       }

@@ -73,16 +73,24 @@ async function notifyOperator(
   joinUrl: string,
   slotConflictWith: string
 ): Promise<void> {
-  await sendOperatorEmail({
-    clientEmail: input.email,
-    date: input.date,
-    startTime: input.startTime,
-    hours: input.hours,
-    amountCents: 0,
-    joinUrl,
-    kind: 'reservation',
-    ...(slotConflictWith ? { slotConflictWith } : {}),
-  })
+  // Spec 003: this path only runs with billing disabled, so the operator mail
+  // renders the billing-disabled variant. The mode rides as a third argument
+  // with an explicit undefined fetchImpl (default global fetch) — the input
+  // object keeps AC-002-06's pinned shape.
+  await sendOperatorEmail(
+    {
+      clientEmail: input.email,
+      date: input.date,
+      startTime: input.startTime,
+      hours: input.hours,
+      amountCents: 0,
+      joinUrl,
+      kind: 'reservation',
+      ...(slotConflictWith ? { slotConflictWith } : {}),
+    },
+    undefined,
+    { billingDisabled: true }
+  )
 }
 
 /** Logs the full error server-side, answers the browser with a static body. */
@@ -100,13 +108,19 @@ function failStatic(
 
 async function trySendClientEmail(input: DirectBookingInput, joinUrl: string): Promise<void> {
   try {
-    await sendClientEmail({
-      clientEmail: input.email,
-      date: input.date,
-      startTime: input.startTime,
-      hours: input.hours,
-      joinUrl,
-    })
+    // First argument stays EXACTLY the AC-002-06 pinned shape; the billing
+    // mode travels in the third argument position (Decision 3).
+    await sendClientEmail(
+      {
+        clientEmail: input.email,
+        date: input.date,
+        startTime: input.startTime,
+        hours: input.hours,
+        joinUrl,
+      },
+      undefined,
+      { billingDisabled: true }
+    )
   } catch (e) {
     // Webhook parity: the booking stands; a client-mail failure is log-only.
     // eslint-disable-next-line no-console
