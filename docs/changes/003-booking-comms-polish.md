@@ -151,7 +151,7 @@ the exact wording inside those invariants.
 
 - **Stack**: React 19 + Vite SPA (`src/`), serverless-style API handlers
   (`api/*.ts`), Vitest. Test command: `npm test` (= `vitest run --exclude
-  '.standards/**'`). Lint: `npm run lint`. ESLint complexity ≤6 everywhere.
+'.standards/**'`). Lint: `npm run lint`. ESLint complexity ≤6 everywhere.
 - **Billing kill-switch**: `src/domain/billing.ts` `isBillingEnabled()` — only
   the exact string `'false'` (trimmed, any case) in `BILLING_ENABLED` disables;
   unset/anything else = ENABLED (fail-safe).
@@ -164,12 +164,12 @@ the exact wording inside those invariants.
   UNCHANGED by spec 003 (pinned by unmodified AC-002-05…15).
 - **joinUrl on the direct path is always a non-empty string at runtime**: a
   meeting error 502s before the direct branch (`api/bookings.ts:47-56,74-79,
-  118-125`), and `createMeetingLink` (`src/domain/meeting.ts`) currently cannot
+118-125`), and `createMeetingLink` (`src/domain/meeting.ts`) currently cannot
   fail. `OperatorEmailInput.joinUrl` / `ClientEmailInput.joinUrl` are still
   typed `string | null | undefined` — the builders must not crash on a falsy
   value (Task 2/3 pin the defensive behavior).
 - **Email module**: `src/domain/email.ts`. `sendOperatorEmail(input,
-  fetchImpl?)` and `sendClientEmail(input, fetchImpl?)` POST to Resend
+fetchImpl?)` and `sendClientEmail(input, fetchImpl?)` POST to Resend
   (`https://api.resend.com/emails`) with `{from,to,subject,text,html}`.
   `escapeHtml` (line 29) replaces `&` first, then `< > " '`. `renderText` keeps
   values raw; `renderHtml` escapes per field and joins with `<br/>` inside one
@@ -178,15 +178,15 @@ the exact wording inside those invariants.
   recorded billing — NOT touched by this spec.
 - **Current wording that must stay byte-identical for billing-ENABLED calls**
   (default input shapes): operator reservation line `'Reserva sin cargo — se
-  factura tras la reunión (pro-rata 0,50 EUR/min)'` (email.ts:46), operator
+factura tras la reunión (pro-rata 0,50 EUR/min)'` (email.ts:46), operator
   charge line `` `${(cents/100).toFixed(2)} EUR (${cents} cents)` `` with label
   `'Importe cobrado'` (email.ts:49-50), operator subject
   `` `Nueva reserva: ${clientEmail} - ${date} ${startTime}` `` (email.ts:99),
   client lines `'Tu reunión con RexiAI está confirmada.'` + `'Reserva sin
-  cargo: no se cobra nada al reservar.'` + `'Se factura después de la reunión a
-  0,50 EUR/min (30 EUR/hora), con los primeros 60 minutos gratis la primera
-  vez.'` (email.ts:144-156), client subject `` `Reserva confirmada: ${date}
-  ${startTime}` `` (email.ts:170).
+cargo: no se cobra nada al reservar.'` + `'Se factura después de la reunión a
+0,50 EUR/min (30 EUR/hora), con los primeros 60 minutos gratis la primera
+vez.'` (email.ts:144-156), client subject `` `Reserva confirmada: ${date}
+${startTime}` `` (email.ts:170).
 - **Time chain**: `src/domain/time.ts`. `getEnvTimezone()` =
   `AVAILABILITY_TIMEZONE` → `TIMEZONE` → `'Europe/Madrid'` (empty string counts
   as unset — truthiness, mirrors `resolveCalendarTimezone` in direct.ts:30-36
@@ -194,7 +194,7 @@ the exact wording inside those invariants.
   returns `{start, end}` Dates using `getEnvTimezone()` + `zonedToUtc`
   (DST-correct, iterative offset resolution). `getConfiguredTimezone()` (yaml
   loader folds `AVAILABILITY_TIMEZONE` first — `src/domain/availability.ts:
-  254-292,353`) drives the display label `` `Hora (${timezone})` `` in today's
+254-292,353`) drives the display label `` `Hora (${timezone})` `` in today's
   emails. **Calendar-link times must derive from the same env chain the
   calendar event uses (`resolveCalendarTimezone`/`getEnvTimezone` →
   `slotIntervalUtc`) — no second source of truth** (informal spec §Constraints).
@@ -206,7 +206,7 @@ the exact wording inside those invariants.
   ('Redirigiendo a Stripe...' es:74 / 'Redirecting to Stripe...' en:187) while
   `fields.submitting`, IGNORING `billingEnabled` — this is the Ask A bug.
   `useBookingSubmit.applyDirectConfirmation` sets `ConfirmationState {date,
-  startTime, joinUrl}`; `BookingConfirmation.tsx:38-47` renders the join CTA
+startTime, joinUrl}`; `BookingConfirmation.tsx:38-47` renders the join CTA
   (`dict.booking.confirmation.joinLink`, es:82/en:195) when `joinUrl` is
   truthy — this is the Ask D removal.
 - **Dictionary constraints**: `src/i18n/dictionary.ts` — `es` and `en` must
@@ -234,13 +234,13 @@ the exact wording inside those invariants.
   (legacy spec-001 task-3 IDs — do not touch, do not reuse its ID range), and
   inside `src/__tests__/AC-002-frontend-confirmation.test.ts` everything except
   the AC-002-17 key list. The unit test `'billingDisabled without a joinUrl
-  still confirms and never navigates'` (same file, lines 170-189) stays valid
+still confirms and never navigates'` (same file, lines 170-189) stays valid
   untouched — `ConfirmationState` keeps carrying `joinUrl`.
 - **Owner-authorized test modifications** (docs/TESTING.md §Tests That Encode a
   Defect; authorization = this spec; MUST be recorded in the PR body):
   1. `src/__tests__/AC-002-frontend-confirmation.render.test.tsx` — the
      join-link expectation (lines 77-80: `getByRole('link', {name:
-     dict.booking.confirmation.joinLink})` + href assertion) inverts to
+dict.booking.confirmation.joinLink})` + href assertion) inverts to
      asserting the join CTA is absent.
   2. `src/__tests__/AC-002-frontend-confirmation.test.ts` — AC-002-17's key
      list `['title','joinLink','dateLabel','timeLabel','note']` drops
@@ -534,57 +534,105 @@ Scenarios: `20-acceptance/AC-003-confirmation-panel.md` (AC-003-32 … AC-003-34
 Index (full Given/When/Then in `20-acceptance/`):
 
 ## AC-003-10 — TEMPLATE URL shape, UTC dates from the slot, duration, and full encoding
+
 ## AC-003-11 — Timezone env chain drives the conversion, same as the calendar event
+
 ## AC-003-12 — Summer-time slots convert with the DST offset, never a fixed one
+
 ## AC-003-13 — Hostile and special-character values are percent-encoded, separators stay structural
+
 ## AC-003-14 — Disabled-mode operator email carries zero billing language
+
 ## AC-003-15 — Disabled-mode operator email structure: facts first, join CTA, calendar CTA
+
 ## AC-003-16 — Operator email escaping: hostile clientEmail inert in html, raw in text
+
 ## AC-003-17 — Slot-conflict warning survives the restructure, named and billing-free
+
 ## AC-003-18 — Falsy join URL: operator email still sends, CTAs omitted
+
 ## AC-003-19 — Default operator call is byte-identical to today (enabled-path guarantee)
+
 ## AC-003-20 — Direct-path e2e: the operator email Resend receives is the disabled variant
+
 ## AC-003-21 — Disabled-mode client email carries zero billing language
+
 ## AC-003-22 — Disabled-mode client email structure: facts first, service framing, both CTAs
+
 ## AC-003-23 — Client email escaping at every sink
+
 ## AC-003-24 — Falsy join URL: client email still sends, CTAs omitted
+
 ## AC-003-25 — Default client call is byte-identical to today (enabled-path guarantee)
+
 ## AC-003-26 — Sandbox-sender guard still blocks disabled-mode client sends
+
 ## AC-003-27 — Direct-path e2e: the client email Resend receives is the disabled variant, to the client
+
 ## AC-003-28 — Billing disabled: in-flight label is the neutral dictionary copy (es)
+
 ## AC-003-29 — Billing enabled: in-flight label stays 'Redirigiendo a Stripe...'
+
 ## AC-003-30 — Billing disabled, en locale: in-flight label is the en neutral copy
+
 ## AC-003-31 — No extra network requests for the billing-aware copy
+
 ## AC-003-32 — Panel renders the facts and note, never the join link (es)
+
 ## AC-003-33 — Panel is dictionary-only and join-link-free in en
+
 ## AC-003-34 — joinLink dictionary key removed; remaining confirmation keys intact
 
 ## Acceptance scenarios
 
 ## AC-003-10 — TEMPLATE URL shape, UTC dates from the slot, duration, and full encoding
+
 ## AC-003-11 — Timezone env chain drives the conversion, same as the calendar event
+
 ## AC-003-12 — Summer-time slots convert with the DST offset, never a fixed one
+
 ## AC-003-13 — Hostile and special-character values are percent-encoded, separators stay structural
+
 ## AC-003-14 — Disabled-mode operator email carries zero billing language
+
 ## AC-003-15 — Disabled-mode operator email structure: facts first, join CTA, calendar CTA
+
 ## AC-003-16 — Operator email escaping: hostile clientEmail inert in html, raw in text
+
 ## AC-003-17 — Slot-conflict warning survives the restructure, named and billing-free
+
 ## AC-003-18 — Falsy join URL: operator email still sends, CTAs omitted
+
 ## AC-003-19 — Default operator call is byte-identical to today (enabled-path guarantee)
+
 ## AC-003-20 — Direct-path e2e: the operator email Resend receives is the disabled variant
+
 ## AC-003-21 — Disabled-mode client email carries zero billing language
+
 ## AC-003-22 — Disabled-mode client email structure: facts first, service framing, both CTAs
+
 ## AC-003-23 — Client email escaping at every sink
+
 ## AC-003-24 — Falsy join URL: client email still sends, CTAs omitted
+
 ## AC-003-25 — Default client call is byte-identical to today (enabled-path guarantee)
+
 ## AC-003-26 — Sandbox-sender guard still blocks disabled-mode client sends
+
 ## AC-003-27 — Direct-path e2e: the client email Resend receives is the disabled variant, to the client
+
 ## AC-003-28 — Billing disabled: in-flight label is the neutral dictionary copy (es)
+
 ## AC-003-29 — Billing enabled: in-flight label stays 'Redirigiendo a Stripe...'
+
 ## AC-003-30 — Billing disabled, en locale: in-flight label is the en neutral copy
+
 ## AC-003-31 — No extra network requests for the billing-aware copy
+
 ## AC-003-32 — Panel renders the facts and note, never the join link (es)
+
 ## AC-003-33 — Panel is dictionary-only and join-link-free in en
+
 ## AC-003-34 — joinLink dictionary key removed; remaining confirmation keys intact
 
 ## Verification
@@ -607,17 +655,17 @@ MODIFIED: `src/domain/email.ts` (incl. Refactorer's Resend-transport consolidati
 
 ## Verdict summary
 
-| # | Check | Result | Exit |
-|---|---|---|---|
-| 1 | Scenario traceability | PASS | 0 |
-| 2 | Full test suite (`npm test`) | PASS | 0 |
-| 3 | Complexity gate (eslint + tsc + vite build) | PASS | 0 / 0 / 0 |
-| 3.5 | Design-principles gate | PASS (scoped authoritative exit 0; unscoped exit 1 adjudicated OUT-OF-SCOPE, ruling below) | 0 scoped / 1 unscoped |
-| 4 | Scenario-to-behavior spot check (AC-003-14, AC-003-10; AC-003-19/25/20/27 additionally confirmed for audit (b)) | PASS | 0 |
-| 5 | No unaccounted behavior | PASS (finding line below) | — |
-| (a) | Authorized-change audit | PASS | — |
-| (b) | Byte-identity audit | PASS | — |
-| (c) | Phase-2 risk note | RECORDED for PR Opener | — |
+| #   | Check                                                                                                           | Result                                                                                     | Exit                  |
+| --- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------- |
+| 1   | Scenario traceability                                                                                           | PASS                                                                                       | 0                     |
+| 2   | Full test suite (`npm test`)                                                                                    | PASS                                                                                       | 0                     |
+| 3   | Complexity gate (eslint + tsc + vite build)                                                                     | PASS                                                                                       | 0 / 0 / 0             |
+| 3.5 | Design-principles gate                                                                                          | PASS (scoped authoritative exit 0; unscoped exit 1 adjudicated OUT-OF-SCOPE, ruling below) | 0 scoped / 1 unscoped |
+| 4   | Scenario-to-behavior spot check (AC-003-14, AC-003-10; AC-003-19/25/20/27 additionally confirmed for audit (b)) | PASS                                                                                       | 0                     |
+| 5   | No unaccounted behavior                                                                                         | PASS (finding line below)                                                                  | —                     |
+| (a) | Authorized-change audit                                                                                         | PASS                                                                                       | —                     |
+| (b) | Byte-identity audit                                                                                             | PASS                                                                                       | —                     |
+| (c) | Phase-2 risk note                                                                                               | RECORDED for PR Opener                                                                     | —                     |
 
 **OVERALL VERDICT: PASS** — Architect (stage 5a Mutation Runner) may proceed.
 
@@ -667,7 +715,33 @@ transcript, `bash .standards/scripts/check-scenario-traceability.sh --json`, run
 ```json
 {
   "checks": [1, 2],
-  "passes": ["AC-003-10 — traced to a test", "AC-003-11 — traced to a test", "AC-003-12 — traced to a test", "AC-003-13 — traced to a test", "AC-003-14 — traced to a test", "AC-003-15 — traced to a test", "AC-003-16 — traced to a test", "AC-003-17 — traced to a test", "AC-003-18 — traced to a test", "AC-003-19 — traced to a test", "AC-003-20 — traced to a test", "AC-003-21 — traced to a test", "AC-003-22 — traced to a test", "AC-003-23 — traced to a test", "AC-003-24 — traced to a test", "AC-003-25 — traced to a test", "AC-003-26 — traced to a test", "AC-003-27 — traced to a test", "AC-003-28 — traced to a test", "AC-003-29 — traced to a test", "AC-003-30 — traced to a test", "AC-003-31 — traced to a test", "AC-003-32 — traced to a test", "AC-003-33 — traced to a test", "AC-003-34 — traced to a test"],
+  "passes": [
+    "AC-003-10 — traced to a test",
+    "AC-003-11 — traced to a test",
+    "AC-003-12 — traced to a test",
+    "AC-003-13 — traced to a test",
+    "AC-003-14 — traced to a test",
+    "AC-003-15 — traced to a test",
+    "AC-003-16 — traced to a test",
+    "AC-003-17 — traced to a test",
+    "AC-003-18 — traced to a test",
+    "AC-003-19 — traced to a test",
+    "AC-003-20 — traced to a test",
+    "AC-003-21 — traced to a test",
+    "AC-003-22 — traced to a test",
+    "AC-003-23 — traced to a test",
+    "AC-003-24 — traced to a test",
+    "AC-003-25 — traced to a test",
+    "AC-003-26 — traced to a test",
+    "AC-003-27 — traced to a test",
+    "AC-003-28 — traced to a test",
+    "AC-003-29 — traced to a test",
+    "AC-003-30 — traced to a test",
+    "AC-003-31 — traced to a test",
+    "AC-003-32 — traced to a test",
+    "AC-003-33 — traced to a test",
+    "AC-003-34 — traced to a test"
+  ],
   "fails": []
 }
 ```
@@ -862,7 +936,7 @@ adjudicated OUT-OF-SCOPE per the ruling above).
 
 ## Evidence: scenario-to-behavior spot check
 
-command: npx vitest run src/__tests__/AC-003-calendar-link.test.ts src/__tests__/AC-003-operator-email.test.ts src/__tests__/AC-003-client-email.test.ts
+command: npx vitest run src/**tests**/AC-003-calendar-link.test.ts src/**tests**/AC-003-operator-email.test.ts src/**tests**/AC-003-client-email.test.ts
 exit: 0
 at: 2026-10-21T18:41:13Z
 
@@ -1029,13 +1103,13 @@ recorded for the PR Opener. Stage 5a (Mutation Runner) may proceed.
 
 ## Summary rows (carried + this stage's re-check)
 
-| Row | Value | Source |
-|---|---|---|
-| Verifier verdict (carried forward) | **PASS** — attempt 1, phase 1; all 5 checks + audits (a)(b) PASS; 0 BLOCKs | `25-verification.md` verdict table + overall verdict |
-| Mutation score | **skipped — `mvp` tier** (see one-line note and evidence below) | this stage, per `docs/SPEC_PIPELINE.md` §Conformance tiers |
+| Row                                                             | Value                                                                                                                                                                                                                                                                                                                                                               | Source                                                              |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Verifier verdict (carried forward)                              | **PASS** — attempt 1, phase 1; all 5 checks + audits (a)(b) PASS; 0 BLOCKs                                                                                                                                                                                                                                                                                          | `25-verification.md` verdict table + overall verdict                |
+| Mutation score                                                  | **skipped — `mvp` tier** (see one-line note and evidence below)                                                                                                                                                                                                                                                                                                     | this stage, per `docs/SPEC_PIPELINE.md` §Conformance tiers          |
 | Complexity summary (carried from Refactorer, re-confirmed live) | scoped (`-BaseRef main`, authoritative): **0 FAIL / 0 WARN**, exit 0; unscoped full-tree: **1 FAIL** — vendored `.standards/skills/hallmark/site/examples/cobalt-01/script.js` CC=10 — ruled **OUT-OF-SCOPE** per the Verifier's ruling + Stop-and-Ask matrix, + **22 pre-existing WARNs** (9 vendored `.standards/**`, 13 in files outside this spec's change set) | Verifier design-principles evidence; live re-run below at 18:54:26Z |
-| Equivalent mutants | **none** — no mutants were generated (gate skipped at `mvp` tier), so no survivor classification exists | this stage |
-| Final test status | **GREEN** — `npm test` exit 0, **30 test files passed (30) / 171 tests passed (171)**, re-run by this stage | evidence block below |
+| Equivalent mutants                                              | **none** — no mutants were generated (gate skipped at `mvp` tier), so no survivor classification exists                                                                                                                                                                                                                                                             | this stage                                                          |
+| Final test status                                               | **GREEN** — `npm test` exit 0, **30 test files passed (30) / 171 tests passed (171)**, re-run by this stage                                                                                                                                                                                                                                                         | evidence block below                                                |
 
 ## Mutation-testing gate: skipped
 
@@ -1047,7 +1121,7 @@ No Stryker run was attempted; consequently no surviving mutants, no mutation-kil
 
 ## Evidence: mutation score
 
-command: bash .standards/scripts/check-code-principles.sh -BaseRef main --json   # tier confirmation for the skip; the mutation gate itself was not executed (policy skip at mvp)
+command: bash .standards/scripts/check-code-principles.sh -BaseRef main --json # tier confirmation for the skip; the mutation gate itself was not executed (policy skip at mvp)
 exit: 0
 at: 2026-10-21T18:54:26Z
 
@@ -1242,8 +1316,8 @@ zinc scale in inline hex so the customer's email looks like the product page.
   - Secondary CTA label (must stay byte-exact, pinned by AC-003-15):
     `Añadir a Google Calendar`
   - Conflict block lead: `ATENCIÓN:` ; body: `Conflicto de franja. Ya existe una
-    reserva (id: {bookingId}) que solapa este horario. Revisa el calendario antes
-    de la reunión.` (replaces today's "Revisar y reembolsar manualmente" -
+reserva (id: {bookingId}) que solapa este horario. Revisa el calendario antes
+de la reunión.` (replaces today's "Revisar y reembolsar manualmente" -
     Decision 5: `reembols` banned; the warning survives with disabled-appropriate
     action language).
   - Footer: `RexiAI` wordmark repeat, `#71717a`, 13px, nothing else (no marketing).
@@ -1318,13 +1392,13 @@ zinc scale in inline hex so the customer's email looks like the product page.
     (extends the subject, does not repeat it - Enchant).
   - H1: `Tu reserva está confirmada`
   - Reassurance line (under H1, 16px `#52525b`): `Para entrar a la sesión, usa el
-    botón de abajo a la hora indicada.`
+botón de abajo a la hora indicada.`
   - Fact rows: `Fecha`, `Hora ({tz})`, `Duración` - same resolutions and the same
     grammar-aware duration rule as Task 2.
   - Primary CTA label: `Unirse a la reunión` (identical button spec as Task 2).
   - Secondary CTA label: `Añadir a Google Calendar` (byte-exact, pinned).
   - Help line (below the CTAs, hairline separated): `¿Dudas o necesitas cambiar la
-    hora? Responde a este correo.` (Sendlayer: a real reply route, no no-reply
+hora? Responde a este correo.` (Sendlayer: a real reply route, no no-reply
     dead-end; the owner's mailbox answers).
   - Footer: `RexiAI` wordmark, `#71717a` 13px.
 - Components: byte-identical button/link/table CSS specs to Task 2 (one design,
@@ -1364,8 +1438,8 @@ zinc scale in inline hex so the customer's email looks like the product page.
     - en: `Sending your reservation...`
     - existing `booking.form.submitting` stays byte-identical for the enabled path.
   - Selection: `fields.submitting ? (billingEnabled ? dict.booking.form.submitting
-    : dict.booking.form.submittingDirect) : (billingEnabled ? dict.booking.form.submit
-    : dict.freeMode.submit)` - the fail-safe default (`useSiteConfig` defaults
+: dict.booking.form.submittingDirect) : (billingEnabled ? dict.booking.form.submit
+: dict.freeMode.submit)` - the fail-safe default (`useSiteConfig` defaults
     `billingEnabled: true` when `/api/config` is unreachable) therefore keeps the
     Stripe wording automatically, satisfying AC-003-29's edge.
 - Typography: existing button scale; copy is 23/25 chars, no wrap risk on the
@@ -1398,7 +1472,7 @@ zinc scale in inline hex so the customer's email looks like the product page.
   - REFRESH `note` (the only copy that must change - the join path moved to
     email, and the note is the panel's job):
     - es: `Te hemos enviado la confirmación por email, con el enlace para unirte a
-      la sesión.`
+la sesión.`
     - en: `We emailed your confirmation, including the link to join your session.`
   - Component change: delete the `confirmation.joinUrl ? <a>...` block; the
     `.booking-confirmation__cta` CSS rules (hover + focus-visible included) become
@@ -1435,3 +1509,6 @@ to the disabled variants only), the direct-path API response shape, and the
 `freeMode` banner/submit copy established by spec 002 (its `GRATIS` badge lives in
 the SPA banner, not in any email, and is untouched by the banned-stem set which
 targets disabled-mode emails).
+
+PR: https://github.com/RexiAI/rexiAI/pull/69
+Commits: 7
