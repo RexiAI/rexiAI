@@ -60,19 +60,28 @@ jobs:
   docker:
     name: Docker Build & Push
     needs: [build]
-    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch && hashFiles('Dockerfile') != ''
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Preflight — Dockerfile must exist at repo root
-        run: test -f Dockerfile || { echo "::error::no Dockerfile at repo root — see templates/Dockerfile.node"; exit 1; }
+      - name: Preflight — check for root Dockerfile
+        id: preflight
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::no Dockerfile at repo root — skipping image build (see templates/Dockerfile.node)"
+          fi
       - name: Log in to GHCR
+        if: steps.preflight.outputs.exists == 'true'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Extract metadata
+        if: steps.preflight.outputs.exists == 'true'
         id: meta
         uses: docker/metadata-action@v6
         with:
@@ -81,6 +90,7 @@ jobs:
             type=sha,prefix=,suffix=,format=short
             type=raw,value=latest,enable={{is_default_branch}}
       - name: Build & Push
+        if: steps.preflight.outputs.exists == 'true'
         uses: docker/build-push-action@v7
         with:
           context: .
