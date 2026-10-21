@@ -1,7 +1,24 @@
 // Email is Resend-only: the mailbox is Godaddy-hosted (info@rexi-ai.com), and
 // Graph mail (Mail.Send) is not used. The provider-agnostic calendar layer is
 // separate — see calendar.ts.
+import { buildDirectClientBody, buildDirectOperatorBody } from './emailDirect.js'
+import { renderHtml, renderText, type BodyLine } from './emailHtml.js'
 import { getConfiguredTimezone } from './time.js'
+
+// escapeHtml lives in emailHtml.ts (shared with the billing-disabled builders);
+// re-exported here so the email module's documented surface is unchanged.
+export { escapeHtml } from './emailHtml.js'
+
+/**
+ * Billing-mode signal (spec 003 Decision 3). Only the direct path sets it:
+ * `{ billingDisabled: true }` selects the billing-disabled email variants, and
+ * every other shape (omitted, {}, false) keeps the byte-identical
+ * billing-enabled output. AC-002-06 pins the client call's FIRST argument, so
+ * the mode rides as an additional argument position, never inside the input.
+ */
+export interface EmailBillingMode {
+  billingDisabled?: boolean
+}
 
 export interface OperatorEmailInput {
   clientEmail: string
@@ -19,25 +36,6 @@ export interface OperatorEmailInput {
    * the operator's mailbox, because nothing else surfaces it.
    */
   slotConflictWith?: string | null
-}
-
-/**
- * clientEmail is attacker-controlled and reaches the operator's mailbox as HTML.
- * & must be replaced first, otherwise the ampersands introduced by the later
- * replacements get double-escaped.
- */
-export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-}
-
-interface BodyLine {
-  label?: string
-  value: string
 }
 
 function amountLine(input: OperatorEmailInput): BodyLine {
@@ -68,17 +66,6 @@ function buildLines(input: OperatorEmailInput): BodyLine[] {
   return lines
 }
 
-function renderText(lines: BodyLine[]): string {
-  return lines.map((l) => (l.label ? `${l.label}: ${l.value}` : l.value)).join('\n')
-}
-
-function renderHtml(lines: BodyLine[]): string {
-  const inner = lines
-    .map((l) => (l.label ? `${escapeHtml(l.label)}: ${escapeHtml(l.value)}` : escapeHtml(l.value)))
-    .join('<br/>')
-  return `<p>${inner}</p>`
-}
-
 function getEmailConfig() {
   const apiKey = process.env['RESEND_API_KEY']
   const from = process.env['EMAIL_FROM']
@@ -87,6 +74,29 @@ function getEmailConfig() {
   if (!from) throw new Error('EMAIL_FROM not set')
   if (!to) throw new Error('EMAIL_TO not set')
   return { apiKey, from, to }
+}
+
+/**
+ * Shared Resend transport: one URL, one auth-header shape, one error mapping.
+ * `errorLabel` preserves each send's distinct thrown prefix, and the payload
+ * keys keep the pre-consolidation from/to/subject/text/html order so the
+ * serialized request body stays byte-identical to what each send built alone.
+ */
+async function postResendEmail(
+  fetchImpl: typeof fetch,
+  apiKey: string,
+  payload: { from: string; to: string; subject: string; text: string; html: string },
+  errorLabel: string
+): Promise<void> {
+  const res = await fetchImpl('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '')
+    throw new Error(`${errorLabel}: ${res.status} ${errText}`)
+  }
 }
 
 /**
@@ -101,34 +111,16 @@ function buildBody(input: OperatorEmailInput): { subject: string; text: string; 
   return { subject, text: renderText(lines), html: renderHtml(lines) }
 }
 
-async function sendViaResend(input: OperatorEmailInput, fetchImpl: typeof fetch): Promise<void> {
-  const { apiKey, from, to } = getEmailConfig()
-  const { subject, text, html } = buildBody(input)
-  const res = await fetchImpl('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      subject,
-      text,
-      html,
-    }),
-  })
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '')
-    throw new Error(`Resend failed: ${res.status} ${errText}`)
-  }
-}
-
 export async function sendOperatorEmail(
   input: OperatorEmailInput,
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = fetch,
+  mode?: EmailBillingMode
 ): Promise<void> {
-  return sendViaResend(input, fetchImpl)
+  const { apiKey, from, to } = getEmailConfig()
+  const { subject, text, html } = mode?.billingDisabled
+    ? buildDirectOperatorBody(input)
+    : buildBody(input)
+  await postResendEmail(fetchImpl, apiKey, { from, to, subject, text, html }, 'Resend failed')
 }
 
 export interface ClientEmailInput {
@@ -189,29 +181,25 @@ function assertClientSenderUsable(from: string): void {
   }
 }
 
-async function sendClientViaResend(
-  input: ClientEmailInput,
-  fetchImpl: typeof fetch
-): Promise<void> {
-  const { apiKey, from } = getEmailConfig()
-  assertClientSenderUsable(from)
-  const { subject, text, html } = buildClientBody(input)
-  const res = await fetchImpl('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from, to: input.clientEmail, subject, text, html }),
-  })
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '')
-    throw new Error(`Resend client email failed: ${res.status} ${errText}`)
-  }
-}
-
 export async function sendClientEmail(
   input: ClientEmailInput,
-  fetchImpl: typeof fetch = fetch
+  fetchImpl: typeof fetch = fetch,
+  mode?: EmailBillingMode
 ): Promise<void> {
-  return sendClientViaResend(input, fetchImpl)
+  const { apiKey, from } = getEmailConfig()
+  // The sandbox-sender guard applies to every client-facing send, disabled
+  // variant included (AC-003-26): it runs before the body build and before any
+  // Resend request.
+  assertClientSenderUsable(from)
+  const { subject, text, html } = mode?.billingDisabled
+    ? buildDirectClientBody(input)
+    : buildClientBody(input)
+  await postResendEmail(
+    fetchImpl,
+    apiKey,
+    { from, to: input.clientEmail, subject, text, html },
+    'Resend client email failed'
+  )
 }
 
 export interface PaymentLinkEmailInput {
@@ -240,26 +228,6 @@ function buildPaymentLinkBody(input: PaymentLinkEmailInput): {
   return { subject, text: renderText(lines), html: renderHtml(lines) }
 }
 
-async function sendPaymentLinkViaResend(
-  input: PaymentLinkEmailInput,
-  fetchImpl: typeof fetch
-): Promise<void> {
-  const { apiKey, from } = getEmailConfig()
-  // Client-facing: the Resend sandbox sender cannot deliver to arbitrary
-  // customers — same constraint as sendClientEmail.
-  assertClientSenderUsable(from)
-  const { subject, text, html } = buildPaymentLinkBody(input)
-  const res = await fetchImpl('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from, to: input.clientEmail, subject, text, html }),
-  })
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '')
-    throw new Error(`Resend payment-link email failed: ${res.status} ${errText}`)
-  }
-}
-
 /**
  * Emails the customer their post-meeting payment link (the recorded-billing
  * Checkout URL). The caller treats this as best effort: a delivery failure must
@@ -271,5 +239,15 @@ export async function sendPaymentLinkEmail(
   input: PaymentLinkEmailInput,
   fetchImpl: typeof fetch = fetch
 ): Promise<void> {
-  return sendPaymentLinkViaResend(input, fetchImpl)
+  const { apiKey, from } = getEmailConfig()
+  // Client-facing: the Resend sandbox sender cannot deliver to arbitrary
+  // customers — same constraint as sendClientEmail.
+  assertClientSenderUsable(from)
+  const { subject, text, html } = buildPaymentLinkBody(input)
+  await postResendEmail(
+    fetchImpl,
+    apiKey,
+    { from, to: input.clientEmail, subject, text, html },
+    'Resend payment-link email failed'
+  )
 }
