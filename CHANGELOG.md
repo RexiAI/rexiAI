@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/RexiAI/rexiAI/compare/v1.4.0...v1.5.0) (2026-10-21)
+
+
+### Features
+
+* **booking:** polish booking communications under disabled billing ([#69](https://github.com/RexiAI/rexiAI/issues/69)) ([24efbd6](https://github.com/RexiAI/rexiAI/commit/24efbd6fe0d04be44a94f91f982f6929a6493777))
+
 # [1.4.0](https://github.com/RexiAI/rexiAI/compare/v1.3.0...v1.4.0) (2026-10-19)
 
 
