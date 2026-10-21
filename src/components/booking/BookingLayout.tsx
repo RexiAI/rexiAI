@@ -7,6 +7,21 @@ import { EmailField } from './fields/EmailField'
 import { SlotField } from './fields/SlotField'
 import type { BookingFields } from './hooks/useBookingFields'
 
+/**
+ * Submit-button label, billing-aware (spec 003 Ask A). While the POST is in
+ * flight a billing-enabled booking really is being redirected to Stripe, but
+ * with billing disabled no redirect ever happens — the direct POST *is* the
+ * booking — so the in-flight copy confirms the send and never names a payment
+ * provider (15-design Task 4). The enabled keys/values are unchanged; the
+ * neutral copy is a dictionary addition, never a hardcoded string here.
+ */
+function submitButtonLabel(dict: Dictionary, billingEnabled: boolean, submitting: boolean): string {
+  if (submitting) {
+    return billingEnabled ? dict.booking.form.submitting : dict.booking.form.submittingDirect
+  }
+  return billingEnabled ? dict.booking.form.submit : dict.freeMode.submit
+}
+
 export function BookingLayout({
   dict,
   billingEnabled,
@@ -66,11 +81,7 @@ export function BookingLayout({
           error={fields.errors['email']}
         />
         <button type="submit" disabled={fields.submitting} className="booking-submit">
-          {fields.submitting
-            ? dict.booking.form.submitting
-            : billingEnabled
-              ? dict.booking.form.submit
-              : dict.freeMode.submit}
+          {submitButtonLabel(dict, billingEnabled, fields.submitting)}
         </button>
       </form>
     </div>
