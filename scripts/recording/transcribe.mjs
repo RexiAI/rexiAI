@@ -14,7 +14,10 @@ import { extractAudio } from './media.mjs'
 const ASR_DEFAULT_LANGUAGE = 'es' // Spanish-primary (10-tasks.md decision 9); override via REXI_ASR_LANGUAGE.
 export const TRANSCRIBED_MARKER = '.rexi-transcribed'
 
-/** Exact bl 2.4.0 invocation — flags verified against `bl speech recognize --help`. */
+/** Exact bl 2.4.0 invocation. `--diarization` is intentionally omitted: the
+ * default ASR model (`qwen-audio-3.0-asr-flash`, sync Flash ASR) rejects the
+ * flag with exit 2 (see the live-scan journal) — speaker attribution needs an
+ * async filetrans model, deferred to spec 006. */
 export function buildAsrCommand(audioPath, transcriptPath, language) {
   return [
     'bl',
@@ -22,7 +25,6 @@ export function buildAsrCommand(audioPath, transcriptPath, language) {
     'recognize',
     '--url',
     audioPath,
-    '--diarization',
     '--language',
     language,
     '--out',

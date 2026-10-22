@@ -68,8 +68,8 @@ Jibri MP4(s)
   ├─ TRANSCRIPTION             marker .rexi-transcribed — audio extraction of ALL session
   │     mp4s in chronological order (Jibri <room>_<YYYY-MM-DD-HH-MM-SS>.mp4 naming;
   │     resumed meetings concatenate in true order) → ffmpeg -vn → audio.wav →
-  │     `bl speech recognize --url audio.wav --diarization --language es --out
-  │     transcript.json` (Spanish-primary hint via REXI_ASR_LANGUAGE, default es)
+  │     `bl speech recognize --url audio.wav --language es --out transcript.json`
+  │     (Spanish-primary hint via REXI_ASR_LANGUAGE, default es)
   └─ INSIGHT + DELIVERY        marker .rexi-analyzed    — transcript.json → `bl text chat`
         → customer-brief.md (fixed skeleton — Requirements, Pain points, Decisions,
         Commitments, Next steps, always all present) → GitHub issue delivery into

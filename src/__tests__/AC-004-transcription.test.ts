@@ -37,7 +37,7 @@ function blProducesOutRunner() {
 }
 
 describe('AC-004 ASR transcription stage', () => {
-  it('AC-004-26: ASR command targets bl with diarization and the Spanish-primary hint', () => {
+  it('AC-004-26: ASR command targets bl with the Spanish-primary hint', () => {
     const argv = buildAsrCommand('/s/audio.wav', '/s/transcript.json', 'es')
     expect(argv).toEqual([
       'bl',
@@ -45,7 +45,6 @@ describe('AC-004 ASR transcription stage', () => {
       'recognize',
       '--url',
       '/s/audio.wav',
-      '--diarization',
       '--language',
       'es',
       '--out',

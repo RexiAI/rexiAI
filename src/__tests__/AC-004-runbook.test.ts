@@ -18,7 +18,6 @@ describe('AC-004 runbook + env docs', () => {
     expect(doc).toMatch(/ALL session/i)
     expect(doc).toContain('chronological order')
     expect(doc).toContain('bl speech recognize')
-    expect(doc).toContain('--diarization')
     expect(doc).toMatch(/Spanish-primary/i)
     expect(doc).toContain('transcript.json')
     expect(doc).toContain('.rexi-transcribed')
