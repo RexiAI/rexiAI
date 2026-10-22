@@ -168,7 +168,7 @@ Branch: `spec/005-home-hosted-recording`.
   `src/__tests__/AC-005-free-hour.test.ts:25-71` (verified by grep, 2026-10-22).
 - This spec therefore starts at **AC-005-06** — the first clean ID. No other source in
   this repo cites any `AC-005-*` ID (verified: `grep -rn "AC-005-" src/ scripts/ tests/
-  deploy/ docs/` yields only the 001 archive + free-hour test; `.standards/docs/changes/`
+deploy/ docs/` yields only the 001 archive + free-hour test; `.standards/docs/changes/`
   hits are the standards repo's own numbering and are excluded from the reference scan
   by the gate's `--exclude-dir=.standards`).
 - Range used: **AC-005-06 … AC-005-52** — 47 scenarios, 9 task files, contiguous,
@@ -189,7 +189,7 @@ not pass)". Verified against the live host and upstream on 2026-10-22:
 
 1. The live web container has **no `/colibri-ws` location** — grepped the rendered
    nginx config (`docker exec docker-jitsi-meet-web-1 grep colibri
-   /run/web/config/nginx/meet.conf` → empty; only `/xmpp-websocket` signaling exists).
+/run/web/config/nginx/meet.conf` → empty; only `/xmpp-websocket` signaling exists).
 2. Upstream **removed colibri-websocket support entirely**: jitsi/docker-jitsi-meet
    commit "feat(web,jvb): remove deprecated colibri websocket support (#2285)"
    (2026-07-29) — the bridge channel now uses SCTP datachannels (always on), the
@@ -209,10 +209,11 @@ performs the colibri-ws/media-transport check, and when absent (current reality)
 prints a loud, explicit warning that the funnel carries web+signaling only and that
 media needs path B's UDP 10000 forward or LAN/tailnet clients — then **continues**
 to the consent boundary, because the informal spec's acceptance shape requires the
-script to "reach the owner-consent boundary with clear instructions" *on this
-machine*, where colibri-ws is absent. Scenario AC-005-25 pins this behavior.
+script to "reach the owner-consent boundary with clear instructions" _on this
+machine_, where colibri-ws is absent. Scenario AC-005-25 pins this behavior.
 
 Alternatives the human may choose instead:
+
 - **(b)** hard-gate: the script refuses to configure the funnel while no TCP-443
   media transport exists (AC-005-25 and AC-005-51 would flip to refusal).
 - **(c)** defer/drop path A until a working media-over-HTTPS transport exists;
@@ -245,7 +246,7 @@ Answer before stage 2 if (b) or (c); otherwise the Coder implements (a).
   publishes 10000/udp).
 - **Prod `MEETING_BASE_URL` changes ONLY via the health-gated switch script
   (Task 5), executed manually by the owner.** No other script may call `vercel
-  env` mutations or the switch script. (Current prod has NO `MEETING_BASE_URL` —
+env` mutations or the switch script. (Current prod has NO `MEETING_BASE_URL` —
   informal spec, host-verified.)
 - **Secrets:** the home env file is mode 0600 and carries NO secret values; no
   script ever echoes an env value, token, or key to stdout/stderr or into a
@@ -283,7 +284,7 @@ Files: new `deploy/home/install-recording-host.sh`.
 Acceptance criteria:
 
 - Installs adapted copies of the shipped units to `/etc/systemd/system/
-  rexi-recording.{service,timer}` (same unit names — decision 4): service keeps
+rexi-recording.{service,timer}` (same unit names — decision 4): service keeps
   `Type=oneshot`, `EnvironmentFile=/etc/rexi-recording.env`, `TimeoutStartSec=300`;
   timer keeps `OnBootSec=2min`, `OnUnitActiveSec=5min`, `Persistent=true`,
   `RandomizedDelaySec=30`, `WantedBy=timers.target`. Only paths/user/PATH differ
@@ -302,13 +303,13 @@ Acceptance criteria:
 - Generated service carries `User=dbueno` and an `Environment=PATH=` line built
   at install time from `dirname $(command -v node)` (covers node + bl + vercel —
   live-verified all in `~/.nvm/versions/node/v24.21.0/bin`) plus `/usr/local/bin:
-  /usr/bin:/bin` (ffmpeg, ffprobe, gh, tailscale live-verified in `/usr/bin`).
+/usr/bin:/bin` (ffmpeg, ffprobe, gh, tailscale live-verified in `/usr/bin`).
   No hardcoded nvm version string in the script source.
 - Pre-flight: checks free GB on the `RECORDINGS_DIR` filesystem (`df`) against
   `REXI_MIN_FREE_GB` (default 20 — decision 5); below threshold → non-zero exit
   with a clear message BEFORE any file write or `systemctl` mutation.
 - Installs + enables + starts the timer (`systemctl daemon-reload`, `enable --now
-  rexi-recording.timer`), then triggers ONE immediate service run and verifies
+rexi-recording.timer`), then triggers ONE immediate service run and verifies
   scan-cycle evidence in `journalctl -u rexi-recording.service` (the
   `[recording-cron]` line, `scripts/recording-cron.sh:37`, or the `Scanning`
   line, `scripts/recording/pipeline.mjs:228`). Success is declared only when
@@ -472,7 +473,7 @@ Acceptance criteria:
   decision matrix in `docs/recording-pipeline.md`.
 - Documents the harmless jibri finalize-placeholder SEVERE (live-verified in
   `docker-jitsi-meet-jibri-1` logs: `JibriServiceFinalizeCommandRunner.doFinalize
-  … Failed to run finalize script` / `Cannot run program "/path/to/finalize"`),
+… Failed to run finalize script` / `Cannot run program "/path/to/finalize"`),
   why it is harmless (processing is timer-scan-driven, e2e-proven through issue
   #75), and how to silence it: unset `JIBRI_FINALIZE_RECORDING_SCRIPT_PATH` in
   the local stack env and recreate the jibri container — marked as a host-side
@@ -562,7 +563,7 @@ Acceptance criteria (004 decision-③ pattern, `AC-004-e2e-journeys.test.ts`):
    (df throws or output unparseable, incl. empty stdout). Forced by the frozen
    004 suite: its fake runners answer every unmatched command with `{stdout:''}`
    (`recording-harness.ts:16-29`) and its scan tests call `scanAll`/`runCli
-   --scan` directly (`AC-004-processor-rewiring.test.ts:290,335`) — a fail-closed
+--scan` directly (`AC-004-processor-rewiring.test.ts:290,335`) — a fail-closed
    guard would skip processing and redden frozen tests, which this spec may not
    modify. The informal spec leaves df-failure behavior unstated; a real
    disk-full still surfaces as contained per-dir write failures.
@@ -615,7 +616,7 @@ Commands run from the repo root on 2026-10-22 (this spec's artifacts only change
 
 2. `bash .standards/scripts/check-scenario-traceability.sh --checks 2` → **exit 0**
    (`Scenario IDs found: 47 live, 143 archived`; `✔ every scenario traced, every
-   reference resolves`). The legacy AC-005-01…05 citations in
+reference resolves`). The legacy AC-005-01…05 citations in
    `src/__tests__/AC-005-free-hour.test.ts` still resolve via the 001 archive;
    nothing dangles; the new 06–52 range introduces no collision.
 3. Full run → **exit 1 with exactly 47 FAIL lines, one per new ID AC-005-06…52**
@@ -628,51 +629,97 @@ Commands run from the repo root on 2026-10-22 (this spec's artifacts only change
 ## Acceptance scenarios
 
 ## AC-005-06 — Script contract: syntax, strict mode, no secret echoing
+
 ## AC-005-07 — Units are repo-derived; shipped VPS artifacts stay untouched
+
 ## AC-005-08 — Env file: exactly three home values, mode 0600, no secret keys
+
 ## AC-005-09 — Unit contract: dbueno, PATH to the tools, timer semantics preserved
+
 ## AC-005-10 — Disk pre-flight refuses before any mutation
+
 ## AC-005-11 — Install never touches prod config or the guarded switch
+
 ## AC-005-12 — First scan cycle is verified via journalctl before success
+
 ## AC-005-13 — Ample free space: silent, normal processing
+
 ## AC-005-14 — Below soft minimum: loud warning, processing continues
+
 ## AC-005-15 — Boundary: free space exactly at the soft minimum is not "below"
+
 ## AC-005-16 — Boundary: free space exactly at the hard floor warns but processes
+
 ## AC-005-17 — Below hard floor: whole run skipped, exit still contained
+
 ## AC-005-18 — Env overrides, read only from the passed env object
+
 ## AC-005-19 — Undeterminable free space fails open with a loud warning
+
 ## AC-005-20 — One-off modes never invoke the guard
+
 ## AC-005-21 — Script contract
+
 ## AC-005-22 — Pre-checks refuse before any configuration
+
 ## AC-005-23 — Consent-pending is detected and explained, not cryptic
+
 ## AC-005-24 — Funnel target: public HTTPS 443 → local Jitsi web :8000
+
 ## AC-005-25 — Media-transport check reports the colibri-ws reality loudly (OPEN QUESTION default (a))
+
 ## AC-005-26 — PUBLIC_URL change is emitted, never applied
+
 ## AC-005-27 — Local stack untouched
+
 ## AC-005-28 — Script contract
+
 ## AC-005-29 — DNS layer: live IP lookup, exact GoDaddy record, DDNS caveat
+
 ## AC-005-30 — Router layer: both forwards printed
+
 ## AC-005-31 — Windows→WSL2 relay: exact admin-PowerShell lines, runtime WSL IP, UDP truth
+
 ## AC-005-32 — Read-only truth-printer with cert-strategy pointer
+
 ## AC-005-33 — Usage validation: no argument, no action
+
 ## AC-005-34 — Happy path: all three gates pass, then and only then Vercel mutates
+
 ## AC-005-35 — TLS gate failure: refuse, change nothing
+
 ## AC-005-36 — Reachability gate failure: refuse, change nothing
+
 ## AC-005-37 — Probe-room gate failure: refuse, change nothing
+
 ## AC-005-38 — Existing variable is replaced, never an abort
+
 ## AC-005-39 — Never invoked automatically by any other script
+
 ## AC-005-40 — Install runbook
+
 ## AC-005-41 — Exposure runbook and the owner-executed switch
+
 ## AC-005-42 — Jibri finalize-placeholder SEVERE documented
+
 ## AC-005-43 — Home-hosted WSL is the primary deployment; VPS demoted
+
 ## AC-005-44 — Storage layout on this machine
+
 ## AC-005-45 — Always-on caveat and consent note
+
 ## AC-005-46 — Retention guidance
+
 ## AC-005-47 — Exposure decision matrix (A vs B vs VPS), funnel media truth
+
 ## AC-005-48 — runs.jsonl is ignored
+
 ## AC-005-49 — Timer installed, first scan cycle proven in the journal
+
 ## AC-005-50 — Env file permissions, journal secrecy, idempotent re-run
+
 ## AC-005-51 — Funnel script reaches the owner-consent boundary; local stack survives
+
 ## AC-005-52 — Switch refuses a dead URL and Vercel prod is provably unchanged
 
 ## Verification
@@ -695,9 +742,9 @@ exit: 0
 at: 2026-10-22T14:12:40Z
 
 {
-  "checks": [1, 2],
-  "passes": ["AC-005-06 — traced to a test", "AC-005-07 — traced to a test", "AC-005-08 — traced to a test", "AC-005-09 — traced to a test", "AC-005-10 — traced to a test", "AC-005-11 — traced to a test", "AC-005-12 — traced to a test", "AC-005-13 — traced to a test", "AC-005-14 — traced to a test", "AC-005-15 — traced to a test", "AC-005-16 — traced to a test", "AC-005-17 — traced to a test", "AC-005-18 — traced to a test", "AC-005-19 — traced to a test", "AC-005-20 — traced to a test", "AC-005-21 — traced to a test", "AC-005-22 — traced to a test", "AC-005-23 — traced to a test", "AC-005-24 — traced to a test", "AC-005-25 — traced to a test", "AC-005-26 — traced to a test", "AC-005-27 — traced to a test", "AC-005-28 — traced to a test", "AC-005-29 — traced to a test", "AC-005-30 — traced to a test", "AC-005-31 — traced to a test", "AC-005-32 — traced to a test", "AC-005-33 — traced to a test", "AC-005-34 — traced to a test", "AC-005-35 — traced to a test", "AC-005-36 — traced to a test", "AC-005-37 — traced to a test", "AC-005-38 — traced to a test", "AC-005-39 — traced to a test", "AC-005-40 — traced to a test", "AC-005-41 — traced to a test", "AC-005-42 — traced to a test", "AC-005-43 — traced to a test", "AC-005-44 — traced to a test", "AC-005-45 — traced to a test", "AC-005-46 — traced to a test", "AC-005-47 — traced to a test", "AC-005-48 — traced to a test", "AC-005-49 — traced to a test", "AC-005-50 — traced to a test", "AC-005-51 — traced to a test", "AC-005-52 — traced to a test"],
-  "fails": []
+"checks": [1, 2],
+"passes": ["AC-005-06 — traced to a test", "AC-005-07 — traced to a test", "AC-005-08 — traced to a test", "AC-005-09 — traced to a test", "AC-005-10 — traced to a test", "AC-005-11 — traced to a test", "AC-005-12 — traced to a test", "AC-005-13 — traced to a test", "AC-005-14 — traced to a test", "AC-005-15 — traced to a test", "AC-005-16 — traced to a test", "AC-005-17 — traced to a test", "AC-005-18 — traced to a test", "AC-005-19 — traced to a test", "AC-005-20 — traced to a test", "AC-005-21 — traced to a test", "AC-005-22 — traced to a test", "AC-005-23 — traced to a test", "AC-005-24 — traced to a test", "AC-005-25 — traced to a test", "AC-005-26 — traced to a test", "AC-005-27 — traced to a test", "AC-005-28 — traced to a test", "AC-005-29 — traced to a test", "AC-005-30 — traced to a test", "AC-005-31 — traced to a test", "AC-005-32 — traced to a test", "AC-005-33 — traced to a test", "AC-005-34 — traced to a test", "AC-005-35 — traced to a test", "AC-005-36 — traced to a test", "AC-005-37 — traced to a test", "AC-005-38 — traced to a test", "AC-005-39 — traced to a test", "AC-005-40 — traced to a test", "AC-005-41 — traced to a test", "AC-005-42 — traced to a test", "AC-005-43 — traced to a test", "AC-005-44 — traced to a test", "AC-005-45 — traced to a test", "AC-005-46 — traced to a test", "AC-005-47 — traced to a test", "AC-005-48 — traced to a test", "AC-005-49 — traced to a test", "AC-005-50 — traced to a test", "AC-005-51 — traced to a test", "AC-005-52 — traced to a test"],
+"fails": []
 }
 
 Result: 47/47 scenario IDs (AC-005-06 … AC-005-52) traced to a test, 0 fails, exit 0.
@@ -714,16 +761,16 @@ at: 2026-10-22T14:12:40Z
 > rexiai-website@0.0.0 test
 > vitest run --exclude '.standards/**'
 
- RUN  v5.0.1 /home/dbueno/projects/rexiAI
+RUN v5.0.1 /home/dbueno/projects/rexiAI
 
- Test Files  47 passed (47)
-      Tests  287 passed (287)
-   Start at  16:11:01
-   Duration  10.87s (environment 69%, tests 15%, setup 7%, transform 5%, import 3%, worker 1%)
+Test Files 47 passed (47)
+Tests 287 passed (287)
+Start at 16:11:01
+Duration 10.87s (environment 69%, tests 15%, setup 7%, transform 5%, import 3%, worker 1%)
 
-Environment  jsdom was created 47 times · 69.51s total, 69% of tracked time
-             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
-             learn more: https://vitest.dev/guide/improving-performance#test-environments
+Environment jsdom was created 47 times · 69.51s total, 69% of tracked time
+create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+learn more: https://vitest.dev/guide/improving-performance#test-environments
 
 Result: 47 test files passed, 287 tests passed, exit 0. No skipped/disabled tests.
 PASS.
@@ -740,20 +787,20 @@ at: 2026-10-22T14:12:40Z
 > eslint .
 
 /home/dbueno/projects/rexiAI/tests/e2e/funnel-consent-boundary.e2e.ts
-  30:5  warning  Unexpected console statement  no-console
-  34:3  warning  Unexpected console statement  no-console
-  63:5  warning  Unexpected console statement  no-console
-  92:3  warning  Unexpected console statement  no-console
+30:5 warning Unexpected console statement no-console
+34:3 warning Unexpected console statement no-console
+63:5 warning Unexpected console statement no-console
+92:3 warning Unexpected console statement no-console
 
 /home/dbueno/projects/rexiAI/tests/e2e/home-timer-scan.e2e.ts
-  35:5  warning  Unexpected console statement  no-console
-  39:3  warning  Unexpected console statement  no-console
-  90:3  warning  Unexpected console statement  no-console
+35:5 warning Unexpected console statement no-console
+39:3 warning Unexpected console statement no-console
+90:3 warning Unexpected console statement no-console
 
 /home/dbueno/projects/rexiAI/tests/e2e/switch-refusal.e2e.ts
-  30:5  warning  Unexpected console statement  no-console
-  34:3  warning  Unexpected console statement  no-console
-  81:3  warning  Unexpected console statement  no-console
+30:5 warning Unexpected console statement no-console
+34:3 warning Unexpected console statement no-console
+81:3 warning Unexpected console statement no-console
 
 ✖ 10 problems (0 errors, 10 warnings)
 
@@ -771,10 +818,10 @@ exit: 1
 at: 2026-10-22T14:12:40Z
 
 {
-  "tier": "mvp",
-  "gates": ["complexity", "dry", "yagni", "solid", "component-per-file", "property-tests"],
-  "fails": [{ "message": "Cyclomatic complexity >6 (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::CC=10", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" }],
-  "warns": [{ "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:45:71:main:KISS_LINES=28", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "45" }, { "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:101:124:checkCompensationPairs:KISS_LINES=25", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "101" }, { "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::KISS_LINES=41", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" }, { "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:93:225::KISS_LINES=43", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "93" }, { "message": "Method body >20 lines (node): ./src/pages/Landing.tsx:13:96:Landing:KISS_LINES=75", "file": "./src/pages/Landing.tsx", "line": "13" }, { "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:32:52:Chevron:KISS_LINES=22", "file": "./src/components/ServicesCarousel.tsx", "line": "32" }, { "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:54:160:ServicesCarousel:KISS_LINES=79", "file": "./src/components/ServicesCarousel.tsx", "line": "54" }, { "message": "Method body >20 lines (node): ./api/bookings/recorded-billing.ts:222:244:?:KISS_LINES=24", "file": "./api/bookings/recorded-billing.ts", "line": "222" }, { "message": "Possible duplication (9x identical 4-line block, first at ./api/bookings/checkout.ts:26): date: string /startTime: string /hours: number /email: string", "file": "./api/bookings/checkout.ts", "line": "26" }, { "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:304): startTime: string /hours: number /joinUrl?: string | null /date: string", "file": "./api/stripe-webhook.ts", "line": "304" }, { "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:138): email: string /date: string /startTime: string /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "138" }, { "message": "Possible duplication (3x identical 4-line block, first at ./src/domain/microsoftGraph.ts:178): }) /if (!res.ok) { /const text = await res.text().catch(() => '') /headers: { Authorization: `Bearer ${token}` },", "file": "./src/domain/microsoftGraph.ts", "line": "178" }, { "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:115): type: \"problem\", /docs: { /description: /meta: {", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "115" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:140): startTime: string /hours: number /amountTotal: number /date: string", "file": "./api/stripe-webhook.ts", "line": "140" }, { "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:132): schema: [], /}, /create(context) { /},", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "132" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/bookings.ts:13): res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } }) /return false /return true /if (req.method !== 'POST') {", "file": "./api/bookings.ts", "line": "13" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:116): .status(400) /.json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } }) /return false /res", "file": "./api/stripe-webhook.ts", "line": "116" }, { "message": "Possible duplication (2x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:133): }, /create(context) { /return { /schema: [],", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "133" }, { "message": "Empty method body (java): ./.standards/ci/templates/archunit/OutboxArchRules.java:30", "file": "./.standards/ci/templates/archunit/OutboxArchRules.java", "line": "30" }, { "message": "Empty method body (java): ./.standards/ci/templates/archunit/SagaArchRules.java:33", "file": "./.standards/ci/templates/archunit/SagaArchRules.java", "line": "33" }, { "message": "SRP: possible god file (node) — ./api/stripe-webhook.ts: 621 lines, 14 methods (split by responsibility)", "file": "./api/stripe-webhook.ts", "line": "" }, { "message": "LSP: 4 instanceof checks in one file (node) — ./src/domain/time.ts (suggests broken substitutability or type dispatch)", "file": "./src/domain/time.ts", "line": "" }]
+"tier": "mvp",
+"gates": ["complexity", "dry", "yagni", "solid", "component-per-file", "property-tests"],
+"fails": [{ "message": "Cyclomatic complexity >6 (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::CC=10", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" }],
+"warns": [{ "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:45:71:main:KISS_LINES=28", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "45" }, { "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:101:124:checkCompensationPairs:KISS_LINES=25", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "101" }, { "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::KISS_LINES=41", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" }, { "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:93:225::KISS_LINES=43", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "93" }, { "message": "Method body >20 lines (node): ./src/pages/Landing.tsx:13:96:Landing:KISS_LINES=75", "file": "./src/pages/Landing.tsx", "line": "13" }, { "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:32:52:Chevron:KISS_LINES=22", "file": "./src/components/ServicesCarousel.tsx", "line": "32" }, { "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:54:160:ServicesCarousel:KISS_LINES=79", "file": "./src/components/ServicesCarousel.tsx", "line": "54" }, { "message": "Method body >20 lines (node): ./api/bookings/recorded-billing.ts:222:244:?:KISS_LINES=24", "file": "./api/bookings/recorded-billing.ts", "line": "222" }, { "message": "Possible duplication (9x identical 4-line block, first at ./api/bookings/checkout.ts:26): date: string /startTime: string /hours: number /email: string", "file": "./api/bookings/checkout.ts", "line": "26" }, { "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:304): startTime: string /hours: number /joinUrl?: string | null /date: string", "file": "./api/stripe-webhook.ts", "line": "304" }, { "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:138): email: string /date: string /startTime: string /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "138" }, { "message": "Possible duplication (3x identical 4-line block, first at ./src/domain/microsoftGraph.ts:178): }) /if (!res.ok) { /const text = await res.text().catch(() => '') /headers: { Authorization: `Bearer ${token}` },", "file": "./src/domain/microsoftGraph.ts", "line": "178" }, { "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:115): type: \"problem\", /docs: { /description: /meta: {", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "115" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:140): startTime: string /hours: number /amountTotal: number /date: string", "file": "./api/stripe-webhook.ts", "line": "140" }, { "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:132): schema: [], /}, /create(context) { /},", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "132" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/bookings.ts:13): res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } }) /return false /return true /if (req.method !== 'POST') {", "file": "./api/bookings.ts", "line": "13" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:116): .status(400) /.json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } }) /return false /res", "file": "./api/stripe-webhook.ts", "line": "116" }, { "message": "Possible duplication (2x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:133): }, /create(context) { /return { /schema: [],", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "133" }, { "message": "Empty method body (java): ./.standards/ci/templates/archunit/OutboxArchRules.java:30", "file": "./.standards/ci/templates/archunit/OutboxArchRules.java", "line": "30" }, { "message": "Empty method body (java): ./.standards/ci/templates/archunit/SagaArchRules.java:33", "file": "./.standards/ci/templates/archunit/SagaArchRules.java", "line": "33" }, { "message": "SRP: possible god file (node) — ./api/stripe-webhook.ts: 621 lines, 14 methods (split by responsibility)", "file": "./api/stripe-webhook.ts", "line": "" }, { "message": "LSP: 4 instanceof checks in one file (node) — ./src/domain/time.ts (suggests broken substitutability or type dispatch)", "file": "./src/domain/time.ts", "line": "" }]
 }
 
 ### Design-principles adjudication (out-of-scope finding — non-blocking)
@@ -811,7 +858,7 @@ PASS (spec-005 scope clean; 1 FAIL + 22 WARNs all out-of-scope/pre-existing).
 
 ## Evidence: scenario-to-behavior spot check
 
-command: manual read — specs/005-home-hosted-recording/20-acceptance/AC-005-disk-guard.md + src/__tests__/AC-005-disk-guard.test.ts; specs/005-home-hosted-recording/20-acceptance/AC-005-prod-switch.md + src/__tests__/AC-005-prod-switch.test.ts
+command: manual read — specs/005-home-hosted-recording/20-acceptance/AC-005-disk-guard.md + src/**tests**/AC-005-disk-guard.test.ts; specs/005-home-hosted-recording/20-acceptance/AC-005-prod-switch.md + src/**tests**/AC-005-prod-switch.test.ts
 exit: 0 (no assertion mismatches found)
 at: 2026-10-22T14:12:40Z
 
@@ -856,14 +903,14 @@ No logic found that does not trace back to a task or scenario.
 
 **PASS** — every Verifier check ran and produced no in-scope findings:
 
-| Check | Result | Exit |
-|---|---|---|
-| scenario traceability | PASS | 0 |
-| full test suite | PASS (287/287) | 0 |
-| complexity gate | PASS (0 errors) | 0 |
-| design-principles gate | PASS for spec-005 scope; 1 out-of-scope FAIL + 22 out-of-scope WARNs recorded | 1 (raw, out-of-scope) |
-| scenario-to-behavior spot check | PASS | n/a |
-| no unaccounted behavior | clean | n/a |
+| Check                           | Result                                                                        | Exit                  |
+| ------------------------------- | ----------------------------------------------------------------------------- | --------------------- |
+| scenario traceability           | PASS                                                                          | 0                     |
+| full test suite                 | PASS (287/287)                                                                | 0                     |
+| complexity gate                 | PASS (0 errors)                                                               | 0                     |
+| design-principles gate          | PASS for spec-005 scope; 1 out-of-scope FAIL + 22 out-of-scope WARNs recorded | 1 (raw, out-of-scope) |
+| scenario-to-behavior spot check | PASS                                                                          | n/a                   |
+| no unaccounted behavior         | clean                                                                         | n/a                   |
 
 Architect may proceed. The single design-principles FAIL is a pre-existing
 `CC=10` in the standards submodule's hallmark example (`.standards/` untouched by
@@ -907,7 +954,7 @@ This repo's tier is **`mvp`**, confirmed live (not assumed):
 
 Per `docs/SPEC_PIPELINE.md §Conformance tiers`, the Architect — mutation testing
 row is **skip** at `mvp`; the Architect role runs at every tier, the mutation
-*test* does not.
+_test_ does not.
 
 ---
 
@@ -975,16 +1022,16 @@ at: 2026-10-22T14:16:02Z
 > rexiai-website@0.0.0 test
 > vitest run --exclude '.standards/**'
 
- RUN  v5.0.1 /home/dbueno/projects/rexiAI
+RUN v5.0.1 /home/dbueno/projects/rexiAI
 
- Test Files  47 passed (47)
-      Tests  287 passed (287)
-   Start at  16:16:02
-   Duration  9.30s (environment 70%, tests 15%, setup 7%, transform 5%, import 3%, worker 1%)
+Test Files 47 passed (47)
+Tests 287 passed (287)
+Start at 16:16:02
+Duration 9.30s (environment 70%, tests 15%, setup 7%, transform 5%, import 3%, worker 1%)
 
-Environment  jsdom was created 47 times · 59.88s total, 70% of tracked time
-             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
-             learn more: https://vitest.dev/guide/improving-performance#test-environments
+Environment jsdom was created 47 times · 59.88s total, 70% of tracked time
+create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+learn more: https://vitest.dev/guide/improving-performance#test-environments
 
 Result: 47 test files passed, 287 tests passed, exit 0. No skipped/disabled tests.
 
@@ -1006,16 +1053,78 @@ entries.
 
 ## Summary
 
-| Row | Value |
-|---|---|
-| Verifier verdict | PASS (carried forward) |
-| Mutation score | skipped — `mvp` tier |
-| Equivalent mutants | n/a |
+| Row                | Value                                                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Verifier verdict   | PASS (carried forward)                                                                                                    |
+| Mutation score     | skipped — `mvp` tier                                                                                                      |
+| Equivalent mutants | n/a                                                                                                                       |
 | Complexity summary | 0 in-scope violations (complexity + design-principles); 1 pre-existing out-of-scope FAIL + 22 out-of-scope WARNs recorded |
-| Final test status | 47 files / 287 tests passed, exit 0 |
-| Remediation record | none |
+| Final test status  | 47 files / 287 tests passed, exit 0                                                                                       |
+| Remediation record | none                                                                                                                      |
 
 **GREEN.** Stage 5b (PR Opener) may proceed.
 
 PR: https://github.com/RexiAI/rexiAI/pull/76
 Commits: 12
+
+---
+
+## Post-PR CI check (phase 2)
+
+### Round 1 — 2026-10-22
+
+Status query against draft PR #76 (head `84757ca`).
+
+command: gh pr checks 76 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-10-22T14:37:33Z
+
+Per-check terminal status (bucket field is the PASS/FAIL parse rule):
+
+| Check                   | state   | bucket   | verdict                                 |
+| ----------------------- | ------- | -------- | --------------------------------------- |
+| Build                   | SUCCESS | pass     | PASS                                    |
+| Unit Tests              | SUCCESS | pass     | PASS                                    |
+| Lint & Format           | FAILURE | fail     | FAIL                                    |
+| Docker Build & Push     | SKIPPED | skipping | SKIP (neutral — pull_request, not push) |
+| Vercel Preview Comments | SUCCESS | pass     | PASS                                    |
+| Vercel                  | SUCCESS | pass     | PASS                                    |
+
+Failing check (check-runs API, `conclusion == "failure"`):
+
+command: gh api repos/RexiAI/rexiAI/commits/84757ca192ceb5ec0fd3f16e4af7bec057dcf18c/check-runs --jq '.check_runs[] | select(.conclusion == "failure") | {name, id, conclusion, details_url}'
+exit: 0
+at: 2026-10-22T14:37:33Z
+
+{"conclusion":"failure","details_url":"https://github.com/RexiAI/rexiAI/actions/runs/39794834545/job/119879423277","id":119879423277,"name":"Lint & Format"}
+
+Failing job log (verbatim excerpt):
+
+command: gh run view 39794834545 --log-failed
+exit: 0
+at: 2026-10-22T14:37:33Z
+
+Lint & Format Run npm run format:check --if-present > prettier --check .
+Lint & Format Run npm run format:check --if-present Checking formatting...
+Lint & Format Run npm run format:check --if-present [warn] docs/changes/005-home-hosted-recording.md
+Lint & Format Run npm run format:check --if-present [warn] Code style issues found in the above file. Run Prettier with --write to fix.
+Lint & Format Run npm run format:check --if-present ##[error]Process completed with exit code 1.
+
+The eslint step (`npm run lint`) passed with 0 errors (10 `no-console` WARNs,
+non-blocking, all confined to `tests/e2e/*.e2e.ts` journeys). The failure is
+isolated to `prettier --check .` flagging this archive one-pager
+(`docs/changes/005-home-hosted-recording.md`) for markdown code-style issues —
+leading-space indentation on wrapped list lines and `*…*` → `_…_` emphasis
+normalization (268 diff lines, verified locally via `prettier --check` on the
+same file).
+
+Root cause: `archive-spec.sh` emits the archive without prettier-clean markdown,
+and `.prettierignore` does not exclude `docs/changes/`. Build, Unit Tests, and
+both Vercel checks are green; this is a formatting gate failure only.
+
+Classification: structural/formatting — route to spec-refactorer (trivial fix:
+`prettier --write docs/changes/005-home-hosted-recording.md`; the durable fix is
+to make `archive-spec.sh` emit prettier-clean output or add `docs/changes/` to
+`.prettierignore`).
+
+Verdict: FAIL (1 of 6 checks failed; 4 pass, 1 neutral SKIP). Phase-2 round 1.
