@@ -5,6 +5,12 @@
 // and embeds its scenario IDs. Pure file assertions: no Docker, no stack, no
 // gh/bl — npm test stays green in a bare checkout (spec-003 precedent: an
 // e2e-only scenario cited from an in-suite test).
+//
+// Rewritten by the e2e-driven remediation (D4): the journeys are no longer
+// written against an `e2e` framework package (absent from deps, no new dep
+// allowed) — they are self-contained scripts the e2e-runner executes with
+// plain node over the shared zero-npm-dependency driver, each carrying its
+// Playwright-MCP playbook. This guard pins THAT contract.
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -22,13 +28,25 @@ describe('AC-004 e2e journey registration', () => {
   it('AC-004-50: the full-chain journey exists and cites AC-004-50 (auto-record fires unassisted, exactly once)', () => {
     const src = readJourney('tests/e2e/auto-record-full-chain.e2e.ts')
     expect(src).toContain('AC-004-50')
-    // scripted per the scenario: unique rexi- room, fake-device + fake-audio flags,
-    // zero recording-UI interaction, second-occupant single-session check.
+    // scripted per the scenario: unique rexi- room, zero recording-UI
+    // interaction, second-occupant single-session check.
     expect(src).toMatch(/rexi-/)
-    expect(src).toContain('--use-fake-device-for-media-capture')
-    expect(src).toContain('--use-file-for-fake-audio-capture=')
     expect(src).toMatch(/no recording control was touched/i)
     expect(src).toMatch(/NO additional Jibri session/i)
+    // D4 runnability: executable by plain node, no framework package.
+    expect(src).toContain('node tests/e2e/auto-record-full-chain.e2e.ts')
+    // D4 media contract: the fake-capture flags are documented but replaced
+    // on this host by the proven page-level getUserMedia override (WebAudio
+    // looping destination + canvas captureStream), with ignoreHTTPSErrors and
+    // display-name-agnostic join / close-browser-as-leave.
+    expect(src).toContain('--use-fake-device-for-media-capture')
+    expect(src).toContain('--use-file-for-fake-audio-capture=')
+    expect(src).toContain('getUserMedia')
+    expect(src).toMatch(/MediaStreamAudioDestinationNode/)
+    expect(src).toContain('captureStream')
+    expect(src).toContain('ignoreHTTPSErrors')
+    expect(src).toMatch(/#enter_displayName/) // named as the absent selector, not used as one
+    expect(src).toMatch(/no #toolbar-hangup/)
   })
 
   it('AC-004-51: the consent-boundary journey exists and cites AC-004-51 (non-rexi room never recorded)', () => {
@@ -36,6 +54,7 @@ describe('AC-004 e2e journey registration', () => {
     expect(src).toContain('AC-004-51')
     expect(src).toMatch(/e2eprobe-/)
     expect(src).toMatch(/no Jibri session directory/i)
+    expect(src).toContain('node tests/e2e/auto-record-consent-boundary.e2e.ts')
   })
 
   it('AC-004-52: the full-chain journey cites AC-004-52 and drives the one-off processor on the REAL session dir', () => {
@@ -45,6 +64,10 @@ describe('AC-004 e2e journey registration', () => {
     expect(src).toMatch(/transcript\.json/)
     expect(src).toMatch(/customer-brief\.md/)
     expect(src).toMatch(/página de precios|pricing/)
+    // env passthrough for the processor step (recordings dir + bl/gh creds)
+    expect(src).toContain('RECORDINGS_DIR')
+    expect(src).toContain('DASHSCOPE_API_KEY')
+    expect(src).toContain('GH_TOKEN')
   })
 
   it('AC-004-53: the full-chain journey cites AC-004-53 (one labeled issue, idempotent second run)', () => {
@@ -54,6 +77,27 @@ describe('AC-004 e2e journey registration', () => {
     expect(src).toContain('customer-insight label')
     expect(src).toMatch(/no duplicate created/i)
     expect(src).toMatch(/\.rexi-transcribed and \.rexi-analyzed markers/i)
+  })
+
+  it('unit: the shared driver and journeys import ZERO npm packages (D4 constraint)', () => {
+    const files = [
+      'tests/e2e/auto-record-lib.mjs',
+      'tests/e2e/auto-record-full-chain.e2e.ts',
+      'tests/e2e/auto-record-consent-boundary.e2e.ts',
+    ]
+    for (const rel of files) {
+      const src = readJourney(rel)
+      const specs = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1])
+      expect(specs.length, rel).toBeGreaterThan(0)
+      for (const spec of specs) {
+        const local = spec === './auto-record-lib.mjs'
+        expect(spec.startsWith('node:') || local, `${rel}: ${spec}`).toBe(true)
+      }
+    }
+    // the D4 mechanism itself: DevTools Protocol over Node's native WebSocket
+    const lib = readJourney('tests/e2e/auto-record-lib.mjs')
+    expect(lib).toContain('globalThis.WebSocket')
+    expect(lib).toMatch(/Page\.addScriptToEvaluateOnNewDocument/)
   })
 
   it('unit: the e2e config follows the standard (tests glob, env-sourced models, budgets, cache)', () => {
