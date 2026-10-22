@@ -35,20 +35,24 @@ export function listMp4Files(dir) {
 
 // ffmpeg argv for the whole extraction: -vn (never a video stream in the
 // output), every input covered in collection order, exactly one output path.
+// -y (overwrite without asking) sits before the output, ffmpeg-global
+// position: the output path (audio.wav) persists across stage failures, and
+// execFile gives ffmpeg no stdin — a re-sweep retry would otherwise block
+// forever on ffmpeg's interactive "File exists. Overwrite?" prompt
+// (live e2e defect D2: a post-ASR-failure re-run hung the whole scan).
 export function buildAudioExtractCommand(mp4s, outPath) {
   const inputs = mp4s.flatMap((mp4) => ['-i', mp4])
   const audioOut = ['-vn', '-ac', '1', '-ar', AUDIO_SAMPLE_RATE]
+  const globals = ['-hide_banner', '-loglevel', 'error', '-y']
   if (mp4s.length <= 1) {
-    return ['ffmpeg', '-hide_banner', '-loglevel', 'error', ...inputs, ...audioOut, outPath]
+    return ['ffmpeg', ...globals, ...inputs, ...audioOut, outPath]
   }
   // Multiple segments (resumed meeting): concat filter keeps collection order.
   const refs = mp4s.map((_, i) => `[${i}:a]`).join('')
   const filter = `${refs}concat=n=${mp4s.length}:v=0:a=1[a]`
   return [
     'ffmpeg',
-    '-hide_banner',
-    '-loglevel',
-    'error',
+    ...globals,
     ...inputs,
     '-filter_complex',
     filter,

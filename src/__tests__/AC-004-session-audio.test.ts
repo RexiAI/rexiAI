@@ -61,6 +61,13 @@ describe('AC-004 session media collection + audio extraction', () => {
     // exactly one audio output path: out.wav appears once, as the final argument
     expect(argv.filter((a) => a === 'out.wav')).toHaveLength(1)
     expect(argv[argv.length - 1]).toBe('out.wav')
+    // D2 pin: -y (overwrite without asking) is part of the command shape and
+    // sits BEFORE the output — execFile gives ffmpeg no stdin, so without it
+    // any re-sweep retry over an existing audio.wav hangs on the interactive
+    // "Overwrite?" prompt forever. The token-order contract (ffmpeg first,
+    // every input before the single output) is unchanged.
+    expect(argv).toContain('-y')
+    expect(argv.indexOf('-y')).toBeLessThan(argv.indexOf('out.wav'))
   })
 
   it('AC-004-24: buildAudioExtractCommand is pure — no runner, no I/O', () => {
@@ -93,5 +100,18 @@ describe('AC-004 session media collection + audio extraction', () => {
     expect(fc.startsWith('[0:a][1:a][2:a]')).toBe(true)
     expect(argv.filter((a) => a === '-i')).toHaveLength(3)
     expect(argv).toContain('-map')
+  })
+
+  it('unit: every extraction shape runs unattended — exactly one -y, before the output (D2 retry-hang pin)', () => {
+    // The post-ASR-failure re-sweep re-runs extraction over an existing
+    // audio.wav in BOTH shapes (single input and concat). Pin -y once per
+    // shape, globally-positioned (before the first -i) and always ahead of
+    // the output path.
+    for (const mp4s of [['a.mp4'], ['a.mp4', 'b.mp4']]) {
+      const argv = buildAudioExtractCommand(mp4s, 'out.wav')
+      expect(argv.filter((a) => a === '-y')).toHaveLength(1)
+      expect(argv.indexOf('-y')).toBeLessThan(argv.indexOf('-i'))
+      expect(argv.indexOf('-y')).toBeLessThan(argv.length - 1)
+    }
   })
 })
