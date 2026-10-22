@@ -14,26 +14,25 @@ import { extractAudio } from './media.mjs'
 const ASR_DEFAULT_LANGUAGE = 'es' // Spanish-primary (10-tasks.md decision 9); override via REXI_ASR_LANGUAGE.
 export const TRANSCRIBED_MARKER = '.rexi-transcribed'
 
-/** Exact bl 2.4.0 invocation. `--diarization` is intentionally omitted: the
- * default ASR model (`qwen-audio-3.0-asr-flash`, sync Flash ASR) rejects the
- * flag with exit 2 (see the live-scan journal) — speaker attribution needs an
- * async filetrans model, deferred to spec 006. */
+// Local Whisper ASR (spec 006 fallback) — replaces `bl speech recognize`, which
+// 401s on the credential-free systemd service env. Resolved against the repo
+// root (recording-cron.sh cd's to the repo root before running the pipeline).
+export const WHISPER_SCRIPT = path.join(
+  process.cwd(),
+  'scripts',
+  'recording',
+  'whisper_transcribe.py'
+)
+
+/** Local Whisper ASR invocation (spec 006 fallback). Offline, credential-free.
+ * Output shape ({language, segments:[{start,end,text}]}) is flattened to plain
+ * text by insight.mjs's extractTranscriptText. */
 export function buildAsrCommand(audioPath, transcriptPath, language) {
-  return [
-    'bl',
-    'speech',
-    'recognize',
-    '--url',
-    audioPath,
-    '--language',
-    language,
-    '--out',
-    transcriptPath,
-  ]
+  return ['python3', WHISPER_SCRIPT, audioPath, transcriptPath, language]
 }
 
 /**
- * audio.wav (Task 2) → bl speech recognize → transcript.json + marker.
+ * audio.wav (Task 2) → local Whisper (faster-whisper) → transcript.json + marker.
  * deps: injected execFile-like runner; env: object consulted for
  * REXI_ASR_LANGUAGE only (never process.env directly, for testability).
  */

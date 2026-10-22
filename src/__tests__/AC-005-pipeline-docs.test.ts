@@ -25,7 +25,7 @@ describe('AC-005 pipeline docs rework', () => {
     // AC-004-47 core tokens, spot subset — full suite is the oracle)
     expect(d).toMatch(/ALL session/i)
     expect(d).toContain('chronological order')
-    expect(d).toContain('bl speech recognize')
+    expect(d).toContain('whisper_transcribe.py')
     expect(d).toContain('.rexi-transcribed')
     expect(d).toContain('customer-brief.md')
     expect(d).toMatch(/independent/i)

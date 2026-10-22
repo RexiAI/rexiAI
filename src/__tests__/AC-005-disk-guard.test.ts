@@ -16,7 +16,7 @@ import {
 } from '../../scripts/recording/disk.mjs'
 import { scanAll } from '../../scripts/recording/pipeline.mjs'
 
-import { blProducesOut, ghStdout, mkTmpDir, makeRunner, writeFile } from './recording-harness.ts'
+import { asrProducesOut, ghStdout, mkTmpDir, makeRunner, writeFile } from './recording-harness.ts'
 import type { Call, Runner, RunnerResult } from './recording-harness.ts'
 
 const MP4 = 'rexi-abc_2026-10-21-10-00-00.mp4'
@@ -72,7 +72,7 @@ function ffprobeStub(call: Call): RunnerResult | undefined {
 }
 
 function external(call: Call): RunnerResult | undefined {
-  return blProducesOut(call) ?? blChat(call) ?? ghCall(call) ?? ffprobeStub(call)
+  return asrProducesOut(call) ?? blChat(call) ?? ghCall(call) ?? ffprobeStub(call)
 }
 
 /** Runner: df answers per `diskBehavior`, the rest answers a healthy chain. */

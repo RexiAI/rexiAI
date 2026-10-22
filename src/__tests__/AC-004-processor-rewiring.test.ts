@@ -25,7 +25,7 @@ import {
   writeFile,
   exists,
   ghStdout,
-  blProducesOut,
+  asrProducesOut,
 } from './recording-harness.ts'
 import type { Call, FetchCall, Runner, RunnerResult } from './recording-harness.ts'
 
@@ -61,7 +61,7 @@ function isBl(call: Call, verb: string): boolean {
 }
 
 function defaultExternal(call: Call): RunnerResult {
-  const asr = blProducesOut(call)
+  const asr = asrProducesOut(call)
   if (asr !== undefined) return asr
   if (isBl(call, 'chat')) {
     return {
@@ -260,7 +260,9 @@ describe('AC-004 processor rewiring', () => {
     ]) {
       expect(exists(dir, f)).toBe(false)
     }
-    expect(chain.calls.filter((c) => c.cmd === 'bl' || c.cmd === 'gh')).toHaveLength(0)
+    expect(
+      chain.calls.filter((c) => c.cmd === 'bl' || c.cmd === 'gh' || c.cmd === 'python3')
+    ).toHaveLength(0)
     // A billing-enabled deployment still bills the silent recording, exactly as today.
     expect(fetch.calls.some((c) => c.init?.method === 'POST')).toBe(true)
     expect(exists(dir, '.rexi-billed')).toBe(true)
@@ -311,7 +313,10 @@ describe('AC-004 processor rewiring', () => {
     expect(again.processed).toBe(2)
     for (const d of dirs.slice(1)) {
       expect(
-        second.calls.filter((c) => (c.cmd === 'bl' || c.cmd === 'gh') && String(c.args).includes(d))
+        second.calls.filter(
+          (c) =>
+            (c.cmd === 'bl' || c.cmd === 'gh' || c.cmd === 'python3') && String(c.args).includes(d)
+        )
       ).toHaveLength(0)
     }
     expect(exists(dirA, '.rexi-transcribed')).toBe(false)
@@ -402,7 +407,9 @@ describe('AC-004 processor rewiring', () => {
 
     expect(exitCode).toBe(0)
     expect(fetch.calls.filter((c) => c.init?.method === 'POST')).toHaveLength(0)
-    expect(chain.calls.filter((c) => c.cmd === 'bl' || c.cmd === 'gh')).toHaveLength(0)
+    expect(
+      chain.calls.filter((c) => c.cmd === 'bl' || c.cmd === 'gh' || c.cmd === 'python3')
+    ).toHaveLength(0)
     for (const f of [
       '.rexi-transcribed',
       '.rexi-analyzed',
