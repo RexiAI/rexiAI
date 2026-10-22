@@ -47,6 +47,9 @@ coverage/
 
 # Playwright MCP session scratch (screenshots, console logs)
 .playwright-mcp/
+
+# Pipeline gate telemetry (loop/gate run log) — stays local, never committed
+runs.jsonl
 .vercel
 .env*
 !.env.example
