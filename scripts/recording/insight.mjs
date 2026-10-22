@@ -1,7 +1,8 @@
 // scripts/recording/insight.mjs — customer brief insight stage (spec 004 Task 4 / Ask C).
 //
-// Wraps `bl text chat` (flags verified against bl 2.4.0 --help: --system /
-// --message). The brief's template skeleton is FIXED literal English headings
+// Runs the brief generation against a local ollama model (offline, no API key
+// — replaces the `bl text chat` cloud call that 401s on the credential-free
+// service env). The brief's template skeleton is FIXED literal English headings
 // in code (10-tasks.md decision 9) — the same headings, same order, in every
 // brief; the LLM fills section bodies in the transcript's language. Client
 // email is allowed in the brief (private repo issue + local disk, Ask C);
@@ -67,7 +68,7 @@ function collectText(node, acc) {
   if (isRecord(node)) collectFromObject(node, acc)
 }
 
-/** Pure prompt builder → the `bl text chat` payload (system + user message). */
+/** Pure prompt builder → the ollama /api/chat payload (system + user message). */
 export function buildInsightMessages(transcriptJson, context) {
   const transcript = extractTranscriptText(transcriptJson)
   const language = detectDominantLanguage(transcript)
@@ -75,18 +76,19 @@ export function buildInsightMessages(transcriptJson, context) {
     'You are a customer-insight analyst for RexiAI.',
     'From the meeting transcript, extract the customer wants in five categories:',
     'requirements, pain points, decisions, commitments, and next steps.',
-    'Answer in Markdown with exactly these level-2 headings in this order:',
+    'Answer in Markdown with EXACTLY these level-2 headings in this order, and',
+    'keep the headings in English — do NOT translate them:',
     BRIEF_SECTIONS.map((s) => `## ${s}`).join(', '),
-    `Write concrete bullet points under each heading. If a category has nothing stated`,
-    `in the transcript, write the exact placeholder "${EMPTY_SECTION_PLACEHOLDER}" under it.`,
-    'Answer in the transcript dominant language.',
+    `Write concrete bullet points under each heading, in the transcript's dominant`,
+    `language. If a category has nothing stated in the transcript, write the exact`,
+    `placeholder "${EMPTY_SECTION_PLACEHOLDER}" under it.`,
     'Never include secrets, API keys, tokens or credentials in your answer.',
   ].join(' ')
 
   const langLine =
     language === 'es'
-      ? 'Answer in the transcript dominant language: Spanish (responda en espanol).'
-      : 'Answer in the transcript dominant language: English (answer in English).'
+      ? 'Write the bullet content in Spanish (escribe el contenido en español), keeping the section headings in English.'
+      : 'Write the bullet content in English, keeping the section headings in English.'
   const attributionLine = context.unattributed
     ? `Meeting room ${context.room} (${context.sessionDate}) — unattributed recording, no client identified.`
     : `Meeting room ${context.room} (${context.sessionDate}) — client ${context.clientEmail}, booking ${context.bookingId}.`
@@ -168,29 +170,41 @@ export function renderBrief(llmContent, context) {
   return `${blocks.join('\n\n')}\n`
 }
 
+const OLLAMA_BASE = 'http://localhost:11434'
+const INSIGHT_DEFAULT_MODEL = 'qwen3:14b'
+
 /**
- * transcript.json → bl text chat → customer-brief.md → deliver → .rexi-analyzed.
+ * transcript.json → local ollama chat → customer-brief.md → deliver → .rexi-analyzed.
  * The marker lands ONLY after the brief write AND delivery succeed (decision 4):
  * any failure propagates unmarked, so the next scan regenerates the brief and
  * re-attempts delivery — the Task 5 search-before-create guards duplicates.
  */
-export async function runInsightStage({ sessionDir, transcriptPath, context, runner, deliver }) {
+export async function runInsightStage({
+  sessionDir,
+  transcriptPath,
+  context,
+  fetch,
+  deliver,
+  env,
+}) {
   const transcriptJson = JSON.parse(readFileSync(transcriptPath, 'utf8'))
   const { system, messages } = buildInsightMessages(transcriptJson, context)
-  const argv = [
-    'bl',
-    'text',
-    'chat',
-    '--system',
-    system,
-    '--message',
-    messages.map((m) => m.content).join('\n\n'),
-    '--output',
-    'json',
-  ]
-  const { stdout } = await runner(argv[0], argv.slice(1))
+  const model = env['REXI_INSIGHT_MODEL'] || INSIGHT_DEFAULT_MODEL
 
-  const brief = renderBrief(parseChatStdout(stdout), context)
+  const res = await fetch(`${OLLAMA_BASE}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'system', content: system }, ...messages],
+      stream: false,
+    }),
+  })
+  if (!res.ok) throw new Error(`ollama /api/chat returned HTTP ${res.status}`)
+  const body = await res.json()
+  const content = parseChatStdout(JSON.stringify(body))
+
+  const brief = renderBrief(content, context)
   writeFileSync(path.join(sessionDir, BRIEF_FILENAME), brief)
 
   await deliver({

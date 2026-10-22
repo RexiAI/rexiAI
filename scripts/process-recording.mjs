@@ -12,8 +12,8 @@
 //
 // Chain (spec 004): Jibri MP4(s) → billing (optional, fail-closed without
 // credentials) → audio extraction of ALL session mp4s in chronological order →
-// bl speech recognize → transcript.json → bl text chat → customer-brief.md →
-// idempotent GitHub issue delivery. Three INDEPENDENT stage markers:
+// local whisper (faster-whisper) → transcript.json → local ollama chat →
+// customer-brief.md → idempotent GitHub issue delivery. Three INDEPENDENT stage markers:
 // .rexi-billed, .rexi-transcribed, .rexi-analyzed. Billing is unchanged;
 // transcription/insight need no Stripe at all.
 //

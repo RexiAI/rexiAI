@@ -70,9 +70,10 @@ Jibri MP4(s)
   │     resumed meetings concatenate in true order) → ffmpeg -vn → audio.wav →
   │     `python3 scripts/recording/whisper_transcribe.py audio.wav transcript.json es`
   │     (local faster-whisper ASR, offline; Spanish-primary via REXI_ASR_LANGUAGE, default es)
-  └─ INSIGHT + DELIVERY        marker .rexi-analyzed    — transcript.json → `bl text chat`
-        → customer-brief.md (fixed skeleton — Requirements, Pain points, Decisions,
-        Commitments, Next steps, always all present) → GitHub issue delivery into
+  └─ INSIGHT + DELIVERY        marker .rexi-analyzed    — transcript.json → local
+        ollama `qwen3:14b` (offline, no key) → customer-brief.md (fixed skeleton —
+        Requirements, Pain points, Decisions, Commitments, Next steps, always all
+        present) → GitHub issue delivery into
         RexiAI/rexiAI labeled `customer-insight`, idempotent via search-before-create
         (open AND closed issues whose title contains the room suppress creation) —
         the issue body carries the brief + the transcript path + the recording

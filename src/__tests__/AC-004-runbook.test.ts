@@ -21,7 +21,7 @@ describe('AC-004 runbook + env docs', () => {
     expect(doc).toMatch(/Spanish-primary/i)
     expect(doc).toContain('transcript.json')
     expect(doc).toContain('.rexi-transcribed')
-    expect(doc).toContain('bl text chat')
+    expect(doc).toContain('ollama')
     expect(doc).toContain('customer-brief.md')
     expect(doc).toContain('customer-insight')
     expect(doc).toMatch(/search-before-create|search.*before.*creat/i)

@@ -108,22 +108,25 @@ async function transcriptionStage({ dir, mp4s, env, deps, dryRun, log }) {
   await transcribe({ sessionDir: dir, mp4s, runner: deps.runner, env })
 }
 
-async function insightStage({ dir, context, deps, dryRun, log }) {
+async function insightStage({ dir, context, deps, dryRun, log, env }) {
   if (existsSync(path.join(dir, ANALYZED_MARKER))) {
     log.log('    SKIP insight: .rexi-analyzed marker.')
     return
   }
   if (dryRun) {
-    log.log('    DRY-RUN: would run bl text chat, write customer-brief.md, open the insight issue.')
+    log.log(
+      '    DRY-RUN: would run local ollama chat, write customer-brief.md, open the insight issue.'
+    )
     return
   }
-  log.log('    INSIGHT: bl text chat → customer-brief.md → GitHub issue…')
+  log.log('    INSIGHT: local ollama chat → customer-brief.md → GitHub issue…')
   const transcriptPath = path.join(dir, 'transcript.json')
   await runInsightStage({
     sessionDir: dir,
     transcriptPath,
     context,
-    runner: deps.runner,
+    fetch: deps.fetch,
+    env,
     deliver: (args) => deliverInsightIssue({ ...args, runner: deps.runner }),
   })
 }
@@ -209,7 +212,7 @@ export async function processSessionDir({ dir, room, dryRun = false, env, deps, 
 
   const context = insightContext({ room: resolvedRoom, mp4s, target, attribution })
   await transcriptionStage({ dir, mp4s, env, deps, dryRun, log })
-  await insightStage({ dir, context, deps, dryRun, log })
+  await insightStage({ dir, context, deps, dryRun, log, env })
   return { ok: billing !== 'failed' }
 }
 
