@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/RexiAI/rexiAI/compare/v1.5.2...v1.6.0) (2026-10-22)
+
+
+### Features
+
+* **recording:** auto-record booked meetings, transcribe, deliver customer insights ([#72](https://github.com/RexiAI/rexiAI/issues/72)) ([2a4de00](https://github.com/RexiAI/rexiAI/commit/2a4de0012da954dce9f4aad0d426ec76a919e8e2))
+
 ## [1.5.2](https://github.com/RexiAI/rexiAI/compare/v1.5.1...v1.5.2) (2026-10-21)
 
 
