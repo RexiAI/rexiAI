@@ -137,7 +137,13 @@ verify_first_run() {
   # failures inside that cycle (the ASR upload-policy 401 expected until
   # spec 006 lands) are contained by design and must NOT flip this verdict —
   # the criterion is that the scan ran, not that every stage succeeded.
-  if journalctl -u rexi-recording.service --no-pager -n 300 | grep -qE '\[recording-cron\]|Scanning'; then
+  # Capture the journal first, then grep the captured text: piping into
+  # `grep -q` lets grep exit on the first match, SIGPIPEs journalctl, and —
+  # under `set -o pipefail` — reports 141 instead of the grep match. The
+  # scan-cycle criterion must key off the grep result, not the writer's exit.
+  local journal
+  journal="$(journalctl -u rexi-recording.service --no-pager -n 300 2>/dev/null || true)"
+  if grep -qE '\[recording-cron\]|Scanning' <<<"$journal"; then
     log "scan-cycle evidence found in the journal — install verified."
     return 0
   fi
