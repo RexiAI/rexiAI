@@ -151,4 +151,29 @@ describe('AC-004 auto-record prosody module + provisioning', () => {
     expect(lua).toContain('rexi_auto_record_started')
     expect(lua).toMatch(/human_occupants\(room\) ~= 1 then return/)
   })
+
+  it('unit: the jibri start IQ is addressed to the room focus component, never the bare room jid (live-defect D1 pin)', () => {
+    const lua = repoFile(MODULE_REPO_PATH)
+    // Live e2e (remediation D1): mod_muc answers <service-unavailable/> to a
+    // jibri set-IQ addressed to the bare room jid, so jicofo never sees it and
+    // Jibri never starts. The probe-proven addressee is room.jid .. '/focus'.
+    expect(lua).toMatch(/st\.stanza\("iq"[\s\S]{0,220}?to\s*=\s*room\.jid\s*\.\.\s*'\/focus'/)
+    // The routed IQ must also carry an id: mod_muc handle_iq_to_occupant
+    // concatenates stanza.attr.id into its de-dup encoding and crashes on nil
+    // (the traceback was the second live half of defect D1).
+    expect(lua).toMatch(/st\.stanza\("iq"[\s\S]{0,300}?\bid\s*=\s*tostring\(math\.random/)
+    // regression guard: the buggy bare-room form must not come back in code
+    expect(lua).not.toMatch(/to\s*=\s*room\.jid,/)
+    // jicofo ignores recording starts from non-moderators (D1 live finding):
+    // the first human must be promoted via the internal set_role actor BEFORE
+    // the IQ is sent, so the queued moderator presence reaches jicofo first.
+    expect(lua).toMatch(/set_role\(true,\s*nick_jid,\s*"moderator"\)/)
+    const promote = lua.indexOf('set_role(true,')
+    const send = lua.indexOf('module:send(iq)')
+    expect(promote).toBeGreaterThan(-1)
+    expect(send).toBeGreaterThan(promote)
+    // from-stays-the-occupant semantics unchanged (consent gate + idempotence)
+    expect(lua).toMatch(/from\s*=\s*occupant\.jid/)
+    expect(lua).toContain('room._data.rexi_auto_record_started = true')
+  })
 })

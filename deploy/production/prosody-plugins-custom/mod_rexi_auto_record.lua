@@ -7,14 +7,20 @@
 -- bookings always mint rooms as rexi-<hex>. Non-prefixed rooms never reach
 -- the recording-start path (AC-004-21) — that is the privacy guarantee.
 --
--- HOW: on the FIRST human occupant joining a matching room, send the same
--- `<jibri action="start" recording_mode="file"/>` set-IQ the moderator UI's
--- recording button sends, addressed to the room's MUC jid, from the joining
--- occupant's own MUC occupant jid (the exact shape mod_muc delivers to jicofo
--- when a real client clicks the button). Being an internal, module-originated
--- stanza it bypasses mod_filter_iq_jibri, whose job is guarding the CLIENT
--- entry point — deliberate here because the trigger is the trusted server
--- side of the consent boundary.
+-- HOW: on the FIRST human occupant joining a matching room, promote that
+-- occupant to moderator (jicofo ignores recording starts from non-moderators)
+-- and send the `<jibri action="start" recording_mode="file"/>` set-IQ from the
+-- joining occupant's own MUC occupant jid, ADDRESSED TO THE ROOM'S FOCUS
+-- OCCUPANT (`room.jid .. '/focus'` — jicofo's presence in the MUC). The bare
+-- room jid does NOT work: mod_muc has no handler for a jibri set-IQ addressed
+-- to the room itself and answers `<service-unavailable/>` — jicofo never sees
+-- the request and Jibri never starts (live-proven trap, e2e remediation D1:
+-- the module logged "started" while zero session dirs appeared; the same IQ
+-- addressed to /focus produced "Accepted jibri request" in jicofo and a real
+-- Jibri file recording). Being an internal, module-originated stanza it
+-- bypasses mod_filter_iq_jibri, whose job is guarding the CLIENT entry point —
+-- deliberate here because the trigger is the trusted server side of the
+-- consent boundary.
 --
 -- IDEMPOTENCY: one session per meeting — the flag lives on room._data, so
 -- repeated occupant-joined events (second participant, reconnects) never
@@ -64,7 +70,35 @@ local function starts_with_prefix(name)
 end
 
 local function start_file_recording(room, occupant)
-    local iq = st.stanza("iq", { from = occupant.jid, to = room.jid, type = "set" })
+    -- jicofo only accepts a file-recording start from a MODERATOR occupant
+    -- ("Ignored Jibri request from non-moderator" — the third live half of
+    -- defect D1). At occupant-joined time jicofo's own AutoOwnerRoleManager
+    -- has not promoted anyone yet, so promote the first human here
+    -- explicitly (actor == true: internal, skips may_set_role — this only
+    -- ever runs inside the rexi- prefix gate). Prosody queues the moderator
+    -- presence and our IQ to jicofo's session IN ORDER, so by the time the
+    -- IQ is processed the sender is already a moderator — deterministic,
+    -- no sleeps, no retries.
+    local nick_jid = room:get_occupant_jid(occupant.jid);
+    if nick_jid then
+        local ok = room:set_role(true, nick_jid, "moderator");
+        if not ok then
+            module:log("warn", "rexi_auto_record: could not promote %s to moderator", nick_jid);
+        end
+    end
+
+    -- to = room.jid would be answered <service-unavailable/> by mod_muc — see
+    -- the HOW block above; the /focus resource is what routes to jicofo.
+    -- The id attribute is NOT decoration: mod_muc's handle_iq_to_occupant
+    -- rewrites stanza.attr.id via base64 concatenation and CRASHES on a nil
+    -- id (live-verified: muc.lib.lua "attempt to concatenate a nil value
+    -- (field 'id')" — the stanza never reaches jicofo).
+    local iq = st.stanza("iq", {
+        from = occupant.jid,
+        to = room.jid .. '/focus',
+        type = "set",
+        id = tostring(math.random(1000000)),
+    })
         :tag("jibri", {
             xmlns = "http://jitsi.org/protocol/jibri",
             action = "start",
