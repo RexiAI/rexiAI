@@ -13,9 +13,13 @@ import { callsWith, firstCallWith, runShellScript } from './shell-harness.ts'
 import type { Shim, ShimRule } from './shell-harness.ts'
 
 const SCRIPT = 'deploy/home/expose-funnel.sh'
-const HOST = 'pcdanimoudo-1.pucelano-95.ts.net'
+const HOST = 'pcdanimoudo-1.tail343219.ts.net'
 
-const TS_STATUS_JSON = '{"Hostname": "pcdanimoudo-1", "UserLogin": {"TailName": "pucelano-95"}}'
+// Real `tailscale status --self --json` shape (v1.102): node name is
+// Self.HostName (capital N), tailnet domain embedded in Self.DNSName — there
+// is no standalone "Hostname"/"TailName" field.
+const TS_STATUS_JSON =
+  '{"Self":{"HostName":"PCDaniMoudo","DNSName":"pcdanimoudo-1.tail343219.ts.net."}}'
 
 const CONSENT_FAIL_OUT =
   'funnel has not been enabled on this tailnet yet.\n' +
@@ -32,7 +36,7 @@ function healthyShims(funnelBg: ShimRule): Shim[] {
     {
       cmd: 'tailscale',
       rules: [
-        { match: 'status --json', stdout: TS_STATUS_JSON },
+        { match: 'status --self --json', stdout: TS_STATUS_JSON },
         { match: 'funnel status', stdout: 'No serve config\n' },
         funnelBg,
       ],
@@ -172,7 +176,7 @@ describe('AC-005 expose-funnel.sh', () => {
         {
           cmd: 'tailscale',
           rules: [
-            { match: 'status --json', stdout: TS_STATUS_JSON },
+            { match: 'status --self --json', stdout: TS_STATUS_JSON },
             { match: 'funnel status', stdout: 'No serve config\n' },
             { match: 'funnel --bg', stdout: CONSENT_FAIL_OUT, exit: 1 },
           ],

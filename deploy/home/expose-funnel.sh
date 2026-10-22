@@ -39,11 +39,18 @@ precheck_tailscale() {
   if ! tailscale status >/dev/null 2>&1; then
     die "pre-check failed: tailscale status — tailscale is not up on this machine"
   fi
-  NODE="$(tailscale status --json | grep -oE '"Hostname": *"[^"]+"' | head -1 | cut -d'"' -f4)"
-  TAILNET="$(tailscale status --json | grep -oE '"TailName": *"[^"]+"' | head -1 | cut -d'"' -f4)"
+  # tailscale v1.102 emits no standalone "Hostname"/"TailName" fields: the node
+  # name is Self.HostName (capital N) and the tailnet domain is embedded in
+  # Self.DNSName (e.g. pcdanimoudo-1.tail343219.ts.net.). The funnel serves on
+  # the MagicDNS name — derive the host from DNSName, never reconstruct it.
+  local self_json dnsname
+  self_json="$(tailscale status --self --json 2>/dev/null)" || die "pre-check failed: could not read the tailscale self status"
+  NODE="$(printf '%s\n' "$self_json" | grep -oE '"HostName": *"[^"]+"' | head -1 | cut -d'"' -f4)"
+  dnsname="$(printf '%s\n' "$self_json" | grep -oE '"DNSName": *"[^"]+"' | head -1 | cut -d'"' -f4)"
   [[ -n "$NODE" ]] || die "pre-check failed: could not read the tailscale node name"
-  [[ -n "$TAILNET" ]] || die "pre-check failed: could not read the tailnet name"
-  FUNNEL_HOST="${NODE}.${TAILNET}.ts.net"
+  FUNNEL_HOST="${dnsname%.}"          # MagicDNS name, trailing dot stripped
+  TAILNET="${FUNNEL_HOST#*.}"         # domain after the machine prefix
+  [[ -n "$FUNNEL_HOST" ]] || die "pre-check failed: could not read the tailscale MagicDNS name"
   log "tailscale node: ${NODE} (tailnet ${TAILNET}) — funnel host will be https://${FUNNEL_HOST}"
 }
 
@@ -91,7 +98,12 @@ configure_funnel() {
   # background proxied to the local target. This is the configuration step —
   # only reached after every pre-check passed.
   local out rc=0
-  out="$(tailscale funnel --bg "http://127.0.0.1:${WEB_HTTP_PORT}" 2>&1)" || rc=$?
+  # `tailscale funnel --bg` prints the consent URL then BLOCKS polling when
+  # funnel is not yet enabled on the tailnet (unlike the older exit-non-zero
+  # behavior). Bound it so the consent-pending state reaches the consent
+  # boundary instead of hanging; timeout's exit 124 routes there like any
+  # other non-zero.
+  out="$(timeout 15 tailscale funnel --bg "http://127.0.0.1:${WEB_HTTP_PORT}" 2>&1)" || rc=$?
   if [[ "$rc" -ne 0 ]]; then
     handle_consent_boundary "$out"
   fi
