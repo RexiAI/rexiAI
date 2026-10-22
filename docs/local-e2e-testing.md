@@ -100,6 +100,59 @@ npm run dev                                  # opens http://localhost:5173
 
 ---
 
+## 2b. Auto-record install — local stack (the e2e oracle, spec 004)
+
+RexiAI rooms (`rexi-<hex>`) auto-start recording via the custom prosody module;
+**no recording-UI click is needed** (and the e2e journeys assert nobody clicks
+one). One-time install against this machine's `~/docker-jitsi-meet`:
+
+```bash
+# 1. Copy the module into the mounted custom-plugins dir
+mkdir -p ~/.jitsi-meet-cfg/prosody/prosody-plugins-custom
+cp ~/projects/rexiAI/deploy/production/prosody-plugins-custom/mod_rexi_auto_record.lua \
+   ~/.jitsi-meet-cfg/prosody/prosody-plugins-custom/mod_rexi_auto_record.lua
+
+# 2. Enable it for BOTH module hooks in the Jitsi .env:
+#    GLOBAL_MODULES   → prosody VirtualHosts
+#    XMPP_MUC_MODULES → the MUC component, where occupant-joined events fire
+#       (GLOBAL_MODULES alone does NOT load the module on the component)
+grep -q '^GLOBAL_MODULES=' ~/docker-jitsi-meet/.env || echo 'GLOBAL_MODULES=rexi_auto_record' >> ~/docker-jitsi-meet/.env
+grep -q '^XMPP_MUC_MODULES=' ~/docker-jitsi-meet/.env || echo 'XMPP_MUC_MODULES=rexi_auto_record' >> ~/docker-jitsi-meet/.env
+
+# 3. (Optional) change the room prefix. The module reads REXI_AUTO_RECORD_PREFIX
+#    from the PROSODY CONTAINER env (default "rexi-" when unset). The stack's
+#    docker-compose only forwards a curated env list — forward the knob with a
+#    compose override (~/docker-jitsi-meet/docker-compose.override.yml):
+#      services:
+#        prosody:
+#          environment:
+#            - REXI_AUTO_RECORD_PREFIX
+#    and set it in ~/docker-jitsi-meet/.env.
+REXI_PREFIX='REXI_AUTO_RECORD_PREFIX=rexi-'
+grep -q '^REXI_AUTO_RECORD_PREFIX=' ~/docker-jitsi-meet/.env || echo "$REXI_PREFIX" >> ~/docker-jitsi-meet/.env
+
+# 4. Restart the stack (up -d recreates only what changed — prosody) and
+#    luac-gate the copy inside the image's own toolchain:
+cd ~/docker-jitsi-meet
+docker compose -f docker-compose.yml -f jibri.yml \
+  -f ~/projects/rexiAI/deploy/production/docker-compose.recordings.yml up -d
+docker exec docker-jitsi-meet-prosody-1 luac -p /prosody-plugins-custom/mod_rexi_auto_record.lua && echo "luac gate: OK"
+
+# 5. Confirm the module loaded on the MUC component:
+docker logs docker-jitsi-meet-prosody-1 2>&1 | grep "rexi_auto_record: loaded" \
+  | grep -c "muc.meet.jitsi" # expect ≥1
+```
+
+A plain `docker restart` does **not** re-read the `.env` — env changes need the
+`docker compose up -d` recreate above (the config is rendered from the
+container env at boot).
+
+Then join any `rexi-*` room and recording starts on the first occupant; the
+Jibri session dir appears under `RECORDINGS_DIR`. `deploy-jitsi.sh` on a real
+VPS performs steps 1–4 automatically and un-provisions if the luac gate fails.
+
+---
+
 ## 3. Book a session (as the customer)
 
 1. Open **http://localhost:5173**.

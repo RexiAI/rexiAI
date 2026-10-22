@@ -1,0 +1,131 @@
+-- mod_rexi_auto_record — auto-start Jibri file recording for first-party (rexi-) rooms.
+--
+-- WHY: RexiAI meetings must be recorded for the recording→transcription→
+-- insight pipeline (spec 004). Requiring a human to click "Start recording"
+-- is unreliable; the room NAME prefix is the consent boundary instead: only
+-- rooms starting with the configured prefix are auto-recorded, and RexiAI
+-- bookings always mint rooms as rexi-<hex>. Non-prefixed rooms never reach
+-- the recording-start path (AC-004-21) — that is the privacy guarantee.
+--
+-- HOW: on the FIRST human occupant joining a matching room, promote that
+-- occupant to moderator (jicofo ignores recording starts from non-moderators)
+-- and send the `<jibri action="start" recording_mode="file"/>` set-IQ from the
+-- joining occupant's own MUC occupant jid, ADDRESSED TO THE ROOM'S FOCUS
+-- OCCUPANT (`room.jid .. '/focus'` — jicofo's presence in the MUC). The bare
+-- room jid does NOT work: mod_muc has no handler for a jibri set-IQ addressed
+-- to the room itself and answers `<service-unavailable/>` — jicofo never sees
+-- the request and Jibri never starts (live-proven trap, e2e remediation D1:
+-- the module logged "started" while zero session dirs appeared; the same IQ
+-- addressed to /focus produced "Accepted jibri request" in jicofo and a real
+-- Jibri file recording). Being an internal, module-originated stanza it
+-- bypasses mod_filter_iq_jibri, whose job is guarding the CLIENT entry point —
+-- deliberate here because the trigger is the trusted server side of the
+-- consent boundary.
+--
+-- IDEMPOTENCY: one session per meeting — the flag lives on room._data, so
+-- repeated occupant-joined events (second participant, reconnects) never
+-- start a second Jibri session (live-proven by AC-004-50).
+--
+-- Knobs (every knob the module reads is documented + defaulted — no silent
+-- half-wiring):
+--   REXI_AUTO_RECORD_PREFIX  env var, default "rexi-". Room-name prefix that
+--                            opts a room into auto-recording. Documented in
+--                            deploy/production/jitsi.env.example; read from
+--                            the prosody CONTAINER env (forward it into the
+--                            container per docs/local-e2e-testing.md).
+--
+-- Enabled via the stack's GLOBAL_MODULES mechanism (deploy-jitsi.sh
+-- provisions it); /prosody-plugins-custom is first on plugin_paths.
+
+local st = require "util.stanza";
+local jid = require "util.jid";
+local util = module:require "util";
+local is_focus = util.is_focus;
+local is_jibri = util.is_jibri;
+local is_transcriber = util.is_transcriber;
+local is_healthcheck_room = util.is_healthcheck_room;
+
+local room_prefix = os.getenv("REXI_AUTO_RECORD_PREFIX") or "rexi-";
+
+module:log("info", "rexi_auto_record: loaded, recording rooms starting with '%s'", room_prefix);
+
+local function is_backend_or_owner(occupant_jid)
+    if occupant_jid == nil then return true end
+    if is_focus(occupant_jid) then return true end
+    if is_jibri(occupant_jid) then return true end
+    if is_transcriber(occupant_jid) then return true end
+    return false
+end
+
+local function human_occupants(room)
+    local n = 0;
+    for _, occupant in room:each_occupant() do
+        if not is_backend_or_owner(occupant.jid) then n = n + 1 end
+    end
+    return n
+end
+
+local function starts_with_prefix(name)
+    return name ~= nil and #room_prefix > 0 and name:sub(1, #room_prefix) == room_prefix
+end
+
+local function start_file_recording(room, occupant)
+    -- jicofo only accepts a file-recording start from a MODERATOR occupant
+    -- ("Ignored Jibri request from non-moderator" — the third live half of
+    -- defect D1). At occupant-joined time jicofo's own AutoOwnerRoleManager
+    -- has not promoted anyone yet, so promote the first human here
+    -- explicitly (actor == true: internal, skips may_set_role — this only
+    -- ever runs inside the rexi- prefix gate). Prosody queues the moderator
+    -- presence and our IQ to jicofo's session IN ORDER, so by the time the
+    -- IQ is processed the sender is already a moderator — deterministic,
+    -- no sleeps, no retries.
+    local nick_jid = room:get_occupant_jid(occupant.jid);
+    if nick_jid then
+        local ok = room:set_role(true, nick_jid, "moderator");
+        if not ok then
+            module:log("warn", "rexi_auto_record: could not promote %s to moderator", nick_jid);
+        end
+    end
+
+    -- to = room.jid would be answered <service-unavailable/> by mod_muc — see
+    -- the HOW block above; the /focus resource is what routes to jicofo.
+    -- The id attribute is NOT decoration: mod_muc's handle_iq_to_occupant
+    -- rewrites stanza.attr.id via base64 concatenation and CRASHES on a nil
+    -- id (live-verified: muc.lib.lua "attempt to concatenate a nil value
+    -- (field 'id')" — the stanza never reaches jicofo).
+    local iq = st.stanza("iq", {
+        from = occupant.jid,
+        to = room.jid .. '/focus',
+        type = "set",
+        id = tostring(math.random(1000000)),
+    })
+        :tag("jibri", {
+            xmlns = "http://jitsi.org/protocol/jibri",
+            action = "start",
+            recording_mode = "file",
+            streaming_mode = "disabled",
+        }):up();
+    module:send(iq);
+    room._data.rexi_auto_record_started = true;
+    module:log("info", "rexi_auto_record: started file recording for %s (first human %s)",
+        room.jid, occupant.jid);
+end
+
+module:hook("muc-occupant-joined", function(event)
+    local room, occupant = event.room, event.occupant;
+
+    -- Consent boundary FIRST: rooms outside the prefix never reach any
+    -- recording-start logic, and the per-room flag short-circuits repeats.
+    if room._data.rexi_auto_record_started then return end
+    if is_healthcheck_room(room.jid) then return end
+
+    local node = jid.split(room.jid);
+    if not starts_with_prefix(node) then return end
+    if is_backend_or_owner(occupant.jid) then return end
+
+    -- Only the FIRST human counts as the trigger; the joining occupant is
+    -- already present, so exactly one human means "this join started it".
+    if human_occupants(room) ~= 1 then return end
+
+    start_file_recording(room, occupant);
+end);

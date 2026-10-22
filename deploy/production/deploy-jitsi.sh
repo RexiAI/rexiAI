@@ -63,11 +63,60 @@ mkdir -p "$RECORDINGS_DIR"
 chown -R 1000:1000 "$RECORDINGS_DIR" 2>/dev/null || true
 chown -R 1000:1000 ~/.jitsi-meet-cfg/storage 2>/dev/null || true
 
+# ── 1b. Auto-record prosody module (spec 004) ────────────────────────────────
+# Provision mod_rexi_auto_record into the mounted custom-plugins dir and enable
+# it via the stack's env-var module hooks, idempotently (exactly once on every
+# re-run). TWO hooks, one on each config surface the module needs (live
+# verified): GLOBAL_MODULES merges into the VirtualHosts; the muc-occupant-joined
+# event fires on the MUC COMPONENT, which loads its own XMPP_MUC_MODULES list.
+# The luac syntax gate in step 2 aborts + un-provisions on a broken module —
+# no silent half-wiring (the jibri-finalize.sh stub precedent).
+# The backup lets the gate's failure path restore .env exactly as found.
+JITSI_CONFIG_DIR="${CONFIG:-$HOME/.jitsi-meet-cfg}"
+CUSTOM_PLUGIN_DIR="$JITSI_CONFIG_DIR/prosody/prosody-plugins-custom"
+AUTO_RECORD_REPO_MODULE="$APP_DIR/deploy/production/prosody-plugins-custom/mod_rexi_auto_record.lua"
+AUTO_RECORD_MODULE="rexi_auto_record"
+
+rex_upsert_env_list() {  # <KEY> <value> <envfile> — append value once, comma list; no duplicates
+  local key="$1" mod="$2" envfile="$3"
+  if grep -qE "^${key}=" "$envfile"; then
+    local current
+    current=$(grep -E "^${key}=" "$envfile" | tail -n 1 | cut -d= -f2-)
+    if ! printf '%s,' "$current" | tr ',' '\n' | grep -qx "$mod"; then
+      sed -i -E "s|^${key}=.*|${key}=${current},${mod}|" "$envfile"
+    fi
+  else
+    printf '%s=%s\n' "$key" "$mod" >> "$envfile"
+  fi
+}
+
+mkdir -p "$CUSTOM_PLUGIN_DIR"
+ENV_BACKUP=$(mktemp)
+cp .env "$ENV_BACKUP"
+rex_upsert_env_list GLOBAL_MODULES "$AUTO_RECORD_MODULE" .env
+rex_upsert_env_list XMPP_MUC_MODULES "$AUTO_RECORD_MODULE" .env
+cp "$AUTO_RECORD_REPO_MODULE" "$CUSTOM_PLUGIN_DIR/mod_rexi_auto_record.lua"
+echo "[auto-record] module copied to $CUSTOM_PLUGIN_DIR; GLOBAL_MODULES + XMPP_MUC_MODULES ensured in .env"
+
 # ── 2. Pull latest images + start stack + Jibri ──────────────────────────────
 echo "[pull] updating jitsi images…"
 $COMPOSE pull || true
 echo "[up] starting web/prosody/jicofo/jvb/jibri (recordings → $RECORDINGS_DIR)…"
 $COMPOSE up -d
+
+# Syntax gate on the provisioned copy (runs inside the image's own lua toolchain,
+# /usr/bin/luac verified present). On failure: remove the copied module, restore
+# .env, abort non-zero — the stack never runs half-provisioned auto-record.
+PROSODY_CID=$($COMPOSE ps -q prosody)
+if ! docker exec "$PROSODY_CID" luac -p /prosody-plugins-custom/mod_rexi_auto_record.lua; then
+  echo "ERROR: mod_rexi_auto_record.lua failed the luac syntax gate — un-provisioning auto-record." >&2
+  rm -f "$CUSTOM_PLUGIN_DIR/mod_rexi_auto_record.lua"
+  cp "$ENV_BACKUP" .env
+  rm -f "$ENV_BACKUP"
+  exit 1
+fi
+rm -f "$ENV_BACKUP"
+echo "[auto-record] luac syntax gate passed"
 
 # ── 3. Recording processor (host systemd timer) ──────────────────────────────
 # RECORDINGS_DIR (the processor's scan dir) is the same independent folder set
