@@ -1128,3 +1128,31 @@ to make `archive-spec.sh` emit prettier-clean output or add `docs/changes/` to
 `.prettierignore`).
 
 Verdict: FAIL (1 of 6 checks failed; 4 pass, 1 neutral SKIP). Phase-2 round 1.
+
+### Round 2 — 2026-10-22 (phase-2 re-check, fix round 1 of 3)
+
+Status query against draft PR #76 (head `522029562db8a8690903c08017d7e1b1aaa08781`),
+after the `style: prettier-format archive one-pager` fix-round push re-triggered CI.
+
+command: gh pr checks 76 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-10-22T14:51:19Z
+
+Per-check terminal status (bucket field is the PASS/FAIL parse rule):
+
+| Check                   | state   | bucket   | verdict                                 |
+| ----------------------- | ------- | -------- | --------------------------------------- |
+| Build                   | SUCCESS | pass     | PASS                                    |
+| Unit Tests              | SUCCESS | pass     | PASS                                    |
+| Lint & Format           | SUCCESS | pass     | PASS (previously failing check, fixed)  |
+| Docker Build & Push     | SKIPPED | skipping | SKIP (neutral — pull_request, not push) |
+| Vercel Preview Comments | SUCCESS | pass     | PASS                                    |
+| Vercel                  | SUCCESS | pass     | PASS                                    |
+
+Previously-failing check `Lint & Format` (check-run id `119879423277`, round 1)
+is now green at this head. No NEW check failed; Build, Unit Tests, and both
+Vercel checks remain green. Docker Build & Push is terminal-neutral SKIP (CI
+workflow skips the push-only job on a `pull_request` event — not a failure).
+
+Verdict: PASS (6 checks terminal — 5 pass, 1 neutral SKIP, 0 fail). Phase-2
+round 2, fix round 1 of 3. No further remediation required.
