@@ -39,16 +39,73 @@ node scripts/process-recording.mjs --scan [--dry-run]
 node scripts/process-recording.mjs --jibri-dir <recording_dir>
 ```
 
-`--dry-run` ffprobes + resolves the reservation but does **not** call billing.
+`--dry-run` ffprobes + resolves the reservation but does **not** call billing —
+and (spec 004) plans the whole chain WITHOUT mutating anything: no POST, no
+`bl`/`gh` call, no files, no markers (decision 8: one meaning — plan, don't
+mutate).
 
 Env (from `.env`): `STRIPE_SECRET_KEY`, `RECORDED_BILLING_TOKEN`,
 `APP_BASE_URL` (where `api/` is served — `vercel dev` → `http://localhost:3000`,
-or the deployed URL), optional `RECORDINGS_DIR`.
+or the deployed URL), optional `RECORDINGS_DIR`; plus the spec-004 insight-chain
+tools: `DASHSCOPE_API_KEY` (bl ASR/LLM auth — env, never argv), `GH_TOKEN` /
+`GITHUB_TOKEN` (gh issue delivery — env, never argv), `REXI_ASR_LANGUAGE`
+(ASR language hint, default `es`). The scan directory always comes from the
+`RECORDINGS_DIR` env/flag — never hardcoded.
 
 **Idempotency:** `recorded-billing` creates a new Checkout session per call (it
 is not idempotent), so the processor writes a `.rexi-billed` marker beside each
 processed recording and `--scan` skips marked ones. Prefer the Jibri
 finalize-hook (fires exactly once per recording) over polling.
+
+### The insight chain (spec 004)
+
+Every finished recording also becomes a customer insight. Per session directory
+the stages are:
+
+```
+Jibri MP4(s)
+  ├─ BILLING (optional)        marker .rexi-billed      — unchanged contract (chain above)
+  ├─ TRANSCRIPTION             marker .rexi-transcribed — audio extraction of ALL session
+  │     mp4s in chronological order (Jibri <room>_<YYYY-MM-DD-HH-MM-SS>.mp4 naming;
+  │     resumed meetings concatenate in true order) → ffmpeg -vn → audio.wav →
+  │     `bl speech recognize --url audio.wav --diarization --language es --out
+  │     transcript.json` (Spanish-primary hint via REXI_ASR_LANGUAGE, default es)
+  └─ INSIGHT + DELIVERY        marker .rexi-analyzed    — transcript.json → `bl text chat`
+        → customer-brief.md (fixed skeleton — Requirements, Pain points, Decisions,
+        Commitments, Next steps, always all present) → GitHub issue delivery into
+        RexiAI/rexiAI labeled `customer-insight`, idempotent via search-before-create
+        (open AND closed issues whose title contains the room suppress creation) —
+        the issue body carries the brief + the transcript path + the recording
+        (session-dir) path. `.rexi-analyzed` is written only after the brief AND
+        the delivery both succeed.
+```
+
+**The three markers are independent.** Each stage skips only its own marker: a
+directory that already has `.rexi-billed` is still transcribed and analyzed; a
+failed stage leaves no marker, so the next scan retries exactly that stage.
+`MAX_MINUTES` (480) gates the **billing** stage only — a long recording still
+transcribes and analyzes (the ceiling protects charge integrity, not insight
+quality).
+
+**Transcription and insight never depend on Stripe.** The stages are Stripe-free
+end to end: no attribution, no reservation, no `STRIPE_SECRET_KEY` required — with billing credentials absent
+the billing stage skips with a clear fail-closed log (never a POST), and the
+recording is processed fully. An unattributed recording still produces
+`transcript.json` + `customer-brief.md` + the insight issue; its booking-context
+section states the recording is unattributed (an email is never fabricated).
+
+**Auto-record:** booking rooms (`rexi-<hex>`) start recording by themselves —
+`deploy/production/prosody-plugins-custom/mod_rexi_auto_record.lua` fires the
+Jibri start for the first human occupant of any room whose name starts with
+`REXI_AUTO_RECORD_PREFIX` (default `rexi-`). No human UI action is required;
+non-prefixed rooms never reach the recording-start path (consent boundary).
+
+### Trigger — per-directory containment
+
+`--scan` processes every session directory inside its own try/catch: one broken
+recording (unreadable mp4, failed `bl`, failed `gh`) is logged with its path,
+counted in the run's failure summary, and left unmarked for the next scan — the
+sweep itself exits 0 (decision 13). Only an unreadable recordings root is fatal.
 
 ## Does this web need a backend?
 
@@ -180,6 +237,13 @@ live there). Three options, in order of preference:
 3. **Sidecar container (production-clean):** a small container sharing the
    `storage/jibri` volume + the docker network, with node + the repo, running
    `--scan` on a loop. Avoids host-cron entirely; the natural shape on a VPS.
+   **Spec-004 limitation:** the sidecar image (`deploy/production/recording-processor/`)
+   ships node + ffmpeg but **lacks `gh`** (and `bl`), so the insight stages
+   cannot complete there — issue delivery is **host-timer-mode only**. A
+   container-mode `--scan` still bills, and the transcription/insight stage
+   failures are per-directory contained (logged, unmarked, never fatal to the
+   sweep). Adding `bl` + `gh` to the image (container-mode delivery) is a
+   documented follow-up for a later spec (Ask D).
 
 ## Production deployment
 

@@ -60,6 +60,35 @@ It renders `.env` (only if absent) from `jitsi.env.example`, generates XMPP pass
 starts the stack + Jibri, installs + starts `rexi-recording.timer`, then prints verification.
 Idempotent: re-run after `git pull` in `/opt/rexiAI` to update the processor or images.
 
+## Revive meet.rexi-ai.com — runbook (spec 004)
+
+> **Scope note:** spec 004 delivers this RUNBOOK only; the actual VPS deployment is
+> **out of scope** for 004 — no production cutover happened in this spec (runbook only).
+
+1. **Host bootstrap (once):** `bash setup-jitsi-host.sh --domain meet.rexi-ai.com …`
+   (Docker, node, ffmpeg, repos, ports — see §One-time VPS setup above).
+2. **Deploy / update (re-runnable):** `bash deploy-jitsi.sh --domain meet.rexi-ai.com
+--public-ip <IP> --email <admin-email> --app-base-url https://rexi-ai.com`.
+   Since spec 004 this script also **provisions the auto-record module**
+   (`mod_rexi_auto_record.lua` → `$CONFIG/prosody/prosody-plugins-custom/`,
+   enabled via `GLOBAL_MODULES` + `XMPP_MUC_MODULES` in the Jitsi `.env`, exactly
+   once per re-run) and **runs its `luac` syntax gate** inside the prosody
+   container right after startup — a failed gate un-provisions and aborts.
+3. **Vercel production env:** set `MEETING_BASE_URL=https://meet.rexi-ai.com`
+   (booking join URLs must point at the revived Jitsi host).
+4. **Processor env:** provision `/etc/rexi-recording.env` (mode 0600, from
+   `rexi-recording.env.example`) with `RECORDINGS_DIR` (the same path Jitsi's
+   `.env` RECORDINGS_DIR mounts), `STRIPE_SECRET_KEY` + `RECORDED_BILLING_TOKEN`
+   (billing, optional — the insight chain runs without them), and the spec-004
+   tool credentials: `DASHSCOPE_API_KEY` (bl ASR/LLM auth) and `GH_TOKEN`
+   (customer-insight issue delivery). `bl`/`gh`/`ffmpeg` must be on the host's
+   PATH for the timer's user.
+5. **Timer:** `systemctl enable --now rexi-recording.timer` (deploy-jitsi.sh does
+   this; verify with `systemctl list-timers rexi-recording.timer`).
+6. **Local-stack auto-record install** (the e2e oracle): see
+   `docs/local-e2e-testing.md` §Auto-record install — the same module + env
+   knobs, applied to the developer machine's docker-jitsi-meet.
+
 ## Trigger — two ways (pick one)
 
 - **Host systemd timer (default):** `rexi-recording.service` + `.timer` → `recording-cron.sh`
@@ -68,7 +97,9 @@ Idempotent: re-run after `git pull` in `/opt/rexiAI` to update the processor or 
   marker is the guard). The processor is dependency-free node + the system ffprobe.
 - **Docker sidecar (alternative):** `docker-compose.recording.yml` (Dockerfile in
   `recording-processor/`) mounts the recordings dir + runs the scan loop in a container — no
-  host cron. Use if you prefer everything in Docker.
+  host cron. Use if you prefer everything in Docker. **Spec-004 caveat:** the image lacks
+  `gh` (and `bl`), so insight issue delivery is host-timer-mode only; container delivery is
+  a documented follow-up (see `docs/recording-pipeline.md` §Trigger).
 - A `jibri-finalize.sh` stub is included for the in-container finalize hook, but the hook can't
   reach the host on a plain bridge — it's documented, not the default.
 
@@ -105,12 +136,12 @@ docker compose -f docker-compose.yml -f jibri.yml logs -f jibri   # recording se
 
 ## Secrets checklist (never committed — this dir only has *.example)
 
-| Where                            | Keys                                                                                                          |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `/etc/rexi-recording.env` (0600) | `STRIPE_SECRET_KEY`, `RECORDED_BILLING_TOKEN`, `APP_BASE_URL`, `MEETING_BASE_URL`                             |
-| docker-jitsi-meet `.env`         | the six XMPP passwords (`./gen-passwords.sh`)                                                                 |
-| Vercel                           | `STRIPE_SECRET_KEY`(live), `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `RECORDED_BILLING_TOKEN`, `MICROSOFT_*` |
-| Resend dashboard                 | verify `rexi-ai.com` → set `EMAIL_FROM` to a verified sender (else customer/payment emails are refused)       |
+| Where                            | Keys                                                                                                                                           |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/etc/rexi-recording.env` (0600) | `STRIPE_SECRET_KEY`, `RECORDED_BILLING_TOKEN`, `APP_BASE_URL`, `MEETING_BASE_URL`, `RECORDINGS_DIR`, `DASHSCOPE_API_KEY` (bl), `GH_TOKEN` (gh) |
+| docker-jitsi-meet `.env`         | the six XMPP passwords (`./gen-passwords.sh`)                                                                                                  |
+| Vercel                           | `STRIPE_SECRET_KEY`(live), `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `RECORDED_BILLING_TOKEN`, `MICROSOFT_*`                                  |
+| Resend dashboard                 | verify `rexi-ai.com` → set `EMAIL_FROM` to a verified sender (else customer/payment emails are refused)                                        |
 
 > The processor never stores the `checkoutUrl` beyond the billing response; the
 > `recorded-billing` endpoint emails it to the customer. Until a Resend verified
