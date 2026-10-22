@@ -6,6 +6,10 @@
     "module": "esnext",
     "types": ["vite/client"],
     "allowArbitraryExtensions": true,
+    // spec 004: src/__tests__ import the zero-dep units under scripts/recording/*.mjs.
+    // allowJs pulls those plain-ESM files into the program for export inference;
+    // checkJs stays off, so the JS itself is never type-asserted.
+    "allowJs": true,
     "skipLibCheck": true,
 
     /* Bundler mode */
