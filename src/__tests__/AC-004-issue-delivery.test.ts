@@ -82,6 +82,41 @@ describe('AC-004 GitHub issue delivery', () => {
     }
   })
 
+  it('AC-004-35: a seconds-fresh issue invisible to the search index is still found by the list scan (live-defect D3 pin)', async () => {
+    // Live e2e: run 1 created #73; the immediate re-sweep searched
+    // --search "<room> in:title", the GitHub SEARCH index had not caught up,
+    // the answer was empty, and a duplicate #74 opened. The --state all LIST
+    // endpoint is index-independent, and the title is deterministic
+    // (decision 7) — the primary check filters it client-side.
+    const fresh = {
+      number: 73,
+      title: 'Customer insight: rexi-abc123 2026-10-21',
+      url: 'https://github.com/RexiAI/rexiAI/issues/73',
+    }
+    const { runner, calls } = makeRunner((call) => {
+      const sub = call.cmd === 'gh' ? call.args.slice(0, 2).join(' ') : ''
+      if (sub === 'label list') return { stdout: JSON.stringify([{ name: 'customer-insight' }]) }
+      if (sub === 'issue list') {
+        // the search index misses the seconds-fresh issue; the plain listing
+        // already shows it
+        return { stdout: call.args.includes('--search') ? '[]' : JSON.stringify([fresh]) }
+      }
+      return { stdout: ghStdout([call.cmd, ...call.args]) }
+    })
+
+    const result = await deliveryArgs(runner)
+
+    expect(result.created).toBe(false)
+    expect(calls.filter((c) => c.args[1] === 'create')).toHaveLength(0)
+    // the primary list scan covers open AND closed without relying on search
+    const listScan = calls.find(
+      (c) => c.args[0] === 'issue' && c.args[1] === 'list' && !c.args.includes('--search')
+    )
+    expect(listScan).toBeDefined()
+    expect(listScan!.args).toContain('--state')
+    expect(listScan!.args[listScan!.args.indexOf('--state') + 1]).toBe('all')
+  })
+
   it('AC-004-36: a missing label is created exactly once; an existing one is not', async () => {
     const missing = healthyRunner({ 'label list': JSON.stringify([{ name: 'bug' }]) })
     await deliveryArgs(missing.runner)
