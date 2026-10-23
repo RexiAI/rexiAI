@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/RexiAI/rexiAI/compare/v1.6.0...v1.7.0) (2026-10-23)
+
+
+### Features
+
+* **recording:** home-hosted recording on this WSL machine ([#76](https://github.com/RexiAI/rexiAI/issues/76)) ([e416640](https://github.com/RexiAI/rexiAI/commit/e4166405988dadb0814fcc28eab8d918164011e1))
+
 # [1.6.0](https://github.com/RexiAI/rexiAI/compare/v1.5.2...v1.6.0) (2026-10-22)
 
 
