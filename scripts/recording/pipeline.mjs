@@ -11,6 +11,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { homedir } from 'node:os'
 
+import { assessFreeSpace } from './disk.mjs'
 import { collectSessionMp4s } from './media.mjs'
 import { transcribe, TRANSCRIBED_MARKER } from './transcribe.mjs'
 import { runInsightStage, ANALYZED_MARKER } from './insight.mjs'
@@ -107,22 +108,25 @@ async function transcriptionStage({ dir, mp4s, env, deps, dryRun, log }) {
   await transcribe({ sessionDir: dir, mp4s, runner: deps.runner, env })
 }
 
-async function insightStage({ dir, context, deps, dryRun, log }) {
+async function insightStage({ dir, context, deps, dryRun, log, env }) {
   if (existsSync(path.join(dir, ANALYZED_MARKER))) {
     log.log('    SKIP insight: .rexi-analyzed marker.')
     return
   }
   if (dryRun) {
-    log.log('    DRY-RUN: would run bl text chat, write customer-brief.md, open the insight issue.')
+    log.log(
+      '    DRY-RUN: would run local ollama chat, write customer-brief.md, open the insight issue.'
+    )
     return
   }
-  log.log('    INSIGHT: bl text chat → customer-brief.md → GitHub issue…')
+  log.log('    INSIGHT: local ollama chat → customer-brief.md → GitHub issue…')
   const transcriptPath = path.join(dir, 'transcript.json')
   await runInsightStage({
     sessionDir: dir,
     transcriptPath,
     context,
-    runner: deps.runner,
+    fetch: deps.fetch,
+    env,
     deliver: (args) => deliverInsightIssue({ ...args, runner: deps.runner }),
   })
 }
@@ -208,7 +212,7 @@ export async function processSessionDir({ dir, room, dryRun = false, env, deps, 
 
   const context = insightContext({ room: resolvedRoom, mp4s, target, attribution })
   await transcriptionStage({ dir, mp4s, env, deps, dryRun, log })
-  await insightStage({ dir, context, deps, dryRun, log })
+  await insightStage({ dir, context, deps, dryRun, log, env })
   return { ok: billing !== 'failed' }
 }
 
@@ -230,12 +234,29 @@ export async function scanAll({ rootDir, dryRun = false, env, deps, log = consol
     log.error(`Recordings dir not found: ${rootDir}`)
     return { processed: 0, failed: [] }
   }
+  // Spec-005 Task 2 disk guard: scan mode ONLY (one-off modes never reach it),
+  // after the root-existence check and before any session dir is processed.
+  // --dry-run gets the same verdicts (decision 6: dry-run reports what a real
+  // run would do). Undeterminable free space fails open (decision 3).
+  const guard = await diskGuard({ rootDir, env, deps, log })
+  if (guard.skipRun) return { processed: 0, failed: [] }
   const { processed, failed } = await sweepSessionDirs({ rootDir, env, deps, dryRun, log })
   log.log(`\nDone. Processed ${processed} recording(s).`)
   if (failed.length > 0) {
     log.log(`Failures: ${failed.length} recording(s) left unmarked and retried on the next scan.`)
   }
   return { processed, failed }
+}
+
+/** Apply one disk-guard verdict to the log; returns whether to skip the run. */
+async function diskGuard({ rootDir, env, deps, log }) {
+  const verdict = await assessFreeSpace({ dir: rootDir, env, runner: deps.runner })
+  if (verdict.level === 'error') {
+    log.error(verdict.message)
+    return { skipRun: true }
+  }
+  if (verdict.message) log.warn(verdict.message) // warn verdicts continue (fail-open included)
+  return { skipRun: false }
 }
 
 async function sweepSessionDirs({ rootDir, env, deps, dryRun, log }) {

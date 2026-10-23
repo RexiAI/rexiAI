@@ -12,7 +12,7 @@ import {
 } from '../../scripts/recording/insight.mjs'
 
 import {
-  makeRunner,
+  makeFetch,
   mkTmpDir,
   rmTmpDir,
   writeFile,
@@ -61,12 +61,8 @@ function llmFiveSections() {
   return SECTIONS.map((s) => `## ${s}\n- body for ${s}`).join('\n\n')
 }
 
-function blChatRunner(content: string) {
-  return makeRunner((call) =>
-    call.cmd === 'bl'
-      ? { stdout: JSON.stringify({ choices: [{ message: { content } }] }) }
-      : { stdout: '' }
-  )
+function ollamaChatFetch(content: string) {
+  return makeFetch(() => ({ status: 200, body: { message: { content } } }))
 }
 
 function contextResolved() {
@@ -150,13 +146,14 @@ describe('AC-004 customer brief insight stage', () => {
   it('AC-004-32: secrets never appear in the brief', async () => {
     const dir = fs.mkdtempSync(`${base}/brief-32-`)
     writeFile(dir, 'transcript.json', JSON.stringify(SPANISH_TRANSCRIPT))
-    const bl = blChatRunner(llmFiveSections())
+    const llm = ollamaChatFetch(llmFiveSections())
     const deliver = async () => ({ created: true })
     await runInsightStage({
       sessionDir: dir,
       transcriptPath: `${dir}/transcript.json`,
       context: contextResolved(),
-      runner: bl.runner,
+      fetch: llm.fetch,
+      env: {},
       deliver,
     })
     const brief = fs.readFileSync(`${dir}/customer-brief.md`, 'utf8')
@@ -166,12 +163,13 @@ describe('AC-004 customer brief insight stage', () => {
   it('AC-004-33: .rexi-analyzed is written only after brief AND issue delivery succeed', async () => {
     const dir = fs.mkdtempSync(`${base}/brief-33-ok-`)
     writeFile(dir, 'transcript.json', JSON.stringify(SPANISH_TRANSCRIPT))
-    const bl = blChatRunner(llmFiveSections())
+    const llm = ollamaChatFetch(llmFiveSections())
     await runInsightStage({
       sessionDir: dir,
       transcriptPath: `${dir}/transcript.json`,
       context: contextResolved(),
-      runner: bl.runner,
+      fetch: llm.fetch,
+      env: {},
       deliver: async () => ({ created: true }),
     })
     expect(exists(dir, 'customer-brief.md')).toBe(true)
@@ -181,13 +179,14 @@ describe('AC-004 customer brief insight stage', () => {
   it('AC-004-33: a delivery failure leaves no .rexi-analyzed and propagates', async () => {
     const dir = fs.mkdtempSync(`${base}/brief-33-fail-`)
     writeFile(dir, 'transcript.json', JSON.stringify(SPANISH_TRANSCRIPT))
-    const bl = blChatRunner(llmFiveSections())
+    const llm = ollamaChatFetch(llmFiveSections())
     await expect(
       runInsightStage({
         sessionDir: dir,
         transcriptPath: `${dir}/transcript.json`,
         context: contextResolved(),
-        runner: bl.runner,
+        fetch: llm.fetch,
+        env: {},
         deliver: async () => {
           throw new Error('gh: issue create failed')
         },

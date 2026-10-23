@@ -25,7 +25,7 @@ import {
   writeFile,
   exists,
   ghStdout,
-  blProducesOut,
+  asrProducesOut,
 } from './recording-harness.ts'
 import type { Call, FetchCall, Runner, RunnerResult } from './recording-harness.ts'
 
@@ -56,25 +56,15 @@ function sessionDir(extraFiles: string[] = [], extraMp4s: Array<[string, number?
   return dir
 }
 
-function isBl(call: Call, verb: string): boolean {
-  return call.cmd === 'bl' && call.args.includes(verb)
-}
-
 function defaultExternal(call: Call): RunnerResult {
-  const asr = blProducesOut(call)
+  const asr = asrProducesOut(call)
   if (asr !== undefined) return asr
-  if (isBl(call, 'chat')) {
-    return {
-      stdout: JSON.stringify({
-        choices: [{ message: { content: '## Requirements\n- pricing page' } }],
-      }),
-    }
-  }
   if (call.cmd === 'gh') return { stdout: ghStdout([call.cmd, ...call.args]) }
   return { stdout: '' }
 }
 
-/** Runner covering bl (ASR out + chat content) and gh (healthy) defaults. */
+/** Runner covering whisper ASR out + gh (healthy) defaults; the insight stage
+ * is ollama over the injected fetch, not a runner command. */
 function chainRunner(behavior?: (call: Call) => RunnerResult | undefined) {
   return makeRunner((call) => {
     const own = behavior ? behavior(call) : undefined
@@ -95,11 +85,27 @@ function postReply(status: number) {
   }
 }
 
+/** A successful local-ollama /api/chat reply — the brief content is irrelevant to
+ * these billing tests; the skeleton renderer tolerates any (or empty) content. */
+function ollamaReply() {
+  return { status: 200, body: { message: { content: '## Requirements\n- pricing page' } } }
+}
+
+/** Route the local ollama /api/chat call to a success reply; delegate the rest. */
+function withOllama(
+  reply: (url: string, init?: FetchCall['init']) => { status: number; body: unknown }
+) {
+  return (url: string, init?: FetchCall['init']) =>
+    url.includes('/api/chat') ? ollamaReply() : reply(url, init)
+}
+
 function stripeFetch(sessions: unknown[], postStatus = 200) {
-  return makeFetch((_url, init) => {
-    if (init?.method === 'POST') return postReply(postStatus)
-    return { status: 200, body: { data: sessions, has_more: false } }
-  })
+  return makeFetch(
+    withOllama((_url, init) => {
+      if (init?.method === 'POST') return postReply(postStatus)
+      return { status: 200, body: { data: sessions, has_more: false } }
+    })
+  )
 }
 
 const RESERVATION = [
@@ -136,8 +142,16 @@ function newestFirstProbe(newest: string) {
   }
 }
 
+/** Stripe-billing POSTs only — the local ollama /api/chat call is also a POST
+ * and must not be counted as a billing attempt. */
+function billingPosts(handle: { calls: FetchCall[] }) {
+  return handle.calls.filter((c) => c.init?.method === 'POST' && !c.url.includes('/api/chat'))
+}
+
 function postCall(handle: { calls: FetchCall[] }) {
-  return handle.calls.find((c) => c.init && c.init.method === 'POST')
+  return handle.calls.find(
+    (c) => c.init && c.init.method === 'POST' && !c.url.includes('/api/chat')
+  )
 }
 
 describe('AC-004 processor rewiring', () => {
@@ -152,7 +166,7 @@ describe('AC-004 processor rewiring', () => {
     expect(exists(dir, 'transcript.json')).toBe(true)
     expect(exists(dir, '.rexi-transcribed')).toBe(true)
     // The marker still guards billing exactly as today: no POST ever attempted.
-    expect(fetch.calls.filter((c) => c.init?.method === 'POST')).toHaveLength(0)
+    expect(billingPosts(fetch)).toHaveLength(0)
   })
 
   it('AC-004-40: missing STRIPE_SECRET_KEY no longer aborts the run', async () => {
@@ -168,7 +182,7 @@ describe('AC-004 processor rewiring', () => {
     expect(exists(dir, 'transcript.json')).toBe(true)
     expect(exists(dir, '.rexi-analyzed')).toBe(true)
     expect(lines.join('\n')).toMatch(/SKIP billing/i)
-    expect(fetch.calls.filter((c) => c.init?.method === 'POST')).toHaveLength(0)
+    expect(billingPosts(fetch)).toHaveLength(0)
   })
 
   it('AC-004-40: the entry script no longer carries the STRIPE_SECRET_KEY startup gate', () => {
@@ -188,7 +202,7 @@ describe('AC-004 processor rewiring', () => {
     expect(lines.join('\n')).toMatch(/unattributed/i)
     expect(exists(dir, 'transcript.json')).toBe(true)
     expect(fs.readFileSync(`${dir}/customer-brief.md`, 'utf8')).toMatch(/unattributed/i)
-    expect(fetch.calls.filter((c) => c.init?.method === 'POST')).toHaveLength(0)
+    expect(billingPosts(fetch)).toHaveLength(0)
     expect(exists(dir, '.rexi-billed')).toBe(false)
   })
 
@@ -196,7 +210,7 @@ describe('AC-004 processor rewiring', () => {
     const dir = sessionDir()
     const chain = chainRunner(ffprobeBehavior({ duration: () => 120, audio: () => true }))
     const { lines, log } = captureLog()
-    const fetch = makeFetch(() => ({ status: 401, body: { error: 'bad key' } })) // throws inside lookup
+    const fetch = makeFetch(withOllama(() => ({ status: 401, body: { error: 'bad key' } }))) // throws inside lookup
 
     await processSessionDir({ dir, env: BILLING_ENV, deps: depsOf(chain.runner, fetch), log })
 
@@ -260,9 +274,11 @@ describe('AC-004 processor rewiring', () => {
     ]) {
       expect(exists(dir, f)).toBe(false)
     }
-    expect(chain.calls.filter((c) => c.cmd === 'bl' || c.cmd === 'gh')).toHaveLength(0)
+    expect(
+      chain.calls.filter((c) => c.cmd === 'bl' || c.cmd === 'gh' || c.cmd === 'python3')
+    ).toHaveLength(0)
     // A billing-enabled deployment still bills the silent recording, exactly as today.
-    expect(fetch.calls.some((c) => c.init?.method === 'POST')).toBe(true)
+    expect(billingPosts(fetch).length).toBeGreaterThan(0)
     expect(exists(dir, '.rexi-billed')).toBe(true)
     expect(ok).toBe(true)
   })
@@ -311,7 +327,10 @@ describe('AC-004 processor rewiring', () => {
     expect(again.processed).toBe(2)
     for (const d of dirs.slice(1)) {
       expect(
-        second.calls.filter((c) => (c.cmd === 'bl' || c.cmd === 'gh') && String(c.args).includes(d))
+        second.calls.filter(
+          (c) =>
+            (c.cmd === 'bl' || c.cmd === 'gh' || c.cmd === 'python3') && String(c.args).includes(d)
+        )
       ).toHaveLength(0)
     }
     expect(exists(dirA, '.rexi-transcribed')).toBe(false)
@@ -351,7 +370,7 @@ describe('AC-004 processor rewiring', () => {
     await processSessionDir({ dir, env: BILLING_ENV, deps: depsOf(chain.runner, fetch), log })
 
     expect(lines.join('\n')).toMatch(/exceeds the 480 min ceiling/)
-    expect(fetch.calls.filter((c) => c.init?.method === 'POST')).toHaveLength(0)
+    expect(billingPosts(fetch)).toHaveLength(0)
     expect(exists(dir, '.rexi-billed')).toBe(false)
     expect(exists(dir, '.rexi-transcribed')).toBe(true) // still transcribes…
     expect(exists(dir, '.rexi-analyzed')).toBe(true) // …and analyzes
@@ -401,8 +420,10 @@ describe('AC-004 processor rewiring', () => {
     })
 
     expect(exitCode).toBe(0)
-    expect(fetch.calls.filter((c) => c.init?.method === 'POST')).toHaveLength(0)
-    expect(chain.calls.filter((c) => c.cmd === 'bl' || c.cmd === 'gh')).toHaveLength(0)
+    expect(billingPosts(fetch)).toHaveLength(0)
+    expect(
+      chain.calls.filter((c) => c.cmd === 'bl' || c.cmd === 'gh' || c.cmd === 'python3')
+    ).toHaveLength(0)
     for (const f of [
       '.rexi-transcribed',
       '.rexi-analyzed',

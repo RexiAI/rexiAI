@@ -145,12 +145,13 @@ export function ghStdout(cmdArgs: string[]): string {
   return 'https://github.com/RexiAI/rexiAI/issues/1'
 }
 
-/** The bl ASR side effect as recorded: the --out target gets a transcript file. */
-export function blProducesOut(call: Call): RunnerResult | undefined {
-  if (call.cmd !== 'bl' || !call.args.includes('--out')) return undefined
-  const out = call.args[call.args.indexOf('--out') + 1]
-  fs.writeFileSync(out, JSON.stringify({ transcripts: [] }))
-  return { stdout: '{}' }
+/** The local-whisper ASR side effect as recorded: the transcript file is written
+ * at argv[2] (command: python3 whisper_transcribe.py <audio> <transcript> <lang>). */
+export function asrProducesOut(call: Call): RunnerResult | undefined {
+  if (call.cmd !== 'python3' || call.args.length < 3) return undefined
+  const out = call.args[2]
+  fs.writeFileSync(out, JSON.stringify({ segments: [] }))
+  return { stdout: '' }
 }
 
 export const SPANISH_TRANSCRIPT = {

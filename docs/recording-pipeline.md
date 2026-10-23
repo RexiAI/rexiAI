@@ -68,11 +68,12 @@ Jibri MP4(s)
   ├─ TRANSCRIPTION             marker .rexi-transcribed — audio extraction of ALL session
   │     mp4s in chronological order (Jibri <room>_<YYYY-MM-DD-HH-MM-SS>.mp4 naming;
   │     resumed meetings concatenate in true order) → ffmpeg -vn → audio.wav →
-  │     `bl speech recognize --url audio.wav --diarization --language es --out
-  │     transcript.json` (Spanish-primary hint via REXI_ASR_LANGUAGE, default es)
-  └─ INSIGHT + DELIVERY        marker .rexi-analyzed    — transcript.json → `bl text chat`
-        → customer-brief.md (fixed skeleton — Requirements, Pain points, Decisions,
-        Commitments, Next steps, always all present) → GitHub issue delivery into
+  │     `python3 scripts/recording/whisper_transcribe.py audio.wav transcript.json es`
+  │     (local faster-whisper ASR, offline; Spanish-primary via REXI_ASR_LANGUAGE, default es)
+  └─ INSIGHT + DELIVERY        marker .rexi-analyzed    — transcript.json → local
+        ollama `qwen3:14b` (offline, no key) → customer-brief.md (fixed skeleton —
+        Requirements, Pain points, Decisions, Commitments, Next steps, always all
+        present) → GitHub issue delivery into
         RexiAI/rexiAI labeled `customer-insight`, idempotent via search-before-create
         (open AND closed issues whose title contains the room suppress creation) —
         the issue body carries the brief + the transcript path + the recording
@@ -139,6 +140,10 @@ Jibri + the recordings + ffprobe. That is `scripts/process-recording.mjs`.
 - It calls the **existing** serverless `recorded-billing` endpoint over HTTPS.
 
 ### Recommended topology
+
+> **Spec-005 status:** the recommended topology below is realized today with
+> the "Jitsi host" being the home WSL2 box (PRIMARY, see §Deployment topology)
+> instead of a VPS — the VPS line is the alternative.
 
 - **Web app:** Vercel (Vite SPA + serverless `api/`). Unchanged.
 - **Jitsi + Jibri + recording processor:** one VPS (the Jitsi host), exposed to
@@ -214,6 +219,12 @@ cannot provide. Keep serverless for the web; run the processor beside Jibri.
 - ⬜ Optional: processor writes `recorded_minutes` to the reservation session
   metadata so the endpoint's advisory `getRecordedMinutes` cross-check has a
   source (currently a null no-op stub).
+- ⬜ Optional: **model tiers** (tune per accuracy needs) — ASR is local
+  faster-whisper (`REXI_WHISPER_MODEL`, default `small`; tiers
+  tiny/base/small/medium/large-v3) and insight is local ollama
+  (`REXI_INSIGHT_MODEL`, default `qwen3:14b`). Both are env-tunable in the
+  service environment; `small` trades transcription accuracy for CPU speed —
+  bump to `medium`/`large-v3` if Spanish accuracy matters more than scan time.
 
 ## Trigger
 
@@ -245,7 +256,58 @@ live there). Three options, in order of preference:
    sweep). Adding `bl` + `gh` to the image (container-mode delivery) is a
    documented follow-up for a later spec (Ask D).
 
-## Production deployment
+## Deployment topology (spec 005)
+
+**PRIMARY: home-hosted on WSL2 (this machine).** Jitsi + Jibri + the recording
+processor all run on one home server: the WSL2 guest under Windows. This is
+the topology in production use today — the VPS route below survives as the
+documented **alternative** (it costs a monthly bill and is only worth it if
+the home box's residential IP or uptime stops being acceptable).
+
+- **Storage layout on this machine:** the session directory, `transcript.json`,
+  and `customer-brief.md` all live under `RECORDINGS_DIR` =
+  `/home/dbueno/rexi-recordings` (Jibri writes the MP4 there; the processor
+  writes its sidecars beside it). Customer-insight GitHub issues are delivered
+  to the **PRIVATE repo** `RexiAI/rexiAI` — transcripts and briefs never land
+  in a public repository.
+- **Always-on caveat:** the machine must be powered on both for meetings AND
+  for the processor timer. `Persistent=true` on the timer catches up missed
+  scans after downtime, so recordings made before a reboot are still
+  processed. Consent boundary is unchanged: only rooms prefixed `rexi-`
+  auto-record (`mod_rexi_auto_record`).
+- **Install:** `deploy/home/install-recording-host.sh` (adapted systemd units,
+  0600 `/etc/rexi-recording.env`, first-scan journal verification) — see
+  `deploy/home/README.md`.
+- **Retention (manual for now):** there is no automated deletion and
+  `REXI_ARCHIVE_DIR` remains documented-but-unimplemented. Measured sizing is
+  approximately 3 MB per minute of recording; the filesystem currently has
+  ~821 GB free ≈ months of headroom. Revisit (or implement the archive dir)
+  when a scan cycle starts warning via the disk guard
+  (`REXI_MIN_FREE_GB` / `REXI_HARD_MIN_FREE_GB`).
+
+### Exposure decision matrix — path A vs path B vs VPS
+
+|                            | A: Tailscale Funnel                      | B: `meet.rexi-ai.com` → home                                                    | VPS alternative      |
+| -------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------- | -------------------- |
+| Cost                       | zero monthly cost                        | zero (DNS already owned)                                                        | monthly cost (VPS)   |
+| Setup work                 | zero router/DNS work                     | GoDaddy A record + router forwards `443/tcp` + `10000/udp` + Windows→WSL2 relay | full server bring-up |
+| TLS                        | valid Let's Encrypt on the `ts.net` host | Let's Encrypt via the stack's `ENABLE_LETSENCRYPT`                              | real cert            |
+| Media for external clients | **NO** — page + XMPP signaling only      | **full media path** (direct UDP 10000 reachability)                             | full media path      |
+| Caveats                    | HTTPS-only proxy                         | dynamic residential IP (DDNS caveat)                                            | the bill             |
+
+**Why path A cannot carry media (honest current truth):** Tailscale Funnel is
+an HTTPS-only proxy. It carries the Jitsi web app and the XMPP signaling, so
+clients can load the page and join the conference, but WebRTC media and the
+SCTP bridge channel ride the ICE transport — they need **direct UDP 10000
+reachability**, which only path B's router forward (or LAN/tailnet-local
+clients) provides. The old escape hatch — colibri-websocket over TCP 443 — was
+**removed upstream** (jitsi/docker-jitsi-meet #2285, 2026-07): the rendered
+nginx config on this host has no `/colibri-ws` location and no setting
+re-enables it. `deploy/home/expose-funnel.sh` prints this limitation as a loud
+banner before it configures anything. Path B stays the customer-meeting path;
+`deploy/home/expose-path-b.sh` prints its exact three layers.
+
+## Production deployment (alternative: the VPS route)
 
 `host.docker.internal` is a Docker-Desktop-local alias — it does not exist for
 real clients. For production:
@@ -260,10 +322,14 @@ real clients. For production:
   - **UDP 10000 open** on the VPS firewall/security-group (JVB media).
   - Reverse proxy (nginx/Traefik/Caddy) terminating TLS → web:8443.
   - The processor runs on the VPS (cron or sidecar), calling the Vercel endpoint.
-- **Why not Cloudflare Tunnel / Tailscale Funnel:** they proxy TCP/HTTPS only —
-  the JVB **UDP 10000** media path won't traverse them. They're fine for the
-  signaling/web leg, but media needs the public UDP port (or a TURN server). For a
-  single small VPS, opening UDP 10000 + `JVB_ADVERTISE_IPS=<public IP>` is the
-  simplest correct setup.
+- **Why not Cloudflare Tunnel / Tailscale Funnel:** (spec 005 update — this is
+  now the full, honest truth, see §Exposure decision matrix) they proxy
+  TCP/HTTPS only — the JVB **UDP 10000** media path won't traverse them. They
+  carry the web app and XMPP signaling, but WebRTC media and the SCTP bridge
+  channel need direct UDP reachability (or a TURN server). The one historical
+  TCP-443 media escape hatch, colibri-websocket, was removed upstream
+  (jitsi/docker-jitsi-meet #2285), so no configuration puts media on a funnel.
+  For a single small VPS, opening UDP 10000 + `JVB_ADVERTISE_IPS=<public IP>`
+  remains the simplest correct setup.
 - **Resend:** verify `rexi-ai.com` (DNS records) so customer emails deliver.
 - **Stripe:** live keys + a tax registration for VAT.
