@@ -219,6 +219,12 @@ cannot provide. Keep serverless for the web; run the processor beside Jibri.
 - ⬜ Optional: processor writes `recorded_minutes` to the reservation session
   metadata so the endpoint's advisory `getRecordedMinutes` cross-check has a
   source (currently a null no-op stub).
+- ⬜ Optional: **model tiers** (tune per accuracy needs) — ASR is local
+  faster-whisper (`REXI_WHISPER_MODEL`, default `small`; tiers
+  tiny/base/small/medium/large-v3) and insight is local ollama
+  (`REXI_INSIGHT_MODEL`, default `qwen3:14b`). Both are env-tunable in the
+  service environment; `small` trades transcription accuracy for CPU speed —
+  bump to `medium`/`large-v3` if Spanish accuracy matters more than scan time.
 
 ## Trigger
 

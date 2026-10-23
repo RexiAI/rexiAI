@@ -56,25 +56,15 @@ function sessionDir(extraFiles: string[] = [], extraMp4s: Array<[string, number?
   return dir
 }
 
-function isBl(call: Call, verb: string): boolean {
-  return call.cmd === 'bl' && call.args.includes(verb)
-}
-
 function defaultExternal(call: Call): RunnerResult {
   const asr = asrProducesOut(call)
   if (asr !== undefined) return asr
-  if (isBl(call, 'chat')) {
-    return {
-      stdout: JSON.stringify({
-        choices: [{ message: { content: '## Requirements\n- pricing page' } }],
-      }),
-    }
-  }
   if (call.cmd === 'gh') return { stdout: ghStdout([call.cmd, ...call.args]) }
   return { stdout: '' }
 }
 
-/** Runner covering bl (ASR out + chat content) and gh (healthy) defaults. */
+/** Runner covering whisper ASR out + gh (healthy) defaults; the insight stage
+ * is ollama over the injected fetch, not a runner command. */
 function chainRunner(behavior?: (call: Call) => RunnerResult | undefined) {
   return makeRunner((call) => {
     const own = behavior ? behavior(call) : undefined

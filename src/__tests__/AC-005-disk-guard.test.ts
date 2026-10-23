@@ -52,14 +52,6 @@ function dfThrows(): (call: Call) => RunnerResult | undefined {
   return (call) => (call.cmd === 'df' ? { fail: true } : undefined)
 }
 
-const CHAT_JSON = JSON.stringify({
-  choices: [{ message: { content: '## Requirements\n- pricing page' } }],
-})
-
-function blChat(call: Call): RunnerResult | undefined {
-  return call.cmd === 'bl' && call.args.includes('chat') ? { stdout: CHAT_JSON } : undefined
-}
-
 function ghCall(call: Call): RunnerResult | undefined {
   return call.cmd === 'gh' ? { stdout: ghStdout([call.cmd, ...call.args]) } : undefined
 }
@@ -72,7 +64,7 @@ function ffprobeStub(call: Call): RunnerResult | undefined {
 }
 
 function external(call: Call): RunnerResult | undefined {
-  return asrProducesOut(call) ?? blChat(call) ?? ghCall(call) ?? ffprobeStub(call)
+  return asrProducesOut(call) ?? ghCall(call) ?? ffprobeStub(call)
 }
 
 /** Runner: df answers per `diskBehavior`, the rest answers a healthy chain. */
