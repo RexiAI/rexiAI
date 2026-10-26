@@ -1403,6 +1403,32 @@ cleaned, or committed here, per the stop-and-ask matrix.
 | Audit-trail gate (`check-audit-trail.sh`) | **FAIL** — Verifier-owned evidence-format gap in `25-verification.md`; blocks stage 5b until corrected |
 | Non-blocking | `schedule.json` producer (follow-up spec); orphaned Chrome processes |
 
+## PR
+
+PR: https://github.com/RexiAI/rexiAI/pull/86
+commit-count: 9
+
+Stage 5b appended this after the report above was green. One correction to the
+row above, recorded rather than rewritten: the audit-trail `FAIL` cited there
+(`2026-10-26T12:28:15Z`) was fixed by the Verifier afterwards — its
+`scenario-to-behavior spot check` block now carries a numeric `exit:` and its
+timestamp is `2026-10-26T12:31:05Z`. As run by stage 5b,
+`check-audit-trail.sh 006-branded-meeting-link-and-recording-bot` exits **0**, and
+`check-specs-archived.sh` exits **0** at the pushed head.
+
+Commits on `spec/006-branded-meeting-link-and-recording-bot` (8 at PR open plus
+this record commit):
+
+1. `feat(meeting): branded join URL with real-room resolution and join page` — Task 1
+2. `feat(email): recording-consent notice before the join link in both client emails` — Task 2
+3. `feat(booking): carry the booking locale from the SPA to both client emails` — Task 8
+4. `feat(recording-bot): count non-bot humans and gate recording on two of them` — Tasks 3+4 (grouped: both behaviours live in one module)
+5. `feat(recording-bot): join the room, capture audio, write a pipeline-ready mp4` — Tasks 5+6 (grouped: the output writer imports the config module)
+6. `feat(recording-bot): surface missed meetings and install the host units` — Task 7
+7. `docs(specs): add spec 006 tasks, design, acceptance scenarios and reports`
+8. `docs(changes): archive 006-branded-meeting-link-and-recording-bot`
+9. `docs(changes): record PR URL and commit count for 006-branded-meeting-link-and-recording-bot`
+
 ## 15-design.md
 
 # Design Spec: 006-branded-meeting-link-and-recording-bot
