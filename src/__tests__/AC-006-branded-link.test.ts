@@ -67,9 +67,7 @@ describe('AC-006 branded meeting link', () => {
     const joinUrl = okJoinUrl(await createMeetingLink(MEET_INPUT))
     const brandedRoom = roomFromJoinUrl(joinUrl)
 
-    expect(realRoomUrl('rexi-0123456789abcdef')).toBe(
-      'https://meet.jit.si/rexi-0123456789abcdef'
-    )
+    expect(realRoomUrl('rexi-0123456789abcdef')).toBe('https://meet.jit.si/rexi-0123456789abcdef')
     expect(realRoomUrl(brandedRoom as string)).toBe(`https://meet.jit.si/${brandedRoom}`)
     // Same room on both sides: only the host differs (room → booking mapping holds).
     expect(new URL(realRoomUrl(brandedRoom as string)).pathname).toBe(`/${brandedRoom}`)

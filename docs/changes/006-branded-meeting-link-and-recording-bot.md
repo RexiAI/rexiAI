@@ -79,7 +79,7 @@ Source: `specs/006-branded-meeting-link-and-recording-bot/00-informal.md`.
   every booking points at a public room nobody records.
 - `api/bookings/direct.ts` `finishDirectBooking` resolves the join URL, sends the
   client + operator emails, and returns `{ checkoutUrl: null, joinUrl,
-  billingDisabled: true }`. Its return shape is pinned (AC-002-*); this spec must
+billingDisabled: true }`. Its return shape is pinned (AC-002-*); this spec must
   not change it.
 - `scripts/process-recording.mjs` (via `scripts/recording/*`) scans `RECORDINGS_DIR`
   for finished recordings, ffprobes them, and writes three independent markers
@@ -96,7 +96,7 @@ Source: `specs/006-branded-meeting-link-and-recording-bot/00-informal.md`.
 
 ## Scope boundaries (non-goals)
 
-- **Vercel/redirect hosting is out of scope.** We specify the *behaviour* of the
+- **Vercel/redirect hosting is out of scope.** We specify the _behaviour_ of the
   link (the URL the client sees, where it lands), not how the redirect is hosted.
 - **The transcription/insight chain is out of scope.** The bot's job ends at "a
   recording exists in `RECORDINGS_DIR` in a format `process-recording.mjs` already
@@ -115,7 +115,7 @@ Source: `specs/006-branded-meeting-link-and-recording-bot/00-informal.md`.
 `createMeetingLink` (and its consumers) must produce a client-facing join URL on
 the branded domain, and a separate resolution must yield the real `meet.jit.si`
 room for the same room name. The silent `meet.jit.si` fallback for the
-*client-facing* URL is removed.
+_client-facing_ URL is removed.
 
 Acceptance criteria:
 
@@ -326,16 +326,16 @@ Scenarios: `20-acceptance/AC-006-notice-locale.md` (AC-006-27 … AC-006-36).
 
 ## Scenario ID map
 
-| Task | File | Scenario IDs |
-|---|---|---|
-| 1 | `20-acceptance/AC-006-branded-link.md` | AC-006-01 … AC-006-04 |
-| 2 | `20-acceptance/AC-006-consent-notice.md` | AC-006-05 … AC-006-09 |
-| 3 | `20-acceptance/AC-006-participant-count.md` | AC-006-10 … AC-006-12 |
-| 4 | `20-acceptance/AC-006-record-threshold.md` | AC-006-13 … AC-006-17 |
-| 5 | `20-acceptance/AC-006-recording-output.md` | AC-006-18 … AC-006-20 |
-| 6 | `20-acceptance/AC-006-recordings-location.md` | AC-006-21 … AC-006-23 |
-| 7 | `20-acceptance/AC-006-missed-meeting.md` | AC-006-24 … AC-006-26 |
-| 8 | `20-acceptance/AC-006-notice-locale.md` | AC-006-27 … AC-006-36 |
+| Task | File                                          | Scenario IDs          |
+| ---- | --------------------------------------------- | --------------------- |
+| 1    | `20-acceptance/AC-006-branded-link.md`        | AC-006-01 … AC-006-04 |
+| 2    | `20-acceptance/AC-006-consent-notice.md`      | AC-006-05 … AC-006-09 |
+| 3    | `20-acceptance/AC-006-participant-count.md`   | AC-006-10 … AC-006-12 |
+| 4    | `20-acceptance/AC-006-record-threshold.md`    | AC-006-13 … AC-006-17 |
+| 5    | `20-acceptance/AC-006-recording-output.md`    | AC-006-18 … AC-006-20 |
+| 6    | `20-acceptance/AC-006-recordings-location.md` | AC-006-21 … AC-006-23 |
+| 7    | `20-acceptance/AC-006-missed-meeting.md`      | AC-006-24 … AC-006-26 |
+| 8    | `20-acceptance/AC-006-notice-locale.md`       | AC-006-27 … AC-006-36 |
 
 ## Documented decisions
 
@@ -411,7 +411,7 @@ Scenarios: `20-acceptance/AC-006-notice-locale.md` (AC-006-27 … AC-006-36).
 4. **Missed-meeting visibility surface.** Task 7 requires "a durable record the
    operator can see". Confirm whether that is a log line + filesystem marker, an
    operator email, or an issue — the exact surface is the Coder's mechanism, but
-   the *minimum* ("a durable record naming the room") is what is pinned.
+   the _minimum_ ("a durable record naming the room") is what is pinned.
 5. **English notice wording — RESOLVED (decision 11).** Line 1 is
    `Recording notice: this meeting is recorded as audio.`; line 2 is unchanged:
    `We use the recording to document the session. If you prefer it not to be recorded, reply to this email before the meeting.`
@@ -419,40 +419,75 @@ Scenarios: `20-acceptance/AC-006-notice-locale.md` (AC-006-27 … AC-006-36).
 ## Acceptance scenarios
 
 ## AC-006-01 — Client join URL uses the branded domain, https, one path segment, and a lang query parameter
+
 ## AC-006-02 — Room name is rexi- plus 16 hex, last path segment
+
 ## AC-006-03 — Real Jitsi room resolves to meet.jit.si with the same room
+
 ## AC-006-04 — Missing brand config fails loud, never a meet.jit.si join URL
+
 ## AC-006-05 — Enabled client email carries the notice in text and HTML
+
 ## AC-006-06 — Disabled (direct) client email carries the notice in text and HTML
+
 ## AC-006-07 — Notice appears before the join link
+
 ## AC-006-08 — Operator email has no consent notice
+
 ## AC-006-09 — Existing locked copy is preserved; only the notice is added
+
 ## AC-006-10 — Bot alone counts as zero non-bot humans
+
 ## AC-006-11 — Bot plus humans counts only the humans
+
 ## AC-006-12 — A human sharing the bot's display name is still counted
+
 ## AC-006-13 — No recording below the threshold (0 or 1 non-bot human)
+
 ## AC-006-14 — Recording starts at exactly 2 non-bot humans
+
 ## AC-006-15 — Recording continues above 2 non-bot humans
+
 ## AC-006-16 — Recording stops when non-bot humans drop below 2
+
 ## AC-006-17 — The bot's own join/leave never changes the decision
+
 ## AC-006-18 — Recording lands under RECORDINGS_DIR as an .mp4
+
 ## AC-006-19 — The recording has an audio stream
+
 ## AC-006-20 — The room is derivable by the existing pipeline, unchanged
+
 ## AC-006-21 — One setting drives both the bot and the processor
+
 ## AC-006-22 — Reconfiguring the one setting moves both
+
 ## AC-006-23 — Unset setting yields one shared default, not two fallbacks
+
 ## AC-006-24 — Elapsed meeting with no recording is reported missed
+
 ## AC-006-25 — Pending or in-progress meetings are not reported missed
+
 ## AC-006-26 — A recorded meeting is not reported missed
+
 ## AC-006-27 — Spanish locale renders the exact Spanish notice (both variants)
+
 ## AC-006-28 — English locale renders the exact English notice (both variants)
+
 ## AC-006-29 — Missing or unrecognised locale falls back to Spanish, never crashes
+
 ## AC-006-30 — Locale changes only the notice and the join URL's lang value; every other line is byte-identical
+
 ## AC-006-31 — Operator email is unaffected by locale
+
 ## AC-006-32 — Enabled-path email localises using the locale captured at booking time
+
 ## AC-006-33 — The join URL in the booking email carries lang matching the booking's locale
+
 ## AC-006-34 — The join page derives its language from the lang parameter alone
+
 ## AC-006-35 — Absent, empty, or unrecognised lang falls back to Spanish, never a crash, never English
+
 ## AC-006-36 — The lang parameter never reaches the real Jitsi room
 
 ## Verification
@@ -484,9 +519,9 @@ exit: 0
 at: 2026-10-26T10:46:10Z
 
 {
-  "checks": [1, 2],
-  "passes": ["AC-006-01 — traced to a test", "AC-006-02 — traced to a test", "AC-006-03 — traced to a test", "AC-006-04 — traced to a test", "AC-006-05 — traced to a test", "AC-006-06 — traced to a test", "AC-006-07 — traced to a test", "AC-006-08 — traced to a test", "AC-006-09 — traced to a test", "AC-006-10 — traced to a test", "AC-006-11 — traced to a test", "AC-006-12 — traced to a test", "AC-006-13 — traced to a test", "AC-006-14 — traced to a test", "AC-006-15 — traced to a test", "AC-006-16 — traced to a test", "AC-006-17 — traced to a test", "AC-006-18 — traced to a test", "AC-006-19 — traced to a test", "AC-006-20 — traced to a test", "AC-006-21 — traced to a test", "AC-006-22 — traced to a test", "AC-006-23 — traced to a test", "AC-006-24 — traced to a test", "AC-006-25 — traced to a test", "AC-006-26 — traced to a test", "AC-006-27 — traced to a test", "AC-006-28 — traced to a test", "AC-006-29 — traced to a test", "AC-006-30 — traced to a test", "AC-006-31 — traced to a test", "AC-006-32 — traced to a test", "AC-006-33 — traced to a test", "AC-006-34 — traced to a test", "AC-006-35 — traced to a test", "AC-006-36 — traced to a test"],
-  "fails": []
+"checks": [1, 2],
+"passes": ["AC-006-01 — traced to a test", "AC-006-02 — traced to a test", "AC-006-03 — traced to a test", "AC-006-04 — traced to a test", "AC-006-05 — traced to a test", "AC-006-06 — traced to a test", "AC-006-07 — traced to a test", "AC-006-08 — traced to a test", "AC-006-09 — traced to a test", "AC-006-10 — traced to a test", "AC-006-11 — traced to a test", "AC-006-12 — traced to a test", "AC-006-13 — traced to a test", "AC-006-14 — traced to a test", "AC-006-15 — traced to a test", "AC-006-16 — traced to a test", "AC-006-17 — traced to a test", "AC-006-18 — traced to a test", "AC-006-19 — traced to a test", "AC-006-20 — traced to a test", "AC-006-21 — traced to a test", "AC-006-22 — traced to a test", "AC-006-23 — traced to a test", "AC-006-24 — traced to a test", "AC-006-25 — traced to a test", "AC-006-26 — traced to a test", "AC-006-27 — traced to a test", "AC-006-28 — traced to a test", "AC-006-29 — traced to a test", "AC-006-30 — traced to a test", "AC-006-31 — traced to a test", "AC-006-32 — traced to a test", "AC-006-33 — traced to a test", "AC-006-34 — traced to a test", "AC-006-35 — traced to a test", "AC-006-36 — traced to a test"],
+"fails": []
 }
 
 PASS — all 36 scenario IDs (AC-006-01 … AC-006-36) resolve to a test, no dangling
@@ -503,12 +538,12 @@ at: 2026-10-26T10:46:50Z
 > rexiai-website@0.0.0 test
 > vitest run --exclude '.standards/**'
 
- RUN  v5.0.1 /home/dbueno/projects/rexiAI
+RUN v5.0.1 /home/dbueno/projects/rexiAI
 
- Test Files  61 passed (61)
-      Tests  382 passed (382)
-   Start at  11:45:00
-   Duration  14.76s (environment 71%, tests 14%, setup 7%, transform 4%, import 3%, worker 1%)
+Test Files 61 passed (61)
+Tests 382 passed (382)
+Start at 11:45:00
+Duration 14.76s (environment 71%, tests 14%, setup 7%, transform 4%, import 3%, worker 1%)
 
 PASS — 61 files / 382 tests green, exit 0. No skipped or disabled tests reported
 (the `AC-006-19` real-ffmpeg case uses `it.skipIf(!hasFfmpeg)`; see spot check —
@@ -527,20 +562,20 @@ at: 2026-10-26T10:47:20Z
 > eslint .
 
 /home/dbueno/projects/rexiAI/tests/e2e/funnel-consent-boundary.e2e.ts
-  30:5  warning  Unexpected console statement  no-console
-  34:3  warning  Unexpected console statement  no-console
-  63:5  warning  Unexpected console statement  no-console
-  92:3  warning  Unexpected console statement  no-console
+30:5 warning Unexpected console statement no-console
+34:3 warning Unexpected console statement no-console
+63:5 warning Unexpected console statement no-console
+92:3 warning Unexpected console statement no-console
 
 /home/dbueno/projects/rexiAI/tests/e2e/home-timer-scan.e2e.ts
-  35:5  warning  Unexpected console statement  no-console
-  39:3  warning  Unexpected console statement  no-console
-  90:3  warning  Unexpected console statement  no-console
+35:5 warning Unexpected console statement no-console
+39:3 warning Unexpected console statement no-console
+90:3 warning Unexpected console statement no-console
 
 /home/dbueno/projects/rexiAI/tests/e2e/switch-refusal.e2e.ts
-  30:5  warning  Unexpected console statement  no-console
-  34:3  warning  Unexpected console statement  no-console
-  81:3  warning  Unexpected console statement  no-console
+30:5 warning Unexpected console statement no-console
+34:3 warning Unexpected console statement no-console
+81:3 warning Unexpected console statement no-console
 
 ✖ 10 problems (0 errors, 10 warnings)
 
@@ -557,36 +592,36 @@ exit: 1
 at: 2026-10-26T10:47:50Z
 
 {
-  "tier": "mvp",
-  "gates": ["complexity", "dry", "yagni", "solid", "component-per-file", "property-tests"],
-  "fails": [{ "message": "Cyclomatic complexity >6 (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::CC=10", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" }],
-  "warns": [
-    { "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:45:71:main:KISS_LINES=28", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "45" },
-    { "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:101:124:checkCompensationPairs:KISS_LINES=25", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "101" },
-    { "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::KISS_LINES=41", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" },
-    { "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:93:225::KISS_LINES=43", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "93" },
-    { "message": "Method body >20 lines (node): ./src/pages/Landing.tsx:13:96:Landing:KISS_LINES=75", "file": "./src/pages/Landing.tsx", "line": "13" },
-    { "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:32:52:Chevron:KISS_LINES=22", "file": "./src/components/ServicesCarousel.tsx", "line": "32" },
-    { "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:54:160:ServicesCarousel:KISS_LINES=79", "file": "./src/components/ServicesCarousel.tsx", "line": "54" },
-    { "message": "Method body >20 lines (node): ./api/stripe-webhook.ts:148:167:getRawBookingFields:KISS_LINES=21", "file": "./api/stripe-webhook.ts", "line": "148" },
-    { "message": "Method body >20 lines (node): ./api/bookings/checkout.ts:45:66:buildSessionParams:KISS_LINES=23", "file": "./api/bookings/checkout.ts", "line": "45" },
-    { "message": "Method body >20 lines (node): ./api/bookings/recorded-billing.ts:222:244:?:KISS_LINES=24", "file": "./api/bookings/recorded-billing.ts", "line": "222" },
-    { "message": "Method body >20 lines (python): ./scripts/recording/whisper_transcribe.py:37:64:main:KISS_LINES=23 [approximate heuristic — comprehension/decorator forms can inflate the count; ADR 0006 warn phase]", "file": "./scripts/recording/whisper_transcribe.py", "line": "37" },
-    { "message": "Possible duplication (11x identical 4-line block, first at ./api/bookings.ts:31): date: string /startTime: string /hours: number /email: string", "file": "./api/bookings.ts", "line": "31" },
-    { "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:284): startTime: string /hours: number /joinUrl?: string | null /date: string", "file": "./api/stripe-webhook.ts", "line": "284" },
-    { "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:122): email: string /date: string /startTime: string /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "122" },
-    { "message": "Possible duplication (3x identical 4-line block, first at ./src/domain/microsoftGraph.ts:178): }) /if (!res.ok) { /const text = await res.text().catch(() => '') /headers: { Authorization: `Bearer ${token}` },", "file": "./src/domain/microsoftGraph.ts", "line": "178" },
-    { "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:115): type: \"problem\", /docs: { /description: /meta: {", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "115" },
-    { "message": "Possible duplication (3x identical 4-line block, first at ./api/bookings.ts:32): startTime: string /hours: number /locale?: Locale /date: string", "file": "./api/bookings.ts", "line": "32" },
-    { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:124): startTime: string /hours: number /amountTotal: number /date: string", "file": "./api/stripe-webhook.ts", "line": "124" },
-    { "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:132): schema: [], /}, /create(context) { /},", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "132" },
-    { "message": "Possible duplication (3x identical 4-line block, first at ./api/bookings.ts:14): res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } }) /return false /return true /if (req.method !== 'POST') {", "file": "./api/bookings.ts", "line": "14" },
-    { "message": "Possible duplication (2x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:133): }, /create(context) { /return { /schema: [],", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "133" },
-    { "message": "Empty method body (java): ./.standards/ci/templates/archunit/OutboxArchRules.java:30", "file": "./.standards/ci/templates/archunit/OutboxArchRules.java", "line": "30" },
-    { "message": "Empty method body (java): ./.standards/ci/templates/archunit/SagaArchRules.java:33", "file": "./.standards/ci/templates/archunit/SagaArchRules.java", "line": "33" },
-    { "message": "SRP: possible god file (node) — ./api/stripe-webhook.ts: 603 lines, 9 methods (split by responsibility)", "file": "./api/stripe-webhook.ts", "line": "" },
-    { "message": "LSP: 4 instanceof checks in one file (node) — ./src/domain/time.ts (suggests broken substitutability or type dispatch)", "file": "./src/domain/time.ts", "line": "" }
-  ]
+"tier": "mvp",
+"gates": ["complexity", "dry", "yagni", "solid", "component-per-file", "property-tests"],
+"fails": [{ "message": "Cyclomatic complexity >6 (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::CC=10", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" }],
+"warns": [
+{ "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:45:71:main:KISS_LINES=28", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "45" },
+{ "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:101:124:checkCompensationPairs:KISS_LINES=25", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "101" },
+{ "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::KISS_LINES=41", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" },
+{ "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:93:225::KISS_LINES=43", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "93" },
+{ "message": "Method body >20 lines (node): ./src/pages/Landing.tsx:13:96:Landing:KISS_LINES=75", "file": "./src/pages/Landing.tsx", "line": "13" },
+{ "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:32:52:Chevron:KISS_LINES=22", "file": "./src/components/ServicesCarousel.tsx", "line": "32" },
+{ "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:54:160:ServicesCarousel:KISS_LINES=79", "file": "./src/components/ServicesCarousel.tsx", "line": "54" },
+{ "message": "Method body >20 lines (node): ./api/stripe-webhook.ts:148:167:getRawBookingFields:KISS_LINES=21", "file": "./api/stripe-webhook.ts", "line": "148" },
+{ "message": "Method body >20 lines (node): ./api/bookings/checkout.ts:45:66:buildSessionParams:KISS_LINES=23", "file": "./api/bookings/checkout.ts", "line": "45" },
+{ "message": "Method body >20 lines (node): ./api/bookings/recorded-billing.ts:222:244:?:KISS_LINES=24", "file": "./api/bookings/recorded-billing.ts", "line": "222" },
+{ "message": "Method body >20 lines (python): ./scripts/recording/whisper_transcribe.py:37:64:main:KISS_LINES=23 [approximate heuristic — comprehension/decorator forms can inflate the count; ADR 0006 warn phase]", "file": "./scripts/recording/whisper_transcribe.py", "line": "37" },
+{ "message": "Possible duplication (11x identical 4-line block, first at ./api/bookings.ts:31): date: string /startTime: string /hours: number /email: string", "file": "./api/bookings.ts", "line": "31" },
+{ "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:284): startTime: string /hours: number /joinUrl?: string | null /date: string", "file": "./api/stripe-webhook.ts", "line": "284" },
+{ "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:122): email: string /date: string /startTime: string /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "122" },
+{ "message": "Possible duplication (3x identical 4-line block, first at ./src/domain/microsoftGraph.ts:178): }) /if (!res.ok) { /const text = await res.text().catch(() => '') /headers: { Authorization: `Bearer ${token}` },", "file": "./src/domain/microsoftGraph.ts", "line": "178" },
+{ "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:115): type: \"problem\", /docs: { /description: /meta: {", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "115" },
+{ "message": "Possible duplication (3x identical 4-line block, first at ./api/bookings.ts:32): startTime: string /hours: number /locale?: Locale /date: string", "file": "./api/bookings.ts", "line": "32" },
+{ "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:124): startTime: string /hours: number /amountTotal: number /date: string", "file": "./api/stripe-webhook.ts", "line": "124" },
+{ "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:132): schema: [], /}, /create(context) { /},", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "132" },
+{ "message": "Possible duplication (3x identical 4-line block, first at ./api/bookings.ts:14): res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } }) /return false /return true /if (req.method !== 'POST') {", "file": "./api/bookings.ts", "line": "14" },
+{ "message": "Possible duplication (2x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:133): }, /create(context) { /return { /schema: [],", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "133" },
+{ "message": "Empty method body (java): ./.standards/ci/templates/archunit/OutboxArchRules.java:30", "file": "./.standards/ci/templates/archunit/OutboxArchRules.java", "line": "30" },
+{ "message": "Empty method body (java): ./.standards/ci/templates/archunit/SagaArchRules.java:33", "file": "./.standards/ci/templates/archunit/SagaArchRules.java", "line": "33" },
+{ "message": "SRP: possible god file (node) — ./api/stripe-webhook.ts: 603 lines, 9 methods (split by responsibility)", "file": "./api/stripe-webhook.ts", "line": "" },
+{ "message": "LSP: 4 instanceof checks in one file (node) — ./src/domain/time.ts (suggests broken substitutability or type dispatch)", "file": "./src/domain/time.ts", "line": "" }
+]
 }
 
 Exit 1 (findings). The single FAIL is **out-of-repo noise**:
@@ -606,7 +641,7 @@ field-shape literals in `./api/bookings.ts` and `./api/stripe-webhook.ts`.
 
 ## Evidence: scenario-to-behavior spot check
 
-command: grep -nE "OnUnitActiveSec|ExecStart|recording-bot-cron|recording-bot\.mjs|recordRoom|joinRoom|runSession|applyStep|capture\.start|capture\.stop|finalizeRecording" deploy/home/rexi-recording-bot.timer deploy/home/rexi-recording-bot.service deploy/home/rexi-recording-bot-watch.service scripts/recording-bot-cron.sh scripts/recording-bot.mjs scripts/recording/bot/session.mjs scripts/recording/bot/capture.mjs scripts/recording/bot/output.mjs ; BOT_LIVE_TEST=1 npx vitest run src/__tests__/AC-006-bot-adapter.test.ts
+command: grep -nE "OnUnitActiveSec|ExecStart|recording-bot-cron|recording-bot\.mjs|recordRoom|joinRoom|runSession|applyStep|capture\.start|capture\.stop|finalizeRecording" deploy/home/rexi-recording-bot.timer deploy/home/rexi-recording-bot.service deploy/home/rexi-recording-bot-watch.service scripts/recording-bot-cron.sh scripts/recording-bot.mjs scripts/recording/bot/session.mjs scripts/recording/bot/capture.mjs scripts/recording/bot/output.mjs ; BOT_LIVE_TEST=1 npx vitest run src/**tests**/AC-006-bot-adapter.test.ts
 exit: 0
 at: 2026-10-26T12:31:05Z
 
@@ -615,50 +650,50 @@ deploy/home/rexi-recording-bot.service:19:# Node is resolved by scripts/recordin
 deploy/home/rexi-recording-bot.service:34:ExecStart=/home/dbueno/projects/rexiAI/scripts/recording-bot-cron.sh \
 deploy/home/rexi-recording-bot-watch.service:35:ExecStart=/home/dbueno/projects/rexiAI/scripts/recording-bot-cron.sh --watch
 scripts/recording-bot-cron.sh:2:# scripts/recording-bot-cron.sh — node-path-resolving entry point for the bot's
-scripts/recording-bot-cron.sh:10:#   scripts/recording-bot-cron.sh --missed ~/.rexi-recording-bot/schedule.json
-scripts/recording-bot-cron.sh:11:#   scripts/recording-bot-cron.sh --watch
-scripts/recording-bot-cron.sh:12:#   scripts/recording-bot-cron.sh --run --room rexi-0123456789abcdef
-scripts/recording-bot-cron.sh:28:  echo "[recording-bot-cron] node not found — set NODE_BIN=/path/to/node" >&2
+scripts/recording-bot-cron.sh:10:# scripts/recording-bot-cron.sh --missed ~/.rexi-recording-bot/schedule.json
+scripts/recording-bot-cron.sh:11:# scripts/recording-bot-cron.sh --watch
+scripts/recording-bot-cron.sh:12:# scripts/recording-bot-cron.sh --run --room rexi-0123456789abcdef
+scripts/recording-bot-cron.sh:28: echo "[recording-bot-cron] node not found — set NODE_BIN=/path/to/node" >&2
 scripts/recording-bot-cron.sh:32:echo "[recording-bot-cron] $(date -u +%Y-%m-%dT%H:%M:%SZ) $* via $NODE_BIN"
 scripts/recording-bot-cron.sh:33:exec "$NODE_BIN" scripts/recording-bot.mjs "$@"
 scripts/recording-bot.mjs:2:// scripts/recording-bot.mjs — host-side entry point for the local recording bot
 scripts/recording-bot.mjs:43:import { DEFAULT_JITSI_BASE_URL, JITSI_BASE_URL_ENV, recordRoom } from './recording/bot/capture.mjs'
 scripts/recording-bot.mjs:49:import { finalizeRecording } from './recording/bot/output.mjs'
-scripts/recording-bot.mjs:71:    '  node scripts/recording-bot.mjs --run --room rexi-<16hex> [--base <jitsi-url>]',
-scripts/recording-bot.mjs:72:    '  node scripts/recording-bot.mjs --watch [--schedule <file>] [--room rexi-<16hex>]',
-scripts/recording-bot.mjs:73:    '  node scripts/recording-bot.mjs --finalize <audio-file> --room rexi-<16hex>',
-scripts/recording-bot.mjs:74:    '  node scripts/recording-bot.mjs --decide <participants.json>',
-scripts/recording-bot.mjs:75:    '  node scripts/recording-bot.mjs --missed <schedule.json>',
-scripts/recording-bot.mjs:129:  const result = await finalizeRecording({ room, audioPath: audio, env: process.env, runner })
-scripts/recording-bot.mjs:158:  const result = await recordRoom({ room, baseUrl: base, env: process.env, log: console })
+scripts/recording-bot.mjs:71: ' node scripts/recording-bot.mjs --run --room rexi-<16hex> [--base <jitsi-url>]',
+scripts/recording-bot.mjs:72: ' node scripts/recording-bot.mjs --watch [--schedule <file>] [--room rexi-<16hex>]',
+scripts/recording-bot.mjs:73: ' node scripts/recording-bot.mjs --finalize <audio-file> --room rexi-<16hex>',
+scripts/recording-bot.mjs:74: ' node scripts/recording-bot.mjs --decide <participants.json>',
+scripts/recording-bot.mjs:75: ' node scripts/recording-bot.mjs --missed <schedule.json>',
+scripts/recording-bot.mjs:129: const result = await finalizeRecording({ room, audioPath: audio, env: process.env, runner })
+scripts/recording-bot.mjs:158: const result = await recordRoom({ room, baseUrl: base, env: process.env, log: console })
 scripts/recording/bot/session.mjs:72:export async function applyStep({ command, capture }) {
-scripts/recording/bot/session.mjs:73:  if (command === 'start') await capture.start()
-scripts/recording/bot/session.mjs:74:  if (command === 'stop') return capture.stop()
+scripts/recording/bot/session.mjs:73: if (command === 'start') await capture.start()
+scripts/recording/bot/session.mjs:74: if (command === 'stop') return capture.stop()
 scripts/recording/bot/session.mjs:85: * cap fired; `artifact` is whatever `capture.stop()` produced (null when nothing
 scripts/recording/bot/session.mjs:94:export async function runSession({
-scripts/recording/bot/session.mjs:115:    const artifact = await applyStep({ command: step.command, capture })
-scripts/recording/bot/session.mjs:126:    const artifact = await capture.stop()
-scripts/recording/bot/capture.mjs:12://   4. hands the snapshots to `runSession`, which starts ffmpeg on the sink's
+scripts/recording/bot/session.mjs:115: const artifact = await applyStep({ command: step.command, capture })
+scripts/recording/bot/session.mjs:126: const artifact = await capture.stop()
+scripts/recording/bot/capture.mjs:12:// 4. hands the snapshots to `runSession`, which starts ffmpeg on the sink's
 scripts/recording/bot/capture.mjs:30:import { finalizeRecording } from './output.mjs'
 scripts/recording/bot/capture.mjs:33:import { runSession } from './session.mjs'
 scripts/recording/bot/capture.mjs:47: * and `joinRoom` clicks the page's own join button as a fallback.
 scripts/recording/bot/capture.mjs:141:export async function joinRoom({
 scripts/recording/bot/capture.mjs:199: * RECORDINGS_DIR until the capture has stopped and `finalizeRecording` muxes it.
 scripts/recording/bot/capture.mjs:205:export async function recordRoom({ room, baseUrl, env, log = console, sessionOptions = {}, deps = {} }) {
-scripts/recording/bot/capture.mjs:221:  const room$ = await (deps.joinRoom || joinRoom)({
-scripts/recording/bot/capture.mjs:231:    const { reason, artifact } = await (deps.runSession || runSession)({
+scripts/recording/bot/capture.mjs:221: const room$ = await (deps.joinRoom || joinRoom)({
+scripts/recording/bot/capture.mjs:231: const { reason, artifact } = await (deps.runSession || runSession)({
 scripts/recording/bot/capture.mjs:247:/** The capture device `runSession` drives: ffmpeg on the sink, then the muxer. */
-scripts/recording/bot/capture.mjs:266:      const result = await finalizeRecording({ room, audioPath: outPath, env, runner, log })
+scripts/recording/bot/capture.mjs:266: const result = await finalizeRecording({ room, audioPath: outPath, env, runner, log })
 scripts/recording/bot/output.mjs:79:export async function finalizeRecording({
 
- RUN  v5.0.1 /home/dbueno/projects/rexiAI
+RUN v5.0.1 /home/dbueno/projects/rexiAI
 
 [live-proof] mean_volume=-18.5 dB file=/tmp/rexi-live-recordings-t1GtBq/rexi-dc7639061d46b10d_2026-10-26-12-31-46/rexi-dc7639061d46b10d_2026-10-26-12-31-46.mp4
 
- Test Files  1 passed (1)
-      Tests  31 passed (31)
-   Start at  13:31:06
-   Duration  40.80s (tests 99%)
+Test Files 1 passed (1)
+Tests 31 passed (31)
+Start at 13:31:06
+Duration 40.80s (tests 99%)
 
 ---
 
@@ -686,7 +721,7 @@ Confirmed by tracing the code, not by trusting the Coder's report:
   not ship. `--finalize` is the contract that adapter feeds."
 - `grep -rniE "webrtc|lib-jitsi|RTCPeerConnection|getUserMedia|MediaRecorder"`
   across `scripts/`, `deploy/`, `api/`, `src/` finds **no** WebRTC client, media
-  capture, or room-join code — only comments and the Jitsi *deployment* scripts
+  capture, or room-join code — only comments and the Jitsi _deployment_ scripts
   (`deploy/production/setup-jitsi-host.sh`, etc.) that install the stack.
 - `--finalize` has exactly one caller: `recording-bot.mjs` itself (`runFinalize`).
   No adapter exists. `--decide` only prints JSON. `--missed` is never scheduled —
@@ -695,15 +730,16 @@ Confirmed by tracing the code, not by trusting the Coder's report:
   the tests and by `recording-bot.mjs`'s `--decide` print path.
 
 So the scenarios are satisfied by unit-level functions only:
+
 - AC-006-13 … AC-006-17 (threshold) → pure `shouldRecord` / `recordingAction`
   returning 'start'/'continue'/'stop'/'idle'. Nothing acts on the returned action.
-- AC-006-18 … AC-006-20 (output) → `finalizeRecording` muxes a *provided* audio
+- AC-006-18 … AC-006-20 (output) → `finalizeRecording` muxes a _provided_ audio
   file. The test writes a fake `'audio'` WAV and uses a `simulatedRunner` (mocked
   ffmpeg/ffprobe); the one real-ffmpeg case is `skipIf(!hasFfmpeg)`. Nothing
   produces the audio file in production.
 - AC-006-24 … AC-006-26 (missed) → pure `findMissedMeetings` + `recordMissedMeetings`.
 
-Further: the repo's *actual* recording mechanism is Jibri via
+Further: the repo's _actual_ recording mechanism is Jibri via
 `deploy/production/prosody-plugins-custom/mod_rexi_auto_record.lua` (spec 004),
 which starts recording on the **first** human occupant (threshold = 1). The spec
 006 two-human threshold (`shouldRecord`/`recordingAction`) is wired to **no**
@@ -713,7 +749,7 @@ inconsistent with spec 006 Task 4.
 
 Classification: the tests are green but assert decisions and a muxer, not a
 recorder. The end-to-end capability the spec is titled after ("recording bot")
-is not delivered. This is a false green for the *capability*, not a fault in the
+is not delivered. This is a false green for the _capability_, not a fault in the
 individual unit assertions.
 
 **Finding (b) — the `AC-007-bookings.test.ts` edit is a legitimate fixture fix,
@@ -736,6 +772,7 @@ precondition the new fail-loud behavior requires; no assertion changed, no
 expected value bent. Legitimate.
 
 **Other confirmations (commands, not reading):**
+
 - `npm run build` → exit 0 ("✓ built in 201ms"; 43 modules). The branded-link
   change to `src/domain/meeting.ts` compiles in both entry points.
 - `grep -nE "setTimeout|setInterval|requestAnimationFrame|location\.replace|http-equiv" deploy/join/index.html` → no matches. The page reads `window.location.search`/`.pathname` (a read, not navigation) and `pointAtRoom` sets the action `href` to `https://meet.jit.si/<room>` with no query — decision 8 (no auto-forward) holds.
@@ -786,12 +823,12 @@ claims.
 Traced the full chain (read the code, then confirmed by live execution):
 
 - `deploy/home/rexi-recording-bot-watch.service` (`Type=simple`) →
-  `ExecStart=scripts/recording-bot-cron.sh --watch` → resolves node → 
+  `ExecStart=scripts/recording-bot-cron.sh --watch` → resolves node →
   `scripts/recording-bot.mjs --watch` → `runWatch` → `currentWindows` →
   `activeWindows(readSchedule(...))` → `runRoom` → `recordRoom`.
 - `deploy/home/rexi-recording-bot.timer` → `rexi-recording-bot.service`
   (`Type=oneshot`, every 5 min) → `scripts/recording-bot-cron.sh --missed
-  <schedule.json>` → `--missed` → `findMissedMeetings` + `recordMissedMeetings`.
+<schedule.json>` → `--missed` → `findMissedMeetings` + `recordMissedMeetings`.
 - Inside `recordRoom`: `joinRoom` (launchBrowser → openPage → navigate →
   waitForJoin) → `runSession` → `nextStep` (pure threshold) → `applyStep` →
   on command `'start'` **calls `capture.start()`** (ffmpeg on the PulseAudio
@@ -808,18 +845,18 @@ schedule/timer → captured file is complete.
 
 ## Evidence: live proof (scoped spot-check re-run)
 
-command: BOT_LIVE_TEST=1 npx vitest run src/__tests__/AC-006-bot-adapter.test.ts
+command: BOT_LIVE_TEST=1 npx vitest run src/**tests**/AC-006-bot-adapter.test.ts
 exit: 0
 at: 2026-10-26T12:17:51Z
 
- RUN  v5.0.1 /home/dbueno/projects/rexiAI
+RUN v5.0.1 /home/dbueno/projects/rexiAI
 
 [live-proof] mean_volume=-17.6 dB file=/tmp/rexi-live-recordings-zzdIYm/rexi-8747ae3e35388146_2026-10-26-12-18-35/rexi-8747ae3e35388146_2026-10-26-12-18-35.mp4
 
- Test Files  1 passed (1)
-      Tests  31 passed (31)
-   Start at  13:17:51
-   Duration  44.55s (tests 99%)
+Test Files 1 passed (1)
+Tests 31 passed (31)
+Start at 13:17:51
+Duration 44.55s (tests 99%)
 
 `mean_volume=-17.6 dB` (a real participant reads ~-20 dB; silence ~-91 dB),
 exit 0, 31 tests. The recording is audible and lands in RECORDINGS_DIR as a
@@ -860,9 +897,9 @@ self-audio leaks into the capture.
   only the `BOT_LIVE_TEST=1` gated test reads it.
 - No acceptance scenario pins the bot's capture host. AC-006-13…17 pin the
   pure threshold decision; AC-006-18…20 pin output format/room-derivation/pipeline
-  compatibility; Task 1 pins the *client-facing* branded URL and the real-room
+  compatibility; Task 1 pins the _client-facing_ branded URL and the real-room
   resolution (booking-side, `meeting.ts`), not the bot's join host.
-- The comment is truthful about *why*: meet.jit.si now refuses to start a
+- The comment is truthful about _why_: meet.jit.si now refuses to start a
   conference without a signed-in moderator, and the bot never starts a
   conference (it joins one the humans opened).
 
@@ -870,7 +907,7 @@ Verdict: (a). Production path defaults to meet.jit.si and is unchanged; the
 live proof moves off it only because an anonymous test cannot start a
 meet.jit.si room. **Note (recorded, not blocking):** the same moderator
 requirement raises a real deployment question for production — if meet.jit.si
-no longer lets anonymous *clients* start rooms either, the booked humans cannot
+no longer lets anonymous _clients_ start rooms either, the booked humans cannot
 open the room the bot joins; that is a hosting-policy/deployment concern (the
 repo already ships Jibri/self-host scripts), not a defect in this spec's code.
 Second note: `output.mjs` hardcodes `meeting_url` to `https://meet.jit.si/<room>`
@@ -887,16 +924,16 @@ and `--missed` have nothing feeding them unattended.
 Judgment — this is **not** the same class of failure as attempt 1:
 
 - Attempt 1: the `'start'`/`'stop'` actions had **no consumer inside the
-  delivered code** — a chain broken *within* scope. Now the chain is complete and
+  delivered code** — a chain broken _within_ scope. Now the chain is complete and
   live-verified.
 - The schedule file is the bot's **input**, produced by a component (the booking
   side) that **no task in 10-tasks.md assigns**. Tasks 1–8 cover branded link,
   consent, participant count, threshold, output, recordings location, missed
-  *evaluation*, locale — none says "write schedule.json on booking."
+  _evaluation_, locale — none says "write schedule.json on booking."
 - AC-006-24…26 assert the missed-meeting **evaluation** ("given a booked meeting
   … the bot emits a record naming the room"). The pure `findMissedMeetings` /
   `recordMissedMeetings` is correct and its test asserts exactly the scenario
-  (see below). No scenario asserts schedule *production*.
+  (see below). No scenario asserts schedule _production_.
 
 So the scenarios are satisfied by the bot as scoped. The gap is a genuine
 out-of-scope input (propose a follow-up spec to have the booking side emit
@@ -910,12 +947,12 @@ that plainly rather than bury it.
 
 ## Evidence: scenario tests (scoped spot-check)
 
-command: npx vitest run src/__tests__/AC-006-missed-meeting.test.ts src/__tests__/AC-006-recording-output.test.ts src/__tests__/AC-006-recordings-location.test.ts src/__tests__/AC-006-record-threshold.test.ts
+command: npx vitest run src/**tests**/AC-006-missed-meeting.test.ts src/**tests**/AC-006-recording-output.test.ts src/**tests**/AC-006-recordings-location.test.ts src/**tests**/AC-006-record-threshold.test.ts
 exit: 0
 at: 2026-10-26T12:23:27Z
 
- Test Files  4 passed (4)
-      Tests  27 passed (27)
+Test Files 4 passed (4)
+Tests 27 passed (27)
 
 Read `AC-006-missed-meeting.test.ts` directly: AC-006-24 asserts an elapsed
 unrecorded entry → `findMissedMeetings` length 1 + a durable `.rexi-missed`
@@ -960,7 +997,7 @@ out-of-repo `.standards/skills/hallmark/...` noise and stands as-is).
   cron wrapper and three systemd units trace to the bot's host-side wiring.
   Nothing untraced in the logic.
 - Observation (environment, not a spec finding): orphaned Chrome processes from
-  a prior *manual* run remain (`/tmp/chrome-p4-{Alpha,Beta,Rexi Recorder}`,
+  a prior _manual_ run remain (`/tmp/chrome-p4-{Alpha,Beta,Rexi Recorder}`,
   room `rexi-39f7a6cd00000000`, ports 9481–9483). These are not from the
   committed vitest live test (which uses `rexi-live-profile-*` dirs and cleans
   up in its `finally`), nor from my runs (both of mine cleaned up). Flag for the
@@ -1052,7 +1089,7 @@ Per `.standards/docs/SPEC_PIPELINE.md §Conformance tiers`, the "Architect —
 mutation testing" row is **skip** at `mvp`; per
 `.standards/docs/CONFORMANCE_TIERS.md`, mutation testing (PiTest / Gremlins /
 Stryker) is a `production`-tier rule, so at `mvp` it is out of scope rather than
-an unmet gap. The Architect role still runs — only the mutation *test* does not.
+an unmet gap. The Architect role still runs — only the mutation _test_ does not.
 
 The tier was verified live by this stage, not assumed:
 
@@ -1101,7 +1138,7 @@ at: 2026-10-26T12:27:21Z
 
 ls: cannot access 'node_modules/.bin/stryker': No such file or directory
 ls: cannot access 'stryker.conf.*': No such file or directory
-13:    "test": "vitest run --exclude '.standards/**'"
+13: "test": "vitest run --exclude '.standards/**'"
 
 ---
 
@@ -1169,14 +1206,14 @@ The separate `it.skipIf(!hasFfmpeg)` case in `AC-006-recording-output.test.ts`
 
 ## Evidence: live-test gating (source fact)
 
-command: grep -n "const LIVE\|describe.skipIf(!LIVE)\|it.skipIf(!hasFfmpeg)" src/__tests__/AC-006-bot-adapter.test.ts src/__tests__/AC-006-recording-output.test.ts
+command: grep -n "const LIVE\|describe.skipIf(!LIVE)\|it.skipIf(!hasFfmpeg)" src/**tests**/AC-006-bot-adapter.test.ts src/**tests**/AC-006-recording-output.test.ts
 exit: 0
 at: 2026-10-26T12:27:26Z
 
-src/__tests__/AC-006-bot-adapter.test.ts:515:const LIVE = process.env['BOT_LIVE_TEST'] === '1'
-src/__tests__/AC-006-bot-adapter.test.ts:516:const LIVE_BASE = process.env['BOT_LIVE_TEST_BASE'] || 'https://meet.ffmuc.net'
-src/__tests__/AC-006-bot-adapter.test.ts:695:describe.skipIf(!LIVE)('live: the bot joins a room and records a real participant', () => {
-src/__tests__/AC-006-recording-output.test.ts:121:  it.skipIf(!hasFfmpeg)(
+src/**tests**/AC-006-bot-adapter.test.ts:515:const LIVE = process.env['BOT_LIVE_TEST'] === '1'
+src/**tests**/AC-006-bot-adapter.test.ts:516:const LIVE_BASE = process.env['BOT_LIVE_TEST_BASE'] || 'https://meet.ffmuc.net'
+src/**tests**/AC-006-bot-adapter.test.ts:695:describe.skipIf(!LIVE)('live: the bot joins a room and records a real participant', () => {
+src/**tests**/AC-006-recording-output.test.ts:121: it.skipIf(!hasFfmpeg)(
 
 ---
 
@@ -1230,16 +1267,16 @@ at: 2026-10-26T12:26:58Z
 > rexiai-website@0.0.0 test
 > vitest run --exclude '.standards/**'
 
- RUN  v5.0.1 /home/dbueno/projects/rexiAI
+RUN v5.0.1 /home/dbueno/projects/rexiAI
 
- Test Files  62 passed (62)
-      Tests  414 passed | 1 skipped (415)
-   Start at  13:26:59
-   Duration  16.91s (environment 69%, tests 15%, setup 8%, transform 5%, import 4%, worker 1%)
+Test Files 62 passed (62)
+Tests 414 passed | 1 skipped (415)
+Start at 13:26:59
+Duration 16.91s (environment 69%, tests 15%, setup 8%, transform 5%, import 4%, worker 1%)
 
-Environment  jsdom was created 62 times · 109.18s total, 69% of tracked time
-             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
-             learn more: https://vitest.dev/guide/improving-performance#test-environments
+Environment jsdom was created 62 times · 109.18s total, 69% of tracked time
+create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+learn more: https://vitest.dev/guide/improving-performance#test-environments
 
 The single skipped test is the `BOT_LIVE_TEST`-gated live capture described
 above. No acceptance scenario depends on it exclusively: the two IDs that block
@@ -1249,14 +1286,14 @@ ran in this suite (evidence below), and stage 4's traceability check resolved
 
 ## Evidence: skipped live block is not the sole coverage for its scenario IDs
 
-command: grep -rn "AC-006-14\|AC-006-19" src/__tests__/ | grep -v "AC-006-bot-adapter"
+command: grep -rn "AC-006-14\|AC-006-19" src/**tests**/ | grep -v "AC-006-bot-adapter"
 exit: 0
 at: 2026-10-26T12:28:36Z
 
-src/__tests__/AC-006-record-threshold.test.ts:31:  it('AC-006-14: exactly two non-bot humans starts the recording', () => {
-src/__tests__/AC-006-recording-output.test.ts:91:  it('AC-006-19: the finalized recording reports an audio stream to ffprobe', async () => {
-src/__tests__/AC-006-recording-output.test.ts:92:    const recordings = path.join(base, 'AC-006-19')
-src/__tests__/AC-006-recording-output.test.ts:113:      env: { RECORDINGS_DIR: path.join(base, 'AC-006-19-silent') },
+src/**tests**/AC-006-record-threshold.test.ts:31: it('AC-006-14: exactly two non-bot humans starts the recording', () => {
+src/**tests**/AC-006-recording-output.test.ts:91: it('AC-006-19: the finalized recording reports an audio stream to ffprobe', async () => {
+src/**tests**/AC-006-recording-output.test.ts:92: const recordings = path.join(base, 'AC-006-19')
+src/**tests**/AC-006-recording-output.test.ts:113: env: { RECORDINGS_DIR: path.join(base, 'AC-006-19-silent') },
 
 ---
 
@@ -1265,7 +1302,7 @@ src/__tests__/AC-006-recording-output.test.ts:113:      env: { RECORDINGS_DIR: p
 Recorded, not fixed here — neither is a gate failure, and neither is stage 5a's
 file to change.
 
-1. **No `schedule.json` producer (follow-up spec needed).** The bot *reads*
+1. **No `schedule.json` producer (follow-up spec needed).** The bot _reads_
    `schedule.json` (`scripts/recording/bot/schedule.mjs`, `scripts/recording-bot.mjs`,
    and both systemd units), but nothing in the repo writes it —
    `api/bookings.ts`, `api/bookings/direct.ts`, and `api/stripe-webhook.ts` never
@@ -1275,7 +1312,7 @@ file to change.
    genuine out-of-scope input rather than an unmet scenario — but it must be
    closed by a follow-up spec **before** the bot is trusted unattended. The
    timer/service units should not be enabled in production until then.
-2. **Orphaned Chrome processes.** A prior *manual* run left browser processes
+2. **Orphaned Chrome processes.** A prior _manual_ run left browser processes
    behind: `/tmp/chrome-p4-{Alpha,Beta,Rexi Recorder}`, room
    `rexi-39f7a6cd00000000`, ports 9481–9483. They are not from the committed
    vitest live test (which uses `rexi-live-profile-*` dirs and cleans up in its
@@ -1295,10 +1332,10 @@ spec branch rather than committed.
 Per `.standards/docs/SPEC_PIPELINE.md §Remediation budget`, carried from the
 attempt entries in `25-verification.md`:
 
-| Phase | Attempt | Gate | Outcome |
-|---|---|---|---|
-| 1 (pre-PR) | 1 | `spot-check` | **BLOCK** — end-to-end recorder absent; `--decide` printed an action with no consumer |
-| 1 (pre-PR) | 2 | `spot-check` (scoped re-verification) | **Resolved → PASS** — recorder wired and live-verified twice (`-17.6 dB` capture, `-91.0 dB` bot-alone control) |
+| Phase      | Attempt | Gate                                  | Outcome                                                                                                         |
+| ---------- | ------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 1 (pre-PR) | 1       | `spot-check`                          | **BLOCK** — end-to-end recorder absent; `--decide` printed an action with no consumer                           |
+| 1 (pre-PR) | 2       | `spot-check` (scoped re-verification) | **Resolved → PASS** — recorder wired and live-verified twice (`-17.6 dB` capture, `-91.0 dB` bot-alone control) |
 
 - **BLOCKs during this run: 1.** Resolved in **phase 1, attempt 2** — inside the
   phase-1 budget of max 3 (2 of 3 used, 1 remaining).
@@ -1359,7 +1396,7 @@ scoped spot-check evidence (`## Evidence: live proof (scoped spot-check re-run)`
 parentheticals, so the exact-match selector never reaches them.
 
 Why this stage did not fix it: `25-verification.md` is the Verifier's
-independent record of what *it* executed. Rewriting its `exit:` line, or
+independent record of what _it_ executed. Rewriting its `exit:` line, or
 renaming its headings to make a gate pass, would put stage 5a's hand on another
 stage's evidence — the exact failure mode the separate Verifier stage exists to
 prevent (`.standards/docs/SPEC_PIPELINE.md §Why a separate Verifier stage`). A
@@ -1390,18 +1427,18 @@ cleaned, or committed here, per the stop-and-ask matrix.
 
 ## Gate summary
 
-| Item | Result |
-|---|---|
-| Verifier precondition (`25-verification.md`) | PASS (attempt 2, phase 1) |
-| Conformance tier | `mvp` (live-verified: no declaration, gate auto-detect, no Stryker) |
-| Mutation score | skipped — `mvp` tier (threshold ≥80% applies at `production`+) |
-| Equivalent mutants | none (no mutants generated) |
-| Complexity (carried from Refactorer) | max CC 6, 0 violations; inline script 9→5; webhook 631→603 lines / 14→9 methods |
-| Final full suite | 62 files, 414 passed, 1 skipped, exit 0 |
-| Remediation | 1 BLOCK, resolved phase 1 attempt 2 (budget 2/3) |
-| Stage 5a gates | GREEN (mutation skipped by tier; suite green) |
-| Audit-trail gate (`check-audit-trail.sh`) | **FAIL** — Verifier-owned evidence-format gap in `25-verification.md`; blocks stage 5b until corrected |
-| Non-blocking | `schedule.json` producer (follow-up spec); orphaned Chrome processes |
+| Item                                         | Result                                                                                                 |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Verifier precondition (`25-verification.md`) | PASS (attempt 2, phase 1)                                                                              |
+| Conformance tier                             | `mvp` (live-verified: no declaration, gate auto-detect, no Stryker)                                    |
+| Mutation score                               | skipped — `mvp` tier (threshold ≥80% applies at `production`+)                                         |
+| Equivalent mutants                           | none (no mutants generated)                                                                            |
+| Complexity (carried from Refactorer)         | max CC 6, 0 violations; inline script 9→5; webhook 631→603 lines / 14→9 methods                        |
+| Final full suite                             | 62 files, 414 passed, 1 skipped, exit 0                                                                |
+| Remediation                                  | 1 BLOCK, resolved phase 1 attempt 2 (budget 2/3)                                                       |
+| Stage 5a gates                               | GREEN (mutation skipped by tier; suite green)                                                          |
+| Audit-trail gate (`check-audit-trail.sh`)    | **FAIL** — Verifier-owned evidence-format gap in `25-verification.md`; blocks stage 5b until corrected |
+| Non-blocking                                 | `schedule.json` producer (follow-up spec); orphaned Chrome processes                                   |
 
 ## PR
 
@@ -1518,7 +1555,7 @@ and this spec does not add one. The two surfaces reuse what already exists.
 - **Join page**: `src/index.css` `:root` custom properties (verbatim values,
   copied) and the `.result-view` layout family from `src/App.css` (centred
   single column, `min-height: 100dvh`, `gap: var(--space-4)`, `text-align:
-  center`, action as a `--radius-full` graphite pill). No card, no shadow, no
+center`, action as a `--radius-full` graphite pill). No card, no shadow, no
   nav, no footer chrome.
 - **Email notice**: the existing hand-built inline-style HTML in
   `src/domain/email.ts` / `src/domain/emailDirect.ts`, unchanged in structure.
@@ -1538,7 +1575,7 @@ SPA.
 
 - Font: system stack, verbatim from `index.css` `body`:
   `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
-  Arial, sans-serif`. No webfont request (poor-connectivity constraint). The
+Arial, sans-serif`. No webfont request (poor-connectivity constraint). The
   email keeps `Arial, Helvetica, sans-serif` exactly as it is today. The English
   variant adds no font, no weight, no size: same tokens, different words.
 - Accent color: none. The only "action" colour is `--color-zinc-900` `#18181b`
@@ -1589,6 +1626,7 @@ no breadcrumb. The page is one message.
 **Typography** (identical in both locales: the English strings are a few
 characters longer and must wrap in the same rhythm, so no locale-specific size
 or tracking is permitted):
+
 - h1: 28px (`--text-2xl`) below 480px, 32px (`--text-3xl`) at and above;
   weight 600; `letter-spacing: -0.02em`; `line-height: 1.2`; `#18181b`
   (this is `.result-title` plus an explicit line-height, since `.result-title`
@@ -1610,19 +1648,19 @@ were the same page with and without a timer, so removing the timer removes the
 distinction. There is no `forwarding` state, no `armed` state, and no third
 state hiding behind a JS branch.
 
-*State A, valid room.* The only state for a valid path. One static page, fully
+_State A, valid room._ The only state for a valid path. One static page, fully
 usable from first paint. Its strings, Spanish (default) and English (final),
 in document order:
 
-| Element | `es` (default, final) | `en` (final) |
-|---|---|---|
-| `<title>` | `Entrar en la reunión · RexiAI` | `Join the meeting · RexiAI` |
-| h1 | `Tu reunión con RexiAI` | `Your meeting with RexiAI` |
-| explanation | `La sala está en Jitsi (meet.jit.si), la plataforma de vídeo que usamos para las sesiones.` | `The room is on Jitsi (meet.jit.si), the video platform we use for sessions.` |
-| notice | `Aviso de grabación: la reunión se graba en audio.` | `Recording notice: this meeting is recorded as audio.` |
-| action label | `Unirse a la reunión` | `Join the meeting` |
-| room identifier | `Sala <room>` | `Room <room>` |
-| help | `Si la sala no se abre, pulsa el botón. Si sigue sin abrirse, escribe a info@rexi-ai.com.` | `If the room does not open, press the button. If it still does not open, email info@rexi-ai.com.` |
+| Element         | `es` (default, final)                                                                       | `en` (final)                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `<title>`       | `Entrar en la reunión · RexiAI`                                                             | `Join the meeting · RexiAI`                                                                       |
+| h1              | `Tu reunión con RexiAI`                                                                     | `Your meeting with RexiAI`                                                                        |
+| explanation     | `La sala está en Jitsi (meet.jit.si), la plataforma de vídeo que usamos para las sesiones.` | `The room is on Jitsi (meet.jit.si), the video platform we use for sessions.`                     |
+| notice          | `Aviso de grabación: la reunión se graba en audio.`                                         | `Recording notice: this meeting is recorded as audio.`                                            |
+| action label    | `Unirse a la reunión`                                                                       | `Join the meeting`                                                                                |
+| room identifier | `Sala <room>`                                                                               | `Room <room>`                                                                                     |
+| help            | `Si la sala no se abre, pulsa el botón. Si sigue sin abrirse, escribe a info@rexi-ai.com.`  | `If the room does not open, press the button. If it still does not open, email info@rexi-ai.com.` |
 
 - `<room>` is the `rexi-<16 hex>` segment read from the path. This is the page's
   verification cue: it must match the room segment of the URL in the booking
@@ -1658,7 +1696,7 @@ in document order:
   is about to start. The notice string itself is shared verbatim with the email,
   per locale, so the client reads the same sentence twice.
 
-*State B, no room in the path.* No join action at all (a button that leads to
+_State B, no room in the path._ No join action at all (a button that leads to
 `https://meet.jit.si/undefined` is worse than no button). Nothing on this page
 navigates on its own (decision 3), so it must earn its own exit:
 
@@ -1668,7 +1706,7 @@ navigates on its own (decision 3), so it must earn its own exit:
 - help line plus the page's only action, an `<a href="mailto:info@rexi-ai.com">`:
   es `Si el enlace del correo tampoco funciona, escribe a info@rexi-ai.com.`
   labelled `Escribir a RexiAI` / en `If the link in the email does not work
-  either, email info@rexi-ai.com.` labelled `Email RexiAI`
+either, email info@rexi-ai.com.` labelled `Email RexiAI`
 - no room identifier, no notice, no join button (there is no session and no room
   to join)
 
@@ -1702,7 +1740,7 @@ delivered the client: `https://meet.rexi-ai.com/rexi-<16hex>?lang=es|en`
   first paint.
 - **Nothing else is read.** No `Accept-Language` sniffing, no cookie, no path
   segment, no stored preference, no geo or timezone heuristic, no client name.
-  The parameter exists so the page shows the language the *booking* was made in;
+  The parameter exists so the page shows the language the _booking_ was made in;
   a device-language sniff would override that (a client who books in Spanish on
   an English phone would get the English page), which makes the parameter a
   suggestion rather than the contract. A second source is not a fallback from the
@@ -1797,11 +1835,12 @@ page that cannot navigate cannot navigate wrongly.
 
 **No data on this page, by design**: it shows no client name, no date, no time,
 no booking reference. There is no per-room lookup and none is being added: a
-page on an unknown domain that greets you by name is *more* alarming, and a
+page on an unknown domain that greets you by name is _more_ alarming, and a
 wrong time (stale cache, timezone, rescheduled slot) is worse than no time. The
 email carries the date and time; this page confirms identity and hands over.
 
 **Anti-patterns to avoid** (specific to this task, not a general dump):
+
 - **Any automatic navigation, in any form.** Not a 4s timer, not a `meta refresh`,
   not a "continue in N seconds" fallback, not a re-armed timer on `pageshow`. The
   human chose one deliberate tap every time (decision 3). A future edit that
@@ -1825,6 +1864,7 @@ email carries the date and time; this page confirms identity and hands over.
   no emoji, no icons, no "Powered by" strip.
 
 **Watch items (Coder must check)**:
+
 - **Hosting contract, and the trap in this repo's own config**: `vercel.json`
   currently rewrites `/(.*)` to `/index.html`. If the branded host inherits that,
   `https://meet.rexi-ai.com/rexi-<hex>?lang=es` serves the marketing SPA and the
@@ -1921,12 +1961,13 @@ spelling of the sentence for a Coder to copy.
 file, `10-tasks.md` (Task 8's acceptance bullet and decision 11), and
 `20-acceptance/AC-006-notice-locale.md` (its header quote and AC-006-28). There is
 no outstanding synchronisation left anywhere and nothing for a later reader to
-finish. A *future* rewording of these two lines would still have to change those
+finish. A _future_ rewording of these two lines would still have to change those
 three files together, because the acceptance test asserts them with "exactly" —
 but that is a property of the string being pinned in three documents, not a task
 someone deferred.
 
 Non-negotiable properties of these strings, in both locales:
+
 - **Selected, not translated, at send time.** The locale picks a frozen pair; no
   string is ever produced by a translation call, a template lookup, or an
   interpolated language switch. Two literals, one selector.
@@ -1942,7 +1983,7 @@ Non-negotiable properties of these strings, in both locales:
   "recording". Verify by running that suite, not by reading this sentence.
 - Accurate: the bot records **audio**, so the notice says audio rather than
   implying video. Identical meaning in both languages, including the actor: the
-  meeting *is* recorded, by us.
+  meeting _is_ recorded, by us.
 - It names a real objection path (`responde a este correo antes de la reunión` /
   `reply to this email before the meeting`) instead of a consent notice with no
   way to object.
@@ -1985,9 +2026,9 @@ position is locale-independent, because only the words change):
   the defensive falsy-join path (AC-003-18/24) must not silently drop a consent
   notice.
 - Operator emails, both variants: unchanged, byte for byte, for any locale.
-- **Nothing else changes with locale.** Heading, fact rows *other than the join
-  URL*, duration line, join CTA (`Unirse a la reunión`), calendar CTA (`Añadir a
-  Google Calendar`), billing lines, and help line stay Spanish and byte-identical
+- **Nothing else changes with locale.** Heading, fact rows _other than the join
+  URL_, duration line, join CTA (`Unirse a la reunión`), calendar CTA (`Añadir a
+Google Calendar`), billing lines, and help line stay Spanish and byte-identical
   (AC-006-30). The join URL's `?lang=` value is the one other thing that moves
   (AC-006-33), so the two renders of the same booking differ in exactly the two
   notice lines and that one character. An English booking receives a Spanish email
@@ -2027,14 +2068,14 @@ appears, for three reasons:
 - The **join page** does not use per-paragraph attributes at all. It is a
   single-language document and puts the locale on `<html lang>` (Task 1 §A11y),
   derived from `?lang=` and matching the column it rendered.
-- The attribute travels with the *notice selection*, not with the URL string: the
+- The attribute travels with the _notice selection_, not with the URL string: the
   same normalised booking locale that writes `?lang=en` onto the join URL is what
   selects the English pair and therefore the attribute. One captured value, three
   consumers (notice text, notice attribute, URL parameter), no second derivation.
 
 The Spanish path emits no `lang` attribute at all — not on the paragraphs, not on
 the container, not conditionally rendered in a way that changes whitespace. That
-keeps the default path byte-identical to the Spanish rendering *without* the
+keeps the default path byte-identical to the Spanish rendering _without_ the
 locale machinery, which is the exact string AC-003-25 asserts: the notice is
 added once, in Spanish, with no attribute, and the English column contributes
 nothing to that path. "Byte-identical to today" would be the wrong claim here —
@@ -2043,11 +2084,12 @@ the notice lines are themselves the approved change (decision 6) — but
 that matters and the one that keeps AC-003-25 meaningful.
 
 **Anti-patterns to avoid**:
+
 - A one-liner buried after the CTA, in a footer, or in a footnote-sized line, in
   either language.
 - Wording that implies surveillance ("monitorizamos", "vigilamos", "we monitor",
   "we track") or that hides the actor ("esta sesión puede ser grabada",
-  "podría grabarse", "this session may be recorded"). The meeting *is* recorded,
+  "podría grabarse", "this session may be recorded"). The meeting _is_ recorded,
   by us, and the notice says so.
 - Reusing the operator's red alert box, or inventing a second visual language for
   one paragraph.
@@ -2059,10 +2101,11 @@ that matters and the one that keeps AC-003-25 meaningful.
 - Em dashes, and any wording that trips the banned-stem list, in either locale.
 - Touching the subject line or the preheader, in either locale. Both are locked,
   both are Spanish, and both are already the wrong place for a legal notice.
-- A second language of the *surrounding* copy: no part-English heading, no
+- A second language of the _surrounding_ copy: no part-English heading, no
   bilingual fact rows, no "Duración / Duration".
 
 **Watch items (Coder must check)**:
+
 - **An existing test now encodes the old behaviour.**
   `src/__tests__/AC-003-client-email.test.ts` AC-003-25 asserts the
   billing-enabled client body with `expect(payload.text).toBe(lines.join('\n'))`
@@ -2168,3 +2211,82 @@ invent them while writing the plumbing.
   issue, dashboard), that is a new spec with its own design stage.
 - **Hosting, certificates, DNS, and the link's delivery mechanism**: out of
   scope per `10-tasks.md`. This document states the observable contract only.
+
+---
+
+# Phase-2 post-PR CI check — round 1 (spec pipeline)
+
+PR: https://github.com/RexiAI/rexiAI/pull/86
+Branch: `spec/006-branded-meeting-link-and-recording-bot`
+Head SHA: `51dd2c551ff91aed344bad247bccb3b19d3e32c6`
+Budget: phase 2, round 1 of max 3 (counter independent of phase 1). No local runs — judged from the checks API only.
+
+## Evidence: PR checks (gh pr checks)
+
+command: gh pr checks 86 --repo RexiAI/rexiAI --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-10-26T12:41:53Z
+
+[{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/40324121246/job/121576613306","name":"Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/40324121246/job/121576463056","name":"Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"fail","link":"https://github.com/RexiAI/rexiAI/actions/runs/40324121246/job/121576463240","name":"Lint & Format","state":"FAILURE","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/40324121246/job/121576463385","name":"Build","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/Y5z21s3VhyWzK7AQurRqgg7PQdCT","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+## Evidence: check-runs pinned to head SHA
+
+command: gh api repos/RexiAI/rexiAI/commits/51dd2c551ff91aed344bad247bccb3b19d3e32c6/check-runs --jq '.total_count, (.check_runs[] | [.id,.name,.status,.conclusion] | @tsv)'
+exit: 0
+at: 2026-10-26T12:41:53Z
+
+5
+121576613306 Docker Build & Push completed skipped
+121576463385 Build completed success
+121576463240 Lint & Format completed failure
+121576463056 Unit Tests completed success
+121576462672 Vercel Preview Comments completed success
+
+## Evidence: failing job log (Lint & Format)
+
+command: gh run view 40324121246 --repo RexiAI/rexiAI --log-failed
+exit: 0
+at: 2026-10-26T12:41:53Z
+
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:25.0244117Z > rexiai-website@0.0.0 format:check
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:25.0244729Z > prettier --check .
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:25.1016541Z Checking formatting...
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:25.7249978Z [warn] deploy/home/README.md
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:25.8267815Z [warn] deploy/join/index.html
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:27.2222020Z [warn] docs/changes/006-branded-meeting-link-and-recording-bot.md
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:27.4434387Z [warn] scripts/recording-bot.mjs
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:27.4847018Z [warn] scripts/recording/bot/capture.mjs
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:27.5012663Z [warn] scripts/recording/bot/cdp.mjs
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:27.5573773Z [warn] scripts/recording/bot/pulse.mjs
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:28.3450218Z [warn] src/**tests**/AC-006-bot-adapter.test.ts
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:28.3558765Z [warn] src/**tests**/AC-006-branded-link.test.ts
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:28.4101382Z [warn] src/**tests**/AC-006-missed-meeting.test.ts
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:28.4687543Z [warn] src/**tests**/AC-006-notice-locale.test.ts
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:28.5010546Z [warn] src/**tests**/AC-006-record-threshold.test.ts
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:28.5360931Z [warn] src/**tests**/AC-006-recording-output.test.ts
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:29.3587859Z [warn] Code style issues found in 13 files. Run Prettier with --write to fix.
+Lint & Format Run npm run format:check --if-present 2026-10-26T12:39:29.4378156Z ##[error]Process completed with exit code 1.
+
+## Verdict: FAIL
+
+Failing check: `Lint & Format` (check-run id `121576463240`, workflow `CI`, run `40324121246`).
+
+Concrete failure reason: the `Lint & Format` job's `npm run format:check` step runs `prettier --check .`, which exits 1 with `Code style issues found in 13 files. Run Prettier with --write to fix.` — 13 files are unformatted per the repo's Prettier config:
+
+- deploy/home/README.md
+- deploy/join/index.html
+- docs/changes/006-branded-meeting-link-and-recording-bot.md
+- scripts/recording-bot.mjs
+- scripts/recording/bot/capture.mjs
+- scripts/recording/bot/cdp.mjs
+- scripts/recording/bot/pulse.mjs
+- src/**tests**/AC-006-bot-adapter.test.ts
+- src/**tests**/AC-006-branded-link.test.ts
+- src/**tests**/AC-006-missed-meeting.test.ts
+- src/**tests**/AC-006-notice-locale.test.ts
+- src/**tests**/AC-006-record-threshold.test.ts
+- src/**tests**/AC-006-recording-output.test.ts
+
+All other terminal checks are green: Unit Tests (pass), Build (pass), Vercel (pass), Vercel Preview Comments (pass), Docker Build & Push (skipped). No pending checks.
+
+Fix routing: formatting only — no behavior implicated. Run `npx prettier --write` on the 13 files (mechanical) and re-push. Classified as structure/formatting → **Refactorer**.

@@ -51,7 +51,12 @@ describe('AC-006 missed meetings', () => {
 
     // Durable, operator-visible record: a log line plus a persistent marker.
     const { lines, log } = captureLog()
-    const written = recordMissedMeetings({ missed, env: { RECORDINGS_DIR: recordings }, now: AFTER, log })
+    const written = recordMissedMeetings({
+      missed,
+      env: { RECORDINGS_DIR: recordings },
+      now: AFTER,
+      log,
+    })
     expect(lines.join('\n')).toContain(ROOM)
     expect(lines.join('\n')).toMatch(/missed/i)
     expect(written).toHaveLength(1)
@@ -79,7 +84,8 @@ describe('AC-006 missed meetings', () => {
     fs.mkdirSync(sessionDir, { recursive: true })
     fs.writeFileSync(path.join(sessionDir, `${ROOM}_2026-10-21-10-00-00.mp4`), 'x')
 
-    const recordingExists = (room: string) => recordingExistsForRoom({ room, env: { RECORDINGS_DIR: recordings } })
+    const recordingExists = (room: string) =>
+      recordingExistsForRoom({ room, env: { RECORDINGS_DIR: recordings } })
     expect(recordingExists(ROOM)).toBe(true)
     expect(findMissedMeetings({ schedule: [entry()], now: AFTER, recordingExists })).toEqual([])
   })
@@ -114,13 +120,18 @@ describe('AC-006 missed meetings', () => {
       fs.mkdirSync(recordings, { recursive: true })
       // A dir named for the room but still being written (no mp4) is NOT a recording.
       fs.mkdirSync(path.join(recordings, `${ROOM}_2026-10-21-10-00-00`))
-      expect(recordingExistsForRoom({ room: ROOM, env: { RECORDINGS_DIR: recordings } })).toBe(false)
+      expect(recordingExistsForRoom({ room: ROOM, env: { RECORDINGS_DIR: recordings } })).toBe(
+        false
+      )
 
       // A root-level mp4 for the room counts.
       fs.writeFileSync(path.join(recordings, `${ROOM}_import.mp4`), 'x')
       expect(recordingExistsForRoom({ room: ROOM, env: { RECORDINGS_DIR: recordings } })).toBe(true)
       expect(
-        recordingExistsForRoom({ room: 'rexi-fedcba9876543210', env: { RECORDINGS_DIR: recordings } })
+        recordingExistsForRoom({
+          room: 'rexi-fedcba9876543210',
+          env: { RECORDINGS_DIR: recordings },
+        })
       ).toBe(false)
 
       const missing = path.join(base, 'unit-exists-missing')

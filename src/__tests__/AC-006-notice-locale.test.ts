@@ -96,22 +96,24 @@ function count(part: string, literal: string): number {
  *  value can differ; the English notice's own `lang="en"` attribute is part of
  *  the notice block, so it is stripped with it. */
 function normalise(part: string, notice: readonly [string, string]): string {
-  return part
-    .split(notice[0])
-    .join('')
-    .split(notice[1])
-    .join('')
-    .split(' lang="en"')
-    .join('')
-    .split('lang=en')
-    .join('lang=__')
-    .split('lang=es')
-    .join('lang=__')
-    // the calendar CTA percent-encodes the join URL (encodeURIComponent)
-    .split('lang%3Den')
-    .join('lang=__')
-    .split('lang%3Des')
-    .join('lang=__')
+  return (
+    part
+      .split(notice[0])
+      .join('')
+      .split(notice[1])
+      .join('')
+      .split(' lang="en"')
+      .join('')
+      .split('lang=en')
+      .join('lang=__')
+      .split('lang=es')
+      .join('lang=__')
+      // the calendar CTA percent-encodes the join URL (encodeURIComponent)
+      .split('lang%3Den')
+      .join('lang=__')
+      .split('lang%3Des')
+      .join('lang=__')
+  )
 }
 
 function makeRes() {
@@ -209,7 +211,9 @@ describe('AC-006 locale-aware consent notice', () => {
     const calendarLine = es.text
       .split('\n')
       .find((line) => line.startsWith('Añadir a Google Calendar: ')) as string
-    expect(es.text.split('\n').filter((l) => !(NOTICE_ES as readonly string[]).includes(l))).toEqual([
+    expect(
+      es.text.split('\n').filter((l) => !(NOTICE_ES as readonly string[]).includes(l))
+    ).toEqual([
       'Tu reserva con RexiAI está confirmada.',
       'Fecha: 2027-03-01',
       'Hora (Europe/Madrid): 10:00',

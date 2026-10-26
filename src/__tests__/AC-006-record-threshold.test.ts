@@ -31,7 +31,9 @@ describe('AC-006 recording threshold', () => {
   it('AC-006-14: exactly two non-bot humans starts the recording', () => {
     const room = [BOT, ...humans(2)]
     expect(shouldRecord(room, BOT)).toBe(true)
-    expect(recordingAction({ recording: false, participants: room, botIdentity: BOT })).toBe('start')
+    expect(recordingAction({ recording: false, participants: room, botIdentity: BOT })).toBe(
+      'start'
+    )
   })
 
   it('AC-006-15: three or more non-bot humans keeps recording', () => {

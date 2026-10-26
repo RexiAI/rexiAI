@@ -14,7 +14,14 @@ import { hasAudioStream } from '../../scripts/recording/billing.mjs'
 import { finalizeRecording, sessionStamp } from '../../scripts/recording/bot/output.mjs'
 import { processSessionDir } from '../../scripts/recording/pipeline.mjs'
 
-import { captureLog, ffprobeBehavior, makeFetch, makeRunner, mkTmpDir, rmTmpDir } from './recording-harness'
+import {
+  captureLog,
+  ffprobeBehavior,
+  makeFetch,
+  makeRunner,
+  mkTmpDir,
+  rmTmpDir,
+} from './recording-harness'
 import type { Call } from './recording-harness'
 
 const execFileAsync = promisify(execFile)

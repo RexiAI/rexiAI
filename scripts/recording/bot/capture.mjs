@@ -121,9 +121,7 @@ export function participantsFromStore(snapshot) {
   const remotes = (snapshot.remote || [])
     .filter((r) => r && typeof r.id === 'string' && r.id.length > 0)
     .map((r) => ({ id: r.id, displayName: r.name || '' }))
-  const own = snapshot.local
-    ? [{ id: BOT_IDENTITY.id, displayName: ownName(snapshot.local) }]
-    : []
+  const own = snapshot.local ? [{ id: BOT_IDENTITY.id, displayName: ownName(snapshot.local) }] : []
   return [...own, ...remotes]
 }
 
@@ -202,13 +200,30 @@ function delay(ms) {
  *   log?: Console, sessionOptions?: object, deps?: object }} input
  * @returns {Promise<{ ok: boolean, reason: string, file?: string }>}
  */
-export async function recordRoom({ room, baseUrl, env, log = console, sessionOptions = {}, deps = {} }) {
+export async function recordRoom({
+  room,
+  baseUrl,
+  env,
+  log = console,
+  sessionOptions = {},
+  deps = {},
+}) {
   const sinkName = sinkNameFor(process.pid)
   const workDir = mkdtempSync(path.join(os.tmpdir(), 'rexi-bot-capture-'))
   const pulse = await (deps.ensurePulseServer || ensurePulseServer)({ env, log })
   const sink = await (deps.loadSink || loadSink)({ server: pulse.server, sinkName, log })
   try {
-    return await captureWithRoom({ room, baseUrl, env, log, pulse, sink, workDir, sessionOptions, deps })
+    return await captureWithRoom({
+      room,
+      baseUrl,
+      env,
+      log,
+      pulse,
+      sink,
+      workDir,
+      sessionOptions,
+      deps,
+    })
   } finally {
     await (deps.unloadSink || unloadSink)({ server: pulse.server, moduleId: sink.moduleId, log })
     pulse.stop()
@@ -217,7 +232,17 @@ export async function recordRoom({ room, baseUrl, env, log = console, sessionOpt
 }
 
 /** The join→record→finalize half, split out so every exit still runs the teardown above. */
-async function captureWithRoom({ room, baseUrl, env, log, pulse, sink, workDir, sessionOptions, deps }) {
+async function captureWithRoom({
+  room,
+  baseUrl,
+  env,
+  log,
+  pulse,
+  sink,
+  workDir,
+  sessionOptions,
+  deps,
+}) {
   const room$ = await (deps.joinRoom || joinRoom)({
     room,
     baseUrl,
@@ -256,7 +281,10 @@ function makeCapture({ room, env, log, pulse, sink, workDir, deps }) {
     async start() {
       const outPath = path.join(workDir, `capture-${Date.now()}.wav`)
       const start = deps.startCapture || startCapture
-      current = { outPath, handle: start({ server: pulse.server, sinkName: sink.sinkName, outPath, env, log }) }
+      current = {
+        outPath,
+        handle: start({ server: pulse.server, sinkName: sink.sinkName, outPath, env, log }),
+      }
     },
     async stop() {
       if (!current) return null

@@ -114,7 +114,11 @@ describe('unit: participant snapshot → decision list (AC-006-12)', () => {
 })
 
 describe('unit: the lifecycle acts on the two-human decision (AC-006-13 … AC-006-17)', () => {
-  const step = (participants: { id: string }[], recording: boolean, belowSinceMs: number | null = null) =>
+  const step = (
+    participants: { id: string }[],
+    recording: boolean,
+    belowSinceMs: number | null = null
+  ) =>
     nextStep({
       recording,
       belowSinceMs,
@@ -289,7 +293,10 @@ describe('unit: the join URL (bot stays out of the lobby, publishes nothing)', (
 })
 
 describe('unit: browser launch contract (outbound only, audio renders)', () => {
-  const args = chromeArgs({ profileDir: '/tmp/profile', url: 'https://example.test/r#x' }) as string[]
+  const args = chromeArgs({
+    profileDir: '/tmp/profile',
+    url: 'https://example.test/r#x',
+  }) as string[]
 
   it('speaks CDP over file descriptors, so no port is listened on', () => {
     expect(args).toContain('--remote-debugging-pipe')
@@ -365,10 +372,13 @@ describe('unit: audio capture argv and PulseAudio server selection', () => {
     expect(sinkNameForModule(listing, '99')).toBeNull()
 
     const runner = async (_cmd: string, args: string[]) =>
-      args.includes('load-module')
-        ? { stdout: '13\n' }
-        : { stdout: listing }
-    const loaded = await loadSink({ server: 'unix:/p', sinkName: 'rexi-bot-1', runner, log: QUIET_LOG })
+      args.includes('load-module') ? { stdout: '13\n' } : { stdout: listing }
+    const loaded = await loadSink({
+      server: 'unix:/p',
+      sinkName: 'rexi-bot-1',
+      runner,
+      log: QUIET_LOG,
+    })
     expect(loaded.sinkName).toBe('rexi-bot-1.2')
     expect(loaded.requested).toBe('rexi-bot-1')
     expect(loaded.moduleId).toBe('13')
@@ -695,103 +705,101 @@ function spawnHuman(input: {
 describe.skipIf(!LIVE)('live: the bot joins a room and records a real participant', () => {
   const cleanups: (() => void | Promise<void>)[] = []
 
-  it(
-    'records a two-human meeting, audible, in RECORDINGS_DIR (AC-006-14, AC-006-19)',
-    async () => {
-      const chromePath = resolveChromePath(process.env as Record<string, string | undefined>)
-      const room = `rexi-${randomBytes(8).toString('hex')}`
-      const work = tmpDir('rexi-live-work-')
-      const recordings = tmpDir('rexi-live-recordings-')
-      const tone = path.join(work, 'tone.wav')
-      await execFileAsync('ffmpeg', [
-        '-hide_banner',
-        '-loglevel',
-        'error',
-        '-y',
-        '-f',
-        'lavfi',
-        '-i',
-        'sine=frequency=440:sample_rate=48000:duration=300',
-        '-ac',
-        '1',
-        '-c:a',
-        'pcm_s16le',
-        tone,
-      ])
+  it('records a two-human meeting, audible, in RECORDINGS_DIR (AC-006-14, AC-006-19)', async () => {
+    const chromePath = resolveChromePath(process.env as Record<string, string | undefined>)
+    const room = `rexi-${randomBytes(8).toString('hex')}`
+    const work = tmpDir('rexi-live-work-')
+    const recordings = tmpDir('rexi-live-recordings-')
+    const tone = path.join(work, 'tone.wav')
+    await execFileAsync('ffmpeg', [
+      '-hide_banner',
+      '-loglevel',
+      'error',
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      'sine=frequency=440:sample_rate=48000:duration=300',
+      '-ac',
+      '1',
+      '-c:a',
+      'pcm_s16le',
+      tone,
+    ])
 
-      const pulse = await ensurePulseServer({ env: process.env as Record<string, string | undefined> })
-      cleanups.push(() => pulse.stop())
-      const sink = await loadSink({ server: pulse.server, sinkName: sinkNameFor('livehumans') })
-      cleanups.push(async () => {
-        await execFileAsync('pactl', [
-          '--server',
-          pulse.server,
-          'unload-module',
-          sink.moduleId,
-        ]).catch(() => {})
-      })
+    const pulse = await ensurePulseServer({
+      env: process.env as Record<string, string | undefined>,
+    })
+    cleanups.push(() => pulse.stop())
+    const sink = await loadSink({ server: pulse.server, sinkName: sinkNameFor('livehumans') })
+    cleanups.push(async () => {
+      await execFileAsync('pactl', [
+        '--server',
+        pulse.server,
+        'unload-module',
+        sink.moduleId,
+      ]).catch(() => {})
+    })
 
-      // Two fake humans, both publishing audio; one plays the 440 Hz tone.
-      const humans = [
-        { name: 'Ana Live', port: 9611, toneFile: tone },
-        { name: 'Bruno Live', port: 9612, toneFile: null },
-      ].map(({ name, port, toneFile }) => {
-        const proc = spawnHuman({
-          chromePath,
-          room,
-          name,
-          port,
-          pulseServer: pulse.server,
-          sink: sink.sinkName,
-          toneFile,
-        })
-        cleanups.push(() => proc.kill('SIGKILL'))
-        return { name, port }
-      })
-
-      // They must be IN the room before the bot arrives — production order: the
-      // booked humans open the room and the bot joins them.
-      for (const human of humans) {
-        const page = await connectHuman(human.port)
-        cleanups.push(() => page.close())
-        await waitForApp(page)
-        await forcePublishAudio(page)
-      }
-
-      const result = await recordRoom({
+    // Two fake humans, both publishing audio; one plays the 440 Hz tone.
+    const humans = [
+      { name: 'Ana Live', port: 9611, toneFile: tone },
+      { name: 'Bruno Live', port: 9612, toneFile: null },
+    ].map(({ name, port, toneFile }) => {
+      const proc = spawnHuman({
+        chromePath,
         room,
-        baseUrl: LIVE_BASE,
-        env: { ...(process.env as Record<string, string>), RECORDINGS_DIR: recordings },
-        log: console,
-        sessionOptions: {
-          graceMs: 2000,
-          intervalMs: 2000,
-          idleTimeoutMs: 180_000,
-          maxDurationMs: 30_000,
-        },
+        name,
+        port,
+        pulseServer: pulse.server,
+        sink: sink.sinkName,
+        toneFile,
       })
+      cleanups.push(() => proc.kill('SIGKILL'))
+      return { name, port }
+    })
 
-      expect(result.ok).toBe(true)
-      const file = String(result.file)
-      expect(file.startsWith(recordings + path.sep)).toBe(true)
-      expect(fs.existsSync(file)).toBe(true)
-      expect(file.endsWith('.mp4')).toBe(true)
+    // They must be IN the room before the bot arrives — production order: the
+    // booked humans open the room and the bot joins them.
+    for (const human of humans) {
+      const page = await connectHuman(human.port)
+      cleanups.push(() => page.close())
+      await waitForApp(page)
+      await forcePublishAudio(page)
+    }
 
-      // A finished session directory the unchanged pipeline sweeps.
-      const sessionDir = path.dirname(file)
-      const metadata = JSON.parse(fs.readFileSync(path.join(sessionDir, 'metadata.json'), 'utf8'))
-      expect(metadata.meeting_url).toBe(`https://meet.jit.si/${room}`)
+    const result = await recordRoom({
+      room,
+      baseUrl: LIVE_BASE,
+      env: { ...(process.env as Record<string, string>), RECORDINGS_DIR: recordings },
+      log: console,
+      sessionOptions: {
+        graceMs: 2000,
+        intervalMs: 2000,
+        idleTimeoutMs: 180_000,
+        maxDurationMs: 30_000,
+      },
+    })
 
-      const meanDb = await meanVolumeDb(file)
-      // Recorded (not just asserted) so an audit can see HOW audible it was: a
-      // silent capture reads about -91 dB, a real participant roughly -20 dB.
-      process.stdout.write(`[live-proof] mean_volume=${meanDb} dB file=${file}\n`)
-      expect(meanDb).toBeGreaterThan(-50)
+    expect(result.ok).toBe(true)
+    const file = String(result.file)
+    expect(file.startsWith(recordings + path.sep)).toBe(true)
+    expect(fs.existsSync(file)).toBe(true)
+    expect(file.endsWith('.mp4')).toBe(true)
 
-      for (const cleanup of cleanups.reverse()) await cleanup()
-      fs.rmSync(work, { recursive: true, force: true })
-      fs.rmSync(recordings, { recursive: true, force: true })
-    },
-    300_000
-  )
+    // A finished session directory the unchanged pipeline sweeps.
+    const sessionDir = path.dirname(file)
+    const metadata = JSON.parse(fs.readFileSync(path.join(sessionDir, 'metadata.json'), 'utf8'))
+    expect(metadata.meeting_url).toBe(`https://meet.jit.si/${room}`)
+
+    const meanDb = await meanVolumeDb(file)
+    // Recorded (not just asserted) so an audit can see HOW audible it was: a
+    // silent capture reads about -91 dB, a real participant roughly -20 dB.
+    process.stdout.write(`[live-proof] mean_volume=${meanDb} dB file=${file}\n`)
+    expect(meanDb).toBeGreaterThan(-50)
+
+    for (const cleanup of cleanups.reverse()) await cleanup()
+    fs.rmSync(work, { recursive: true, force: true })
+    fs.rmSync(recordings, { recursive: true, force: true })
+  }, 300_000)
 })

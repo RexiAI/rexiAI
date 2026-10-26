@@ -48,7 +48,11 @@ export function drainMessages(buffer, onMessage) {
  * @param {{ write: (payload: unknown) => void, timeoutMs?: number,
  *   timers?: { setTimeout: Function, clearTimeout: Function } }} input
  */
-export function createCdp({ write, timeoutMs = DEFAULT_TIMEOUT_MS, timers = { setTimeout, clearTimeout } }) {
+export function createCdp({
+  write,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  timers = { setTimeout, clearTimeout },
+}) {
   let nextId = 0
   const pending = new Map()
 
@@ -66,13 +70,10 @@ export function createCdp({ write, timeoutMs = DEFAULT_TIMEOUT_MS, timers = { se
     const id = ++nextId
     const payload = sessionId ? { id, method, params, sessionId } : { id, method, params }
     return new Promise((resolve, reject) => {
-      const timer = timers.setTimeout(
-        () => {
-          pending.delete(id)
-          reject(new Error(`CDP ${method} timed out after ${timeoutMs} ms`))
-        },
-        timeoutMs
-      )
+      const timer = timers.setTimeout(() => {
+        pending.delete(id)
+        reject(new Error(`CDP ${method} timed out after ${timeoutMs} ms`))
+      }, timeoutMs)
       pending.set(id, { resolve, reject, timer, method })
       write(payload)
     })

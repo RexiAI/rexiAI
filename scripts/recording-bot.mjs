@@ -238,7 +238,8 @@ async function main() {
   }
   if (parsed.mode === 'decide') process.exit(runDecide(parsed))
   if (parsed.mode === 'missed') process.exit(runMissed(parsed))
-  if (parsed.mode === 'run') process.exit(await runRoom({ room: parsed.room, base: jitsiBaseUrl(parsed) }))
+  if (parsed.mode === 'run')
+    process.exit(await runRoom({ room: parsed.room, base: jitsiBaseUrl(parsed) }))
   if (parsed.mode === 'watch') {
     process.exit(
       await runWatch({ schedule: parsed.schedule, room: parsed.room, base: jitsiBaseUrl(parsed) })

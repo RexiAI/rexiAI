@@ -67,9 +67,9 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now rexi-recording-bot.timer rexi-recording-bot-watch.service
 ```
 
-| Unit | Mode | What it does |
-|---|---|---|
-| `rexi-recording-bot-watch.service` | `Type=simple` (always on) | Follows the schedule file and, for each live booked window, joins the room and records once two non-bot humans are present. |
+| Unit                                                      | Mode                        | What it does                                                                                                                                                                    |
+| --------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rexi-recording-bot-watch.service`                        | `Type=simple` (always on)   | Follows the schedule file and, for each live booked window, joins the room and records once two non-bot humans are present.                                                     |
 | `rexi-recording-bot.timer` → `rexi-recording-bot.service` | `Type=oneshot`, every 5 min | Compares elapsed booked windows against `RECORDINGS_DIR` and writes a durable `.<room>.rexi-missed` record for each room that produced no recording ("the machine was asleep"). |
 
 Both resolve node through `scripts/recording-bot-cron.sh`, read

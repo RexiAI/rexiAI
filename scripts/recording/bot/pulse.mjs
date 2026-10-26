@@ -144,7 +144,11 @@ function waitForSocket(socketPath, deadlineMs, runtimePath) {
     const tick = () => {
       if (existsSync(socketPath)) return resolve()
       if (Date.now() - started > deadlineMs) {
-        return reject(new Error(`PulseAudio socket never appeared at ${socketPath}${daemonLogTail(runtimePath)}`))
+        return reject(
+          new Error(
+            `PulseAudio socket never appeared at ${socketPath}${daemonLogTail(runtimePath)}`
+          )
+        )
       }
       setTimeout(tick, 100)
     }
@@ -219,8 +223,16 @@ async function startPrivateDaemon({ env, log, runner, spawnFn }) {
  * @param {{ env: Record<string, string | undefined>, log?: Console,
  *   runner?: Function, spawnFn?: typeof spawn }} input
  */
-export async function ensurePulseServer({ env, log = console, runner = execFileAsync, spawnFn = spawn }) {
-  const candidates = [...pulseServerCandidates(env), `unix:${path.join(privateRuntimeDir(env), 'native')}`]
+export async function ensurePulseServer({
+  env,
+  log = console,
+  runner = execFileAsync,
+  spawnFn = spawn,
+}) {
+  const candidates = [
+    ...pulseServerCandidates(env),
+    `unix:${path.join(privateRuntimeDir(env), 'native')}`,
+  ]
   for (const server of candidates) {
     if (await responds(server, runner)) return { server, owned: false, stop() {}, runner }
   }
