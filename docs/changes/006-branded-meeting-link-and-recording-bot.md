@@ -2349,3 +2349,74 @@ All terminal checks green on the new head `ade9c64809acf077c5848027ea8181bffc383
 No check-run pinned to the new SHA has `conclusion == "failure"` (scan of `repos/RexiAI/rexiAI/commits/<head>/check-runs` returned 5 runs: 4 success, 1 skipped). No pending checks remain. CI run `40325177991` concluded `success` on the exact head SHA under review.
 
 Phase-2 round 2 passes. The formatting fix (commit `ade9c64`) is confirmed under CI.
+
+# Phase-2 post-PR CI check — round 3 (spec pipeline, final budget round)
+
+PR: https://github.com/RexiAI/rexiAI/pull/86
+Branch: `spec/006-branded-meeting-link-and-recording-bot`
+Head SHA: `4ddecf8e615a5c5fe3f62a90c847c900f081de18` (commit `4ddecf8`, the phase-2 evidence addendum, prettier-formatted before committing)
+Budget: phase 2, round 3 of max 3 (counter independent of phase 1). **Final allowed fix-and-repush round.** Scoped re-check — the gate under test is `Lint & Format` (the round-1 failure, at risk because this commit added markdown); Unit Tests / Build / Vercel are re-read from the fresh SHA for regression, not carried forward.
+
+## Evidence: PR head confirmation
+
+command: gh pr view 86 --repo RexiAI/rexiAI --json headRefName,headRefOid,state,url
+exit: 0
+at: 2026-10-26T12:52:58Z
+
+{"headRefName":"spec/006-branded-meeting-link-and-recording-bot","headRefOid":"4ddecf8e615a5c5fe3f62a90c847c900f081de18","state":"OPEN","url":"https://github.com/RexiAI/rexiAI/pull/86"}
+
+## Evidence: PR checks (gh pr checks) — final terminal read
+
+command: gh pr checks 86 --repo RexiAI/rexiAI --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-10-26T12:53:44Z
+
+[{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/40325861247/job/121582565419","name":"Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/40325861247/job/121582243092","name":"Build","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/40325861247/job/121582243453","name":"Lint & Format","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/40325861247/job/121582243530","name":"Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/71MeFN5dvi7UPSp1zwKHP8iDXue4","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+## Evidence: bounded polling to terminal
+
+command: for i in $(seq 1 24); do gh pr checks 86 --json name,bucket,state; sleep 20; done (bounded re-query, ~8 min ceiling)
+exit: 0
+at: 2026-10-26T12:53:04Z
+
+[1] 12:53:04Z [{"bucket":"skipping","name":"Docker Build & Push","state":"SKIPPED"},{"bucket":"pass","name":"Vercel Preview Comments","state":"SUCCESS"},{"bucket":"pass","name":"Build","state":"SUCCESS"},{"bucket":"pass","name":"Lint & Format","state":"SUCCESS"},{"bucket":"pass","name":"Unit Tests","state":"SUCCESS"},{"bucket":"pass","name":"Vercel","state":"SUCCESS"}]
+
+Polling note: the first read (12:52:58Z) showed `Build` as `IN_PROGRESS`; it reached `SUCCESS` on the first re-query within the ceiling. No check was still `pending`/`in_progress` when polling stopped — the loop terminated on "ALL TERMINAL", not on the ceiling.
+
+## Evidence: check-runs pinned to head SHA
+
+command: gh api repos/RexiAI/rexiAI/commits/4ddecf8e615a5c5fe3f62a90c847c900f081de18/check-runs --jq '.total_count, (.check_runs[] | [.id,.name,.status,.conclusion] | @tsv)'
+exit: 0
+at: 2026-10-26T12:53:44Z
+
+5
+121582565419 Docker Build & Push completed skipped
+121582383867 Vercel Preview Comments completed success
+121582243530 Unit Tests completed success
+121582243453 Lint & Format completed success
+121582243092 Build completed success
+
+## Evidence: workflow run conclusion
+
+command: gh run view 40325861247 --repo RexiAI/rexiAI --json headSha,status,conclusion,event
+exit: 0
+at: 2026-10-26T12:53:44Z
+
+{"conclusion":"success","event":"pull_request","headSha":"4ddecf8e615a5c5fe3f62a90c847c900f081de18","status":"completed"}
+
+## Verdict: PASS
+
+All terminal checks green on the new head `4ddecf8e615a5c5fe3f62a90c847c900f081de18`:
+
+- `Lint & Format` — **pass** (check-run id `121582243453`, job `121582243453`). The round-1 failure remains cleared; `prettier --check .` no longer reports unformatted files, including the markdown added by this commit.
+- Unit Tests — pass
+- Build — pass
+- Vercel — pass
+- Vercel Preview Comments — pass
+- Docker Build & Push — skipped
+
+No check-run pinned to the new SHA has `conclusion == "failure"` (scan of `repos/RexiAI/rexiAI/commits/<head>/check-runs` returned 5 runs: 4 success, 1 skipped). No pending checks remain. CI run `40325861247` concluded `success` on the exact head SHA under review.
+
+Phase-2 round 3 passes. All three fix-and-repush rounds of the phase-2 budget are now accounted for (round 1 FAIL on `Lint & Format`, round 2 PASS on `ade9c64`, round 3 PASS on `4ddecf8`). The `Lint & Format` regression the markdown commit risked did not materialise.
+
+Working-tree note: this round-3 addendum is left **uncommitted** by the Verifier, per instruction — a further push would consume budget the pipeline no longer has. The modified file is `docs/changes/006-branded-meeting-link-and-recording-bot.md`; the human decides whether to fold it into the PR.
