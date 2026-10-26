@@ -170,11 +170,16 @@ describe('AC-003 client email (billing disabled)', () => {
       {}
     )
     expect(payload.subject).toBe('Reserva confirmada: 2027-03-01 10:00')
+    // AUTHORISED CHANGE (spec 006 10-tasks.md decision 6, human-approved): the
+    // recording-consent notice is inserted before the join line and nothing else
+    // in this body moves. `toBe` stays exact — the stronger assertion is kept.
     const lines = [
       'Tu reunión con RexiAI está confirmada.',
       'Fecha: 2027-03-01',
       'Hora (Europe/Madrid): 10:00',
       'Duración: 1 horas',
+      'Aviso de grabación: la reunión se graba en audio.',
+      'Usamos la grabación para documentar la sesión. Si prefieres que no se grabe, responde a este correo antes de la reunión.',
       'Enlace de la reunión: https://teams.microsoft.com/l/meetup-join/xyz',
       'Reserva sin cargo: no se cobra nada al reservar.',
       'Se factura después de la reunión a 0,50 EUR/min (30 EUR/hora), ' +
