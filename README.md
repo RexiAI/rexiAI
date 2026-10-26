@@ -87,53 +87,45 @@ So self-hosted Jitsi is a **test-only** topology. What replaced it (spec 006):
 when unset instead of silently falling back to public Jitsi — that silent
 fallback is what produced unrecorded meetings.
 
-### Reaching the stack
+### Local stack (test only)
 
 ```bash
-docker ps --format '{{.Names}}\t{{.Status}}' | grep jitsi      # 5 containers up
-curl -k -sS -o /dev/null -w '%{http_code}\n' https://100.78.218.43:8443/   # 200
+docker ps --format '{{.Names}}\t{{.Status}}' | grep jitsi      # 5 containers
+curl -k -sS -o /dev/null -w '%{http_code}\n' https://localhost:8443/   # 200
 ```
 
-Restart with all three compose files — `jibri` is defined in the third one and
-is an **orphan** under the base compose file alone, so a plain
-`docker compose up -d` leaves it on stale env:
+`jibri` is defined in the third compose file, so start _and_ stop with all three
+— a plain `docker compose up -d` leaves it on stale env:
 
 ```bash
 cd ~/docker-jitsi-meet && docker compose \
   -f docker-compose.yml -f jibri.yml \
   -f /home/dbueno/projects/rexiAI/deploy/production/docker-compose.recordings.yml \
   up -d --force-recreate jibri
+# tear down with the same three files and `down`
 ```
 
-### Pre-production test (proves booking → email → record → insight)
+Joining a `rexi-*` room on this stack records with Jibri; the processor picks the
+MP4 up on its next scan:
 
-Prereq: the phone running Tailscale, on the same tailnet.
+```bash
+systemctl start rexi-recording.service
+journalctl -u rexi-recording.service --since '10 min ago' | tail -40
+```
 
-1. Stack up + local API/SPA running (commands above).
-2. Book a slot in `http://localhost:5173` with the client email you want to
-   inspect. Availability is Mon–Fri 15:00–20:00 Europe/Madrid; on a Sunday the
-   form has no slot — book the next Monday and open the link immediately, the
-   Jitsi room is created on first join and ignores the booked time.
-3. Client email arrives with `https://100.78.218.43:8443/rexi-<hex>`. If it says
-   `meet.jit.si`, the dev API started before `.env` was edited — restart it.
-4. Open the link on the host, accept the self-signed cert (Advanced → Proceed),
-   join. Recording starts on the **first** occupant.
-5. Join the same link from the phone; allow mic + camera.
-6. Talk 60–90 s, leave both sides. Jibri finalizes in ~10–30 s.
-7. `systemctl start rexi-recording.service` (or wait for the timer), then
-   `journalctl -u rexi-recording.service --since '10 min ago' | tail -40`.
-
-Expected: `duration: N min | audio stream: yes`, then `.rexi-transcribed`,
-`transcript.json`, `customer-brief.md`, `.rexi-analyzed`, GitHub issue.
+Expect `duration: N min | audio stream: yes`, then `.rexi-transcribed`,
+`transcript.json`, `customer-brief.md`, `.rexi-analyzed` and a GitHub issue.
 `Unattributed recording … billing skipped` is correct while `BILLING_ENABLED=false`
 — transcription and insight do not depend on Stripe.
 
-| Symptom                    | First thing to check                                                           |
-| -------------------------- | ------------------------------------------------------------------------------ |
-| Phone cannot open the link | Tailscale off, or a different tailnet                                          |
-| Page loads, call fails     | JVB media: `docker logs docker-jitsi-meet-jvb-1 \| grep -i candidate`          |
-| Jibri never starts         | `docker logs docker-jitsi-meet-jicofo-1 \| grep -i 'Accepted jibri'`           |
-| MP4 is silent              | Processor prints `audio stream: no` — Jibri's Chrome never played remote audio |
+This proves the local pipeline. It does **not** prove the client path: that needs
+the branded host from spec 006, which is not deployed yet.
+
+| Symptom                | First thing to check                                                           |
+| ---------------------- | ------------------------------------------------------------------------------ |
+| Page loads, call fails | JVB media: `docker logs docker-jitsi-meet-jvb-1 \| grep -i candidate`          |
+| Jibri never starts     | `docker logs docker-jitsi-meet-jicofo-1 \| grep -i 'Accepted jibri'`           |
+| MP4 is silent          | Processor prints `audio stream: no` — Jibri's Chrome never played remote audio |
 
 ### Rollback of a topology change
 
