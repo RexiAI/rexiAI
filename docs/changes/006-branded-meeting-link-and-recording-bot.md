@@ -2290,3 +2290,62 @@ Concrete failure reason: the `Lint & Format` job's `npm run format:check` step r
 All other terminal checks are green: Unit Tests (pass), Build (pass), Vercel (pass), Vercel Preview Comments (pass), Docker Build & Push (skipped). No pending checks.
 
 Fix routing: formatting only — no behavior implicated. Run `npx prettier --write` on the 13 files (mechanical) and re-push. Classified as structure/formatting → **Refactorer**.
+
+# Phase-2 post-PR CI check — round 2 (spec pipeline)
+
+PR: https://github.com/RexiAI/rexiAI/pull/86
+Branch: `spec/006-branded-meeting-link-and-recording-bot`
+Head SHA: `ade9c64809acf077c5848027ea8181bffc383b45` (commit `ade9c64`, the formatting-fix push)
+Budget: phase 2, round 2 of max 3 (counter independent of phase 1). Scoped re-check — the gate under test is `Lint & Format` (the only round-1 failure); the other checks are re-read from a fresh SHA, not carried forward.
+
+## Evidence: PR head confirmation
+
+command: gh pr view 86 --repo RexiAI/rexiAI --json headRefOid
+exit: 0
+at: 2026-10-26T12:47:09Z
+
+{"headRefOid":"ade9c64809acf077c5848027ea8181bffc383b45"}
+
+## Evidence: PR checks (gh pr checks)
+
+command: gh pr checks 86 --repo RexiAI/rexiAI --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-10-26T12:48:50Z
+
+[{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/40325177991/job/121580055968","name":"Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/40325177991/job/121579908677","name":"Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/40325177991/job/121579908627","name":"Lint & Format","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/40325177991/job/121579908055","name":"Build","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/9UJoT2N4y42P68m8pCAST2oPWv4p","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+## Evidence: check-runs pinned to head SHA
+
+command: gh api repos/RexiAI/rexiAI/commits/ade9c64809acf077c5848027ea8181bffc383b45/check-runs --jq '.total_count, (.check_runs[] | [.id,.name,.status,.conclusion] | @tsv)'
+exit: 0
+at: 2026-10-26T12:48:50Z
+
+5
+121580074151 Vercel Preview Comments completed success
+121580055968 Docker Build & Push completed skipped
+121579908677 Unit Tests completed success
+121579908627 Lint & Format completed success
+121579908055 Build completed success
+
+## Evidence: workflow run conclusion
+
+command: gh run view 40325177991 --repo RexiAI/rexiAI --json headSha,status,conclusion,event
+exit: 0
+at: 2026-10-26T12:48:50Z
+
+{"conclusion":"success","event":"pull_request","headSha":"ade9c64809acf077c5848027ea8181bffc383b45","status":"completed"}
+
+## Verdict: PASS
+
+All terminal checks green on the new head `ade9c64809acf077c5848027ea8181bffc383b45`:
+
+- `Lint & Format` — **pass** (check-run id `121579908627`, job `121579908627`). The round-1 failure is cleared; `prettier --check .` no longer reports the 13 unformatted files.
+- Unit Tests — pass
+- Build — pass
+- Vercel — pass
+- Vercel Preview Comments — pass
+- Docker Build & Push — skipped
+
+No check-run pinned to the new SHA has `conclusion == "failure"` (scan of `repos/RexiAI/rexiAI/commits/<head>/check-runs` returned 5 runs: 4 success, 1 skipped). No pending checks remain. CI run `40325177991` concluded `success` on the exact head SHA under review.
+
+Phase-2 round 2 passes. The formatting fix (commit `ade9c64`) is confirmed under CI.
