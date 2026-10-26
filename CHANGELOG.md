@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/RexiAI/rexiAI/compare/v1.7.0...v1.8.0) (2026-10-26)
+
+
+### Features
+
+* **recording-bot:** branded meeting link, recording consent notice and local recording bot ([#86](https://github.com/RexiAI/rexiAI/issues/86)) ([cae9046](https://github.com/RexiAI/rexiAI/commit/cae9046f985f403944a75230c035b032d9ffc8ab))
+
 # [1.7.0](https://github.com/RexiAI/rexiAI/compare/v1.6.0...v1.7.0) (2026-10-23)
 
 
