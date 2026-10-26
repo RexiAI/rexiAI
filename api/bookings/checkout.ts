@@ -1,4 +1,5 @@
 import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
+import type { Locale } from '../../src/domain/locale.js'
 import { priceCents, PRODUCT_TAX_CODE } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
 import type { ApiRequest, ApiResponse } from '../httpTypes.js'
@@ -31,6 +32,9 @@ type SessionOpts = {
   req: ApiRequest
   res: ApiResponse
   joinUrl?: string | null
+  /** Captured at booking time; survives the checkout round trip in metadata so the
+   *  webhook's confirmation email can render the notice in the right language. */
+  locale?: Locale
 }
 
 // The booking is a €0 reservation: nothing is captured here and the free hour is
@@ -49,6 +53,9 @@ function buildSessionParams(opts: SessionOpts, baseUrl: string) {
     free_hour_applied: String(opts.freeAvailable),
   }
   if (opts.joinUrl) metadata['join_url'] = opts.joinUrl
+  // Additive key (spec 006 Task 8): present only when the booking carried a locale,
+  // so a locale-less booking's metadata stays byte-identical to before.
+  if (opts.locale) metadata['locale'] = opts.locale
   // Managed Payments is disabled: RexiAI is live 1-1 coaching, which Stripe
   // categorically excludes from Managed Payments (professional services / human
   // intervention are unsupported categories). On an account where Managed
@@ -85,15 +92,19 @@ function isValidDuration(hours: number, freeAvailable: boolean, res: ApiResponse
   return false
 }
 
-export async function createCheckout(
-  email: string,
-  date: string,
-  startTime: string,
-  hours: number,
-  req: ApiRequest,
-  res: ApiResponse,
+export type CreateCheckoutInput = {
+  email: string
+  date: string
+  startTime: string
+  hours: number
+  locale?: Locale
+  req: ApiRequest
+  res: ApiResponse
   joinUrl?: string | null
-) {
+}
+
+export async function createCheckout(input: CreateCheckoutInput) {
+  const { email, date, startTime, hours, req, res } = input
   const freeAvailable = await getFreeAvailable(email, res)
   if (freeAvailable === null) return null
   if (!isValidDuration(hours, freeAvailable, res)) return null
@@ -105,6 +116,7 @@ export async function createCheckout(
     freeAvailable,
     req,
     res,
-    joinUrl: normalizeJoinUrl(joinUrl),
+    joinUrl: normalizeJoinUrl(input.joinUrl),
+    ...(input.locale ? { locale: input.locale } : {}),
   })
 }

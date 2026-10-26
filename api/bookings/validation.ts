@@ -3,6 +3,7 @@ import {
   isPastDate,
   type AvailabilityConfig,
 } from '../../src/domain/availability.js'
+import { normalizeLocale, type Locale } from '../../src/domain/locale.js'
 import { priceCents } from '../../src/domain/pricing.js'
 import { isValidEmail } from '../../src/domain/validation.js'
 import type { ApiRequest, ApiResponse } from '../httpTypes.js'
@@ -113,25 +114,38 @@ function extractBookingFields(body: unknown): {
   date: string
   startTime: string
   hoursRaw: unknown
+  localeRaw: unknown
 } {
   const b = (body ?? {}) as Record<string, unknown>
   const email = typeof b.email === 'string' ? b.email.trim() : ''
   const date = typeof b.date === 'string' ? b.date : ''
   const startTime = typeof b.startTime === 'string' ? b.startTime : ''
-  return { email, date, startTime, hoursRaw: b.hours }
+  return { email, date, startTime, hoursRaw: b.hours, localeRaw: b.locale }
+}
+
+/**
+ * The booking's UI locale (spec 006 Task 8). ADDITIVE: an absent field stays
+ * `undefined` so the pre-existing payload shape is untouched, while any supplied
+ * value is normalised — `'en'` is the only value that selects English and an
+ * unrecognised one degrades to Spanish instead of rejecting the booking.
+ */
+function normalizeBookingLocale(raw: unknown): Locale | undefined {
+  if (raw === undefined || raw === null) return undefined
+  return normalizeLocale(raw)
 }
 
 function validateInput(
   body: unknown,
   res: ApiResponse
-): { email: string; date: string; startTime: string; hours: number } | null {
-  const { email, date, startTime, hoursRaw } = extractBookingFields(body)
+): { email: string; date: string; startTime: string; hours: number; locale?: Locale } | null {
+  const { email, date, startTime, hoursRaw, localeRaw } = extractBookingFields(body)
   if (!validateEmail(email, res)) return null
   if (!validateDate(date, res)) return null
   if (!validateTime(startTime, res)) return null
   const hours = validateHours(hoursRaw, res)
   if (hours === null) return null
-  return { email, date, startTime, hours }
+  const locale = normalizeBookingLocale(localeRaw)
+  return locale ? { email, date, startTime, hours, locale } : { email, date, startTime, hours }
 }
 
 export function prepareBookingInput(req: ApiRequest, res: ApiResponse) {

@@ -1,4 +1,5 @@
-import type { Dictionary } from '../../../i18n/dictionary'
+import type { Dictionary, Locale } from '../../../i18n/dictionary'
+import { useI18n } from '../../../i18n/I18nContext'
 import { validateBookingForm } from '../form/validateBookingForm'
 
 import type { BookingFields } from './useBookingFields'
@@ -21,6 +22,7 @@ async function postBooking(payload: {
   date: string
   startTime: string
   hours: number
+  locale: Locale
 }) {
   const res = await fetch('/api/bookings', {
     method: 'POST',
@@ -70,12 +72,15 @@ function handleBookingResponse(
   return false
 }
 
-async function doSubmit(fields: BookingFields, dict: Dictionary) {
+async function doSubmit(fields: BookingFields, dict: Dictionary, locale: Locale) {
   const result = await postBooking({
     email: fields.email,
     date: fields.date,
     startTime: fields.selectedSlot,
     hours: fields.hours,
+    // Additive field (spec 006 Task 8): the locale the visitor is reading the
+    // form in, captured at submit time so the API can localise the notice.
+    locale,
   })
   handleBookingResponse(fields, dict, result.res, result.data)
 }
@@ -83,7 +88,11 @@ async function doSubmit(fields: BookingFields, dict: Dictionary) {
 /** validate → guard → submit. Split from useBookingSubmit's returned handler so
  *  neither function grows past the method-length guideline; the handler's only
  *  extra concern is preventDefault. */
-async function runBookingSubmit(fields: BookingFields, dict: Dictionary): Promise<void> {
+async function runBookingSubmit(
+  fields: BookingFields,
+  dict: Dictionary,
+  locale: Locale
+): Promise<void> {
   const v = validateBookingForm(dict, {
     date: fields.date,
     selectedSlot: fields.selectedSlot,
@@ -95,7 +104,7 @@ async function runBookingSubmit(fields: BookingFields, dict: Dictionary): Promis
   fields.setSubmitting(true)
   fields.setConflictError('')
   try {
-    await doSubmit(fields, dict)
+    await doSubmit(fields, dict, locale)
   } catch {
     fields.setConflictError(GENERIC_ERROR_MESSAGE)
   } finally {
@@ -104,8 +113,10 @@ async function runBookingSubmit(fields: BookingFields, dict: Dictionary): Promis
 }
 
 export function useBookingSubmit(fields: BookingFields, dict: Dictionary) {
+  // The SPA already knows the visitor's locale; it is the booking's language.
+  const { locale } = useI18n()
   return async function submitBooking(ev: React.FormEvent): Promise<void> {
     ev.preventDefault()
-    await runBookingSubmit(fields, dict)
+    await runBookingSubmit(fields, dict, locale)
   }
 }

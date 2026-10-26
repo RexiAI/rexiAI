@@ -155,7 +155,15 @@ try {
       console.error('[e2e] checkout error:', JSON.stringify(o))
     },
   }
-  const session = await createCheckout(email, '2026-09-20', '10:00', 1, mockReq, mockRes, joinUrl)
+  const session = await createCheckout({
+    email,
+    date: '2026-09-20',
+    startTime: '10:00',
+    hours: 1,
+    req: mockReq,
+    res: mockRes,
+    joinUrl,
+  })
   if (!session?.id) {
     console.error('[e2e] FAILED to create reservation — see error above')
     process.exit(1)

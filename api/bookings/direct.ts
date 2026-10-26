@@ -13,6 +13,7 @@ import { randomUUID } from 'crypto'
 
 import { createCalendarEvent, findOverlappingBookingId } from '../../src/domain/calendar.js'
 import { sendClientEmail, sendOperatorEmail } from '../../src/domain/email.js'
+import type { Locale } from '../../src/domain/locale.js'
 import { getCalendarProvider } from '../../src/domain/providers.js'
 import type { ApiResponse } from '../httpTypes.js'
 
@@ -23,6 +24,8 @@ export type DirectBookingInput = {
   date: string
   startTime: string
   hours: number
+  /** The booking's locale; selects the client consent notice (spec 006 Task 8). */
+  locale?: Locale
 }
 
 // Mirrors resolveCalendarTimezone in api/stripe-webhook.ts (minus the session
@@ -108,7 +111,8 @@ function failStatic(
 
 async function trySendClientEmail(input: DirectBookingInput, joinUrl: string): Promise<void> {
   try {
-    // First argument stays EXACTLY the AC-002-06 pinned shape; the billing
+    // First argument keeps the AC-002-06 pinned shape unless this booking carried
+    // a locale, which is the one additive field (spec 006 Task 8); the billing
     // mode travels in the third argument position (Decision 3).
     await sendClientEmail(
       {
@@ -117,6 +121,7 @@ async function trySendClientEmail(input: DirectBookingInput, joinUrl: string): P
         startTime: input.startTime,
         hours: input.hours,
         joinUrl,
+        ...(input.locale ? { locale: input.locale } : {}),
       },
       undefined,
       { billingDisabled: true }

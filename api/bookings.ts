@@ -1,4 +1,5 @@
 import { isBillingEnabled } from '../src/domain/billing.js'
+import type { Locale } from '../src/domain/locale.js'
 import { createMeetingLink, type MeetingResult } from '../src/domain/meeting.js'
 import { checkRateLimit, getClientIp } from '../src/domain/rateLimit.js'
 
@@ -26,19 +27,27 @@ function enforceRateLimit(req: ApiRequest, res: ApiResponse): boolean {
   return false
 }
 
-type BookingInput = { email: string; date: string; startTime: string; hours: number }
+type BookingInput = {
+  email: string
+  date: string
+  startTime: string
+  hours: number
+  locale?: Locale
+}
 
 async function resolveMeeting(input: {
   date: string
   startTime: string
   hours: number
   email: string
+  locale?: Locale
 }): Promise<MeetingResult> {
   return createMeetingLink({
     date: input.date,
     startTime: input.startTime,
     hours: input.hours,
     subject: `RexiAI booking ${input.email} ${input.date} ${input.startTime}`,
+    ...(input.locale ? { locale: input.locale } : {}),
   })
 }
 
@@ -93,15 +102,16 @@ async function runPreflight(req: ApiRequest, res: ApiResponse) {
 }
 
 function reserve(input: BookingInput, meeting: MeetingResult, req: ApiRequest, res: ApiResponse) {
-  return createCheckout(
-    input.email,
-    input.date,
-    input.startTime,
-    input.hours,
+  return createCheckout({
+    email: input.email,
+    date: input.date,
+    startTime: input.startTime,
+    hours: input.hours,
+    ...(input.locale ? { locale: input.locale } : {}),
     req,
     res,
-    toOptionalJoinUrl(meeting)
-  )
+    joinUrl: toOptionalJoinUrl(meeting),
+  })
 }
 
 /**
