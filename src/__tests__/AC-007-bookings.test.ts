@@ -44,6 +44,10 @@ describe('AC-007', () => {
     stripeMocks.mockList.mockReset()
     calendarMocks.mockHasConflict.mockReset()
     process.env['STRIPE_SECRET_KEY'] = 'sk_test_dummy'
+    // spec 006 AC-006-04: createMeetingLink now fails loud without a brand
+    // (the silent meet.jit.si fallback is gone), so the booking path under test
+    // needs the configured brand. Fixture only: no assertion in this file changes.
+    process.env['MEETING_BASE_URL'] = 'https://meet.rexi-ai.com'
     vi.spyOn(fs, 'readFileSync').mockReturnValue(yamlContent as any)
     calendarMocks.mockHasConflict.mockResolvedValue(false)
     stripeMocks.mockList.mockResolvedValue({ data: [] })

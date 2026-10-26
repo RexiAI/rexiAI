@@ -1,0 +1,38 @@
+# Missed-meeting evaluator for the local recording bot (spec 006 Task 7).
+#
+# WHY IT EXISTS: the bot cannot be woken from outside — the host is behind carrier
+# NAT, so nothing inbound can tell it "a meeting starts now". It follows a schedule
+# file instead, and this unit is what makes the *missed* half of that contract
+# actually run: every tick it compares elapsed booked windows against
+# RECORDINGS_DIR, writes a durable `.rexi-missed` record for each room that produced
+# no recording, and logs it.
+#
+# It sits ALONGSIDE the processor's units, never replacing them: it touches no
+# recording and writes none of the processor's three idempotency markers.
+#
+# Install (see deploy/home/README.md):
+#   sudo install -m 644 rexi-recording-bot.service rexi-recording-bot.timer \
+#        rexi-recording-bot-watch.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now rexi-recording-bot.timer rexi-recording-bot-watch.service
+#
+# Node is resolved by scripts/recording-bot-cron.sh, so no interpreter version is
+# pinned here.
+[Unit]
+Description=RexiAI recording bot — missed-meeting evaluator
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/dbueno/projects/rexiAI
+# The single recordings + brand configuration, shared with the processor.
+EnvironmentFile=/etc/rexi-recording.env
+Environment=BOT_SCHEDULE_FILE=/home/dbueno/.rexi-recording-bot/schedule.json
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+User=dbueno
+ExecStart=/home/dbueno/projects/rexiAI/scripts/recording-bot-cron.sh \
+    --missed /home/dbueno/.rexi-recording-bot/schedule.json
+# Filesystem only: no dependency on the Jitsi stack, no browser.
+TimeoutStartSec=120
+Nice=10

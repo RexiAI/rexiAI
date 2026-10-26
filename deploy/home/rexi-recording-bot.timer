@@ -1,0 +1,17 @@
+# Timer for the recording bot's missed-meeting evaluator (spec 006 Task 7).
+#
+# Every five minutes, matching the processor's cadence so a missed meeting surfaces
+# in the same window in which a recording would have been picked up.
+# `Persistent=true` catches up a tick that was lost while the machine was asleep —
+# which is exactly the condition this unit exists to report.
+[Unit]
+Description=RexiAI recording bot — missed-meeting evaluator (every 5m)
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+Persistent=true
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

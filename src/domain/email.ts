@@ -1,8 +1,11 @@
 // Email is Resend-only: the mailbox is Godaddy-hosted (info@rexi-ai.com), and
 // Graph mail (Mail.Send) is not used. The provider-agnostic calendar layer is
 // separate — see calendar.ts.
+import { consentNoticeLines } from './consentNotice.js'
 import { buildDirectClientBody, buildDirectOperatorBody } from './emailDirect.js'
 import { renderHtml, renderText, type BodyLine } from './emailHtml.js'
+import type { Locale } from './locale.js'
+import { localeFreeJoinUrl } from './meetingUrl.js'
 import { getConfiguredTimezone } from './time.js'
 
 // escapeHtml lives in emailHtml.ts (shared with the billing-disabled builders);
@@ -57,7 +60,7 @@ function buildLines(input: OperatorEmailInput): BodyLine[] {
     { label: 'Duración', value: `${input.hours} horas` },
     amountLine(input),
   ]
-  if (input.joinUrl) lines.push({ label: 'Reunión', value: input.joinUrl })
+  if (input.joinUrl) lines.push({ label: 'Reunión', value: localeFreeJoinUrl(input.joinUrl) })
   if (input.slotConflictWith) {
     lines.push({
       value: `ATENCIÓN: conflicto de franja — ya existe una reserva (${input.slotConflictWith}) que solapa este horario. Revisar y reembolsar manualmente.`,
@@ -129,6 +132,8 @@ export interface ClientEmailInput {
   startTime: string
   hours: number
   joinUrl?: string | null
+  /** The booking's locale: selects the consent notice's language (spec 006 Task 8). */
+  locale?: Locale | string | null
 }
 
 function billingModelLines(): BodyLine[] {
@@ -150,6 +155,9 @@ function buildClientLines(input: ClientEmailInput): BodyLine[] {
     { label: `Hora (${timezone})`, value: input.startTime },
     { label: 'Duración', value: `${input.hours} horas` },
   ]
+  // Consent before the join link (AC-006-07): renderText/renderHtml join these in
+  // order, so one insertion gives the right order in both parts.
+  lines.push(...consentNoticeLines(input.locale))
   if (input.joinUrl) lines.push({ label: 'Enlace de la reunión', value: input.joinUrl })
   return [...lines, ...billingModelLines()]
 }

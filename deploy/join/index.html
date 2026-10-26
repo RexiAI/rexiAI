@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Entrar en la reunión · RexiAI</title>
+    <!--
+      Branded join interstitial (spec 006 Task 1). Served from meet.rexi-ai.com,
+      a different host from the SPA, so it is ONE self-contained document: inline
+      styles, no framework, no webfont, no icons, no external request other than
+      the navigation the visitor makes themselves.
+
+      Language comes from ?lang= alone (es | en; anything else is Spanish). There
+      is no device-language sniffing, no cookie, no stored preference, and no
+      locale path segment. The parameter is never forwarded: the action href is
+      https://meet.jit.si/<room> with no query string at all.
+
+      The token values below are copied from src/index.css (:root), the source of
+      truth. The duplication is deliberate: this page must not fetch the SPA
+      bundle to render a handful of words.
+    -->
+    <style>
+      :root {
+        --color-zinc-900: #18181b;
+        --color-zinc-600: #52525b;
+        --color-zinc-500: #71717a;
+        --color-zinc-200: #e4e4e7;
+        --color-white: #ffffff;
+        --space-3: 0.75rem;
+        --space-4: 1rem;
+        --space-6: 1.5rem;
+        --text-sm: 0.8125rem;
+        --text-sm2: 0.875rem;
+        --text-base: 1rem;
+        --text-2xl: 1.75rem;
+        --text-3xl: 2rem;
+        --radius-full: 9999px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--color-white);
+        color: var(--color-zinc-600);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+
+      .page {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-4);
+        min-height: 100dvh;
+        max-width: 32rem;
+        margin: 0 auto;
+        padding: var(--space-6);
+        padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+        text-align: center;
+      }
+
+      /* One column, one rhythm: the rendered state only (the other states keep the
+         hidden attribute, which the UA stylesheet turns into display:none). */
+      section:not([hidden]) {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-4);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: var(--text-2xl);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        color: var(--color-zinc-900);
+      }
+
+      p {
+        margin: 0;
+        max-width: 48ch;
+        font-size: var(--text-base);
+        line-height: 1.5;
+      }
+
+      .notice {
+        color: var(--color-zinc-600);
+      }
+
+      .room {
+        font-size: var(--text-sm);
+        letter-spacing: 0.02em;
+        color: var(--color-zinc-500);
+      }
+
+      .help {
+        font-size: var(--text-sm2);
+        color: var(--color-zinc-500);
+      }
+
+      .action {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        padding: var(--space-3) var(--space-6);
+        border-radius: var(--radius-full);
+        background: var(--color-zinc-900);
+        color: var(--color-white);
+        font-size: var(--text-base);
+        font-weight: 600;
+        line-height: 1.5;
+        text-decoration: none;
+      }
+
+      .action:focus-visible,
+      .recover:focus-visible {
+        outline: 2px solid var(--color-zinc-900);
+        outline-offset: 2px;
+      }
+
+      .recover {
+        display: inline-block;
+        min-height: 44px;
+        color: var(--color-zinc-900);
+        font-size: var(--text-base);
+        text-decoration: underline;
+      }
+
+      @media (min-width: 480px) {
+        h1 {
+          font-size: var(--text-3xl);
+        }
+
+        .action {
+          display: inline-block;
+          width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section id="join-es" hidden data-title="Entrar en la reunión · RexiAI">
+        <h1>Tu reunión con RexiAI</h1>
+        <p>
+          La sala está en Jitsi (meet.jit.si), la plataforma de vídeo que usamos para las sesiones.
+        </p>
+        <p class="notice">Aviso de grabación: la reunión se graba en audio.</p>
+        <a class="action" data-role="action" href="https://meet.jit.si/" rel="noopener"
+          >Unirse a la reunión</a
+        >
+        <p class="room" data-role="room" data-room-prefix="Sala ">Sala</p>
+        <p class="help">
+          Si la sala no se abre, pulsa el botón. Si sigue sin abrirse, escribe a info@rexi-ai.com.
+        </p>
+      </section>
+
+      <section id="join-en" hidden data-title="Join the meeting · RexiAI">
+        <h1>Your meeting with RexiAI</h1>
+        <p>The room is on Jitsi (meet.jit.si), the video platform we use for sessions.</p>
+        <p class="notice">Recording notice: this meeting is recorded as audio.</p>
+        <a class="action" data-role="action" href="https://meet.jit.si/" rel="noopener"
+          >Join the meeting</a
+        >
+        <p class="room" data-role="room" data-room-prefix="Room ">Room</p>
+        <p class="help">
+          If the room does not open, press the button. If it still does not open, email
+          info@rexi-ai.com.
+        </p>
+      </section>
+
+      <section id="invalid-es" hidden data-title="Enlace no válido · RexiAI">
+        <h1>Este enlace no es válido</h1>
+        <p>
+          Falta el código de la sala en la dirección. Abre el enlace del correo de tu reserva tal
+          cual, sin recortarlo.
+        </p>
+        <p class="help">Si el enlace del correo tampoco funciona, escribe a info@rexi-ai.com.</p>
+        <a class="recover" data-role="action" href="mailto:info@rexi-ai.com">Escribir a RexiAI</a>
+      </section>
+
+      <section id="invalid-en" hidden data-title="Invalid link · RexiAI">
+        <h1>This link is not valid</h1>
+        <p>
+          The room code is missing from the address. Open the link in your booking email exactly as
+          it is, without shortening it.
+        </p>
+        <p class="help">If the link in the email does not work either, email info@rexi-ai.com.</p>
+        <a class="recover" data-role="action" href="mailto:info@rexi-ai.com">Email RexiAI</a>
+      </section>
+
+      <noscript>
+        <p>
+          Activa JavaScript para entrar en la sala, o escribe a
+          <a href="mailto:info@rexi-ai.com">info@rexi-ai.com</a>.
+        </p>
+        <p>
+          Enable JavaScript to enter the room, or email
+          <a href="mailto:info@rexi-ai.com">info@rexi-ai.com</a>.
+        </p>
+      </noscript>
+    </main>
+
+    <!--
+      Synchronous, runs before the first paint: reads the room from the pathname and
+      the language from ?lang=, then reveals exactly one already-rendered column.
+      No timers, no navigation, no async work.
+    -->
+    <script>
+      ;(function () {
+        var roomPattern = /^\/?(rexi-[0-9a-f]{16})\/?$/
+
+        function readLocale(search) {
+          return new URLSearchParams(search).get('lang') === 'en' ? 'en' : 'es'
+        }
+
+        function matchRoom(pathname) {
+          var match = roomPattern.exec(pathname)
+          return match ? match[1] : null
+        }
+
+        function fillRoom(element, room) {
+          if (!element) return
+          element.textContent = (element.getAttribute('data-room-prefix') || '') + room
+        }
+
+        function pointAtRoom(element, room) {
+          // No query string: ?lang= is this page's concern and never the room's.
+          if (!element) return
+          element.setAttribute('href', 'https://meet.jit.si/' + room)
+        }
+
+        function showJoin(section, room) {
+          fillRoom(section.querySelector('[data-role="room"]'), room)
+          pointAtRoom(section.querySelector('[data-role="action"]'), room)
+        }
+
+        var locale = readLocale(window.location.search)
+        var room = matchRoom(window.location.pathname)
+        var section = document.getElementById((room ? 'join' : 'invalid') + '-' + locale)
+        if (!section) return
+
+        document.documentElement.lang = locale
+        document.title = section.getAttribute('data-title') || document.title
+        if (room) showJoin(section, room)
+        section.removeAttribute('hidden')
+      })()
+    </script>
+  </body>
+</html>

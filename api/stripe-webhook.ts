@@ -7,6 +7,7 @@ import {
 } from '../src/domain/calendar.js'
 import { sendClientEmail, sendOperatorEmail } from '../src/domain/email.js'
 import { markFreeHourUsed } from '../src/domain/freeHour.js'
+import { normalizeLocale, type Locale } from '../src/domain/locale.js'
 import { getCalendarProvider } from '../src/domain/providers.js'
 import { getStripe } from '../src/domain/stripeClient.js'
 import { markProcessed, wasProcessed } from '../src/domain/webhookDedup.js'
@@ -106,31 +107,14 @@ function getAmountTotal(session: Stripe.Checkout.Session): number {
   return 0
 }
 
-function hasRequiredFields(
-  email: string,
-  date: string,
-  startTime: string,
-  res: ApiResponse
-): boolean {
-  if (!email) {
-    res
-      .status(400)
-      .json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
-    return false
-  }
-  if (!date) {
-    res
-      .status(400)
-      .json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
-    return false
-  }
-  if (!startTime) {
-    res
-      .status(400)
-      .json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
-    return false
-  }
-  return true
+/**
+ * One code, one message, one 400: every "the checkout metadata is incomplete"
+ * case is the same response, so it is written once. Returning null lets callers
+ * `return rejectMissingMetadata(res)` from a nullable builder unchanged.
+ */
+function rejectMissingMetadata(res: ApiResponse): null {
+  res.status(400).json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
+  return null
 }
 
 type BookingData =
@@ -145,6 +129,7 @@ type BookingData =
       recordedBilling: true
       actualMinutes: number
       freeHourApplied: boolean
+      locale: Locale
     }
   | {
       bookingId: string
@@ -157,6 +142,7 @@ type BookingData =
       recordedBilling: false
       actualMinutes: number
       freeHourApplied: boolean
+      locale: Locale
     }
 
 function getRawBookingFields(session: Stripe.Checkout.Session) {
@@ -174,6 +160,9 @@ function getRawBookingFields(session: Stripe.Checkout.Session) {
     recordedBilling: metadata['recorded_billing'] === '1',
     actualMinutes: parseInt(getActualMinutesRaw(metadata), 10),
     freeHourApplied: metadata['free_hour_applied'] === 'true',
+    // Captured at booking time (checkout metadata) — never re-derived here, so
+    // the notice cannot flip language between booking and confirmation.
+    locale: normalizeLocale(metadata['locale']),
   }
 }
 
@@ -194,18 +183,7 @@ function buildRecordedBillingData(
   res: ApiResponse
 ): BookingData | null {
   const origBookingId = resolveOrigBookingId(raw.metadata, raw.bookingId)
-  if (!raw.email) {
-    res
-      .status(400)
-      .json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
-    return null
-  }
-  if (!origBookingId) {
-    res
-      .status(400)
-      .json({ error: { code: 'INVALID_METADATA', message: 'Missing booking metadata' } })
-    return null
-  }
+  if (!raw.email || !origBookingId) return rejectMissingMetadata(res)
   return {
     bookingId: origBookingId,
     email: raw.email,
@@ -217,6 +195,7 @@ function buildRecordedBillingData(
     recordedBilling: true,
     actualMinutes: raw.actualMinutes,
     freeHourApplied: raw.freeHourApplied,
+    locale: raw.locale,
   }
 }
 
@@ -224,7 +203,7 @@ function buildStandardBookingData(
   raw: ReturnType<typeof getRawBookingFields>,
   res: ApiResponse
 ): BookingData | null {
-  if (!hasRequiredFields(raw.email, raw.date, raw.startTime, res)) return null
+  if (!raw.email || !raw.date || !raw.startTime) return rejectMissingMetadata(res)
   return {
     bookingId: raw.bookingId,
     email: raw.email,
@@ -236,6 +215,7 @@ function buildStandardBookingData(
     recordedBilling: false,
     actualMinutes: 0,
     freeHourApplied: raw.freeHourApplied,
+    locale: raw.locale,
   }
 }
 
@@ -305,6 +285,7 @@ async function trySendClientEmail(data: {
   startTime: string
   hours: number
   joinUrl?: string | null
+  locale?: Locale
 }): Promise<void> {
   try {
     await sendClientEmail({
@@ -313,6 +294,7 @@ async function trySendClientEmail(data: {
       startTime: data.startTime,
       hours: Number.isFinite(data.hours) ? data.hours : 1,
       joinUrl: data.joinUrl ?? null,
+      locale: data.locale,
     })
   } catch (e) {
     // eslint-disable-next-line no-console

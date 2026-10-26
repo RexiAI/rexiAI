@@ -10,8 +10,10 @@
 // billing mode (email.ts dispatch). The billing-enabled builders in email.ts
 // are byte-frozen (AC-003-19/25); nothing here may leak into them.
 import { buildCalendarTemplateUrl } from './calendarLink.js'
+import { consentNotice, consentNoticeLines, noticeLangAttribute } from './consentNotice.js'
 import type { ClientEmailInput, OperatorEmailInput } from './email.js'
 import { escapeHtml, renderText, type BodyLine } from './emailHtml.js'
+import { localeFreeJoinUrl } from './meetingUrl.js'
 import { getConfiguredTimezone } from './time.js'
 
 export interface EmailBody {
@@ -147,6 +149,8 @@ interface DirectEmailModel {
   intro: string
   alertId: string
   rows: BodyLine[]
+  /** Rendered consent-notice paragraphs ('' for the operator variants). */
+  notice: string
   joinUrl: string
   calendarUrl: string
   help: string
@@ -169,8 +173,9 @@ const CARD_OPEN =
   'line-height:1.5;color:#18181b;">'
 const CARD_CLOSE = '</div></div>'
 
-/** Reading-order map: preheader → wordmark → H1 → (conflict) → facts → CTAs →
- *  footer. Key facts always precede the CTAs in document order (AC-003-15/22). */
+/** Reading-order map: preheader → wordmark → H1 → (conflict) → facts → notice →
+ *  CTAs → footer. Key facts always precede the CTAs in document order
+ *  (AC-003-15/22), and the consent notice sits between them (AC-006-07). */
 function renderDirectHtml(m: DirectEmailModel): string {
   const blocks = [
     `<span style="display:none">${escapeHtml(m.preheader)}</span>`,
@@ -179,11 +184,25 @@ function renderDirectHtml(m: DirectEmailModel): string {
     m.intro ? `<p style="${INTRO_STYLE}">${escapeHtml(m.intro)}</p>` : '',
     m.alertId ? alertHtml(m.alertId) : '',
     tableHtml(m.rows),
+    m.notice,
     m.joinUrl ? joinButtonHtml(m.joinUrl) + calendarLinkHtml(m.calendarUrl) : '',
     m.help ? `<p style="${HELP_STYLE}">${escapeHtml(m.help)}</p>` : '',
     WORDMARK_FOOT_HTML,
   ].join('')
   return `${CARD_OPEN}${blocks}${CARD_CLOSE}`
+}
+
+/**
+ * The consent notice as body paragraphs (15-design Task 2): plain 16px copy, not
+ * a callout, escaped like every other sink. The English pair carries `lang="en"`
+ * so a screen reader switches voice for those two lines inside the Spanish mail;
+ * the Spanish path emits no attribute at all.
+ */
+function noticeHtml(locale: unknown): string {
+  const attribute = noticeLangAttribute(locale)
+  return consentNotice(locale)
+    .map((line) => `<p style="${INTRO_STYLE}"${attribute}>${escapeHtml(line)}</p>`)
+    .join('')
 }
 
 /** Static chrome per variant; rows/CTAs are filled by the body builders. */
@@ -199,19 +218,27 @@ function operatorModel(
     intro: '',
     alertId: input.slotConflictWith ?? '',
     rows,
+    // Client-facing obligation only: the operator mail never carries the notice.
+    notice: '',
     joinUrl,
     calendarUrl,
     help: '',
   }
 }
 
-function clientModel(rows: BodyLine[], joinUrl: string, calendarUrl: string): DirectEmailModel {
+function clientModel(
+  rows: BodyLine[],
+  joinUrl: string,
+  calendarUrl: string,
+  locale: unknown
+): DirectEmailModel {
   return {
     preheader: CLIENT_PREHEADER,
     heading: CLIENT_HEADING,
     intro: CLIENT_REASSURANCE,
     alertId: '',
     rows,
+    notice: noticeHtml(locale),
     joinUrl,
     calendarUrl,
     help: CLIENT_HELP_HTML,
@@ -220,7 +247,9 @@ function clientModel(rows: BodyLine[], joinUrl: string, calendarUrl: string): Di
 
 export function buildDirectOperatorBody(input: OperatorEmailInput): EmailBody {
   const timezone = getConfiguredTimezone()
-  const joinUrl = input.joinUrl ?? ''
+  // Locale-free link: the operator mail stays byte-identical for any booking
+  // locale (AC-006-31); the client mail is the one that carries `?lang=`.
+  const joinUrl = localeFreeJoinUrl(input.joinUrl ?? '')
   const calendarUrl = directCalendarUrl(input, joinUrl)
   const rows: BodyLine[] = [
     { label: 'Cliente', value: input.clientEmail },
@@ -241,11 +270,17 @@ export function buildDirectClientBody(input: ClientEmailInput): EmailBody {
   const joinUrl = input.joinUrl ?? ''
   const calendarUrl = directCalendarUrl(input, joinUrl)
   const facts = factRows(input, timezone)
-  const textRows: BodyLine[] = [{ value: CLIENT_CONFIRMED_LINE }, ...facts]
+  // Notice after the facts and before the CTAs: the client is told before they
+  // can join (AC-006-07/09). It renders whether or not a join URL exists.
+  const textRows: BodyLine[] = [
+    { value: CLIENT_CONFIRMED_LINE },
+    ...facts,
+    ...consentNoticeLines(input.locale),
+  ]
   const help: BodyLine[] = [{ value: CLIENT_HELP_TEXT }]
   return {
     subject: `Tu reserva está confirmada: ${input.date} ${input.startTime}`,
     text: renderText(directTextLines(textRows, joinUrl, calendarUrl, help)),
-    html: renderDirectHtml(clientModel(facts, joinUrl, calendarUrl)),
+    html: renderDirectHtml(clientModel(facts, joinUrl, calendarUrl, input.locale)),
   }
 }
