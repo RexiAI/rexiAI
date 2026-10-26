@@ -52,6 +52,57 @@ What it does (idempotent — safe to re-run; a second run exits 0):
 to run the timer; `Persistent=true` catches up missed scans after downtime.
 Details: `docs/recording-pipeline.md`.
 
+## The recording bot — `rexi-recording-bot*.{service,timer}`
+
+The processor above only bills recordings that already exist. The **bot** is what
+makes one exist: it joins the booked room as a participant and records it.
+
+Three units ship in this directory. Install them after the processor's:
+
+```bash
+sudo install -m 644 deploy/home/rexi-recording-bot.service \
+  deploy/home/rexi-recording-bot.timer \
+  deploy/home/rexi-recording-bot-watch.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now rexi-recording-bot.timer rexi-recording-bot-watch.service
+```
+
+| Unit | Mode | What it does |
+|---|---|---|
+| `rexi-recording-bot-watch.service` | `Type=simple` (always on) | Follows the schedule file and, for each live booked window, joins the room and records once two non-bot humans are present. |
+| `rexi-recording-bot.timer` → `rexi-recording-bot.service` | `Type=oneshot`, every 5 min | Compares elapsed booked windows against `RECORDINGS_DIR` and writes a durable `.<room>.rexi-missed` record for each room that produced no recording ("the machine was asleep"). |
+
+Both resolve node through `scripts/recording-bot-cron.sh`, read
+`RECORDINGS_DIR`/`MEETING_BASE_URL` from `/etc/rexi-recording.env` (one shared
+knob, no second config file), and write nothing into `RECORDINGS_DIR` until a
+capture has stopped and been finalized.
+
+**Schedule file** (`BOT_SCHEDULE_FILE`, default
+`~/.rexi-recording-bot/schedule.json`) — the bot cannot be woken from outside
+(carrier NAT), so it reads its windows from here:
+
+```json
+[{ "room": "rexi-0123456789abcdef", "startsAt": "2026-10-26T16:00:00Z", "hours": 1 }]
+```
+
+`startsAt` must already be an instant: the booking's wall time (`date` +
+`start_time` in `AVAILABILITY_TIMEZONE`) is resolved by whoever writes this file
+— the booking side, which owns that timezone setting — so the bot stays
+timezone-free. An ad-hoc meeting needs no file at all:
+`scripts/recording-bot-cron.sh --watch --room rexi-<16hex>`.
+
+**Host requirements**, all pre-installed on this machine: a Chrome/Chromium
+binary (`BOT_CHROME_PATH`, else system Chrome, else a Playwright build under
+`~/.cache/ms-playwright`), `pulseaudio`+`pactl`, and `ffmpeg`/`ffprobe`. A
+missing browser or sound server is a loud failure in the journal — never a
+silently empty recording.
+
+**meet.jit.si caveat:** a room there now requires a signed-in moderator to
+start ("The conference has not yet started because no moderators have yet
+arrived"). The bot never starts a conference — it joins rooms the booked humans
+have already opened — but a booking whose client never opens the room produces
+no recording, and the missed-meeting timer reports it.
+
 ## Exposure — two paths, one decision
 
 `docs/recording-pipeline.md` carries the full **A-vs-B decision matrix**.

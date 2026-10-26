@@ -1,0 +1,42 @@
+# The recording bot itself (spec 006 Tasks 3-5): the half that JOINS a room and
+# records it.
+#
+# WHY A LONG-RUNNING UNIT AND NOT A TIMER: a booked meeting can start at any moment
+# inside its window, and a tick-driven process that exits cannot sit in the room
+# waiting for the second human to arrive. So this is `Type=simple`: it follows the
+# schedule file, joins each active window's room, and records when two non-bot humans
+# are present. SIGTERM (systemctl stop) ends the sessions gracefully so a capture in
+# progress is finalized rather than truncated.
+#
+# Preconditions this unit does NOT provide: a browser (BOT_CHROME_PATH, or the system
+# Chrome / Playwright Chromium it discovers) and PulseAudio (`pulseaudio`, `pactl`,
+# `ffmpeg` on PATH). A missing one is a loud failure in the journal, never a silent
+# empty recording.
+#
+# Install (see deploy/home/README.md):
+#   sudo install -m 644 rexi-recording-bot-watch.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now rexi-recording-bot-watch.service
+[Unit]
+Description=RexiAI recording bot — joins booked rooms and records them
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/dbueno/projects/rexiAI
+# The single recordings + brand configuration, shared with the processor.
+EnvironmentFile=/etc/rexi-recording.env
+Environment=BOT_SCHEDULE_FILE=/home/dbueno/.rexi-recording-bot/schedule.json
+# pactl / pulseaudio / ffmpeg come from the system dirs; ffmpeg is required both to
+# capture the sink monitor and to mux the result.
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+User=dbueno
+ExecStart=/home/dbueno/projects/rexiAI/scripts/recording-bot-cron.sh --watch
+# The bot writes its capture to a temp dir and only then muxes into RECORDINGS_DIR,
+# so a stop mid-session leaves no half-finished recording for the scanner.
+KillSignal=SIGTERM
+TimeoutStopSec=60
+Restart=on-failure
+RestartSec=30
+Nice=10
