@@ -9,14 +9,15 @@ import { sendClientEmail, sendOperatorEmail } from '../src/domain/email.js'
 import { markFreeHourUsed } from '../src/domain/freeHour.js'
 import { normalizeLocale, type Locale } from '../src/domain/locale.js'
 import { getCalendarProvider } from '../src/domain/providers.js'
+import { generateRescheduleToken } from '../src/domain/rescheduleToken.js'
 import { getStripe } from '../src/domain/stripeClient.js'
 import { markProcessed, wasProcessed } from '../src/domain/webhookDedup.js'
 
+import { errorText } from './errorText.js'
 import type { ApiRequest, ApiResponse } from './httpTypes.js'
+import { requireMethod } from './routeGuards.js'
 
-function errMsg(e: unknown): string {
-  return e instanceof Error ? e.message : String(e)
-}
+const POST_ONLY = ['POST']
 
 const emailSentForBooking = new Set<string>()
 
@@ -29,14 +30,6 @@ const processedEventIds = new Set<string>()
 export function _resetEmailSent() {
   emailSentForBooking.clear()
   processedEventIds.clear()
-}
-
-function validateMethod(req: ApiRequest, res: ApiResponse): boolean {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
-    return false
-  }
-  return true
 }
 
 function getSignature(req: ApiRequest): string | undefined {
@@ -71,7 +64,7 @@ function constructStripeEvent(payload: string, sig: string, secret: string): Str
 }
 
 function getVerifiedEvent(req: ApiRequest, res: ApiResponse): Stripe.Event | null {
-  if (!validateMethod(req, res)) return null
+  if (!requireMethod(req, res, POST_ONLY)) return null
   const sig = getSignature(req)
   const secret = getWebhookSecret()
   if (!validateSignature(sig, secret, res)) return null
@@ -79,7 +72,7 @@ function getVerifiedEvent(req: ApiRequest, res: ApiResponse): Stripe.Event | nul
     const payload = buildPayload(req)
     return constructStripeEvent(payload, sig!, secret!)
   } catch (e) {
-    res.status(400).json({ error: { code: 'INVALID_SIGNATURE', message: errMsg(e) } })
+    res.status(400).json({ error: { code: 'INVALID_SIGNATURE', message: errorText(e) } })
     return null
   }
 }
@@ -232,7 +225,7 @@ async function checkAlreadyExists(bookingId: string, res: ApiResponse): Promise<
   try {
     return await findEventByBookingId(bookingId)
   } catch (e) {
-    res.status(500).json({ error: { code: 'GCAL_ERROR', message: errMsg(e) } })
+    res.status(500).json({ error: { code: 'GCAL_ERROR', message: errorText(e) } })
     return null
   }
 }
@@ -265,7 +258,7 @@ async function trySendEmail(
     emailSentForBooking.add(data.bookingId)
     return true
   } catch (e) {
-    res.status(500).json({ error: { code: 'EMAIL_ERROR', message: errMsg(e) } })
+    res.status(500).json({ error: { code: 'EMAIL_ERROR', message: errorText(e) } })
     return false
   }
 }
@@ -286,19 +279,25 @@ async function trySendClientEmail(data: {
   hours: number
   joinUrl?: string | null
   locale?: Locale
+  /** The token persisted on the event; the confirmation carries its link. */
+  rescheduleToken?: string | null
 }): Promise<void> {
   try {
-    await sendClientEmail({
-      clientEmail: data.email,
-      date: data.date,
-      startTime: data.startTime,
-      hours: Number.isFinite(data.hours) ? data.hours : 1,
-      joinUrl: data.joinUrl ?? null,
-      locale: data.locale,
-    })
+    await sendClientEmail(
+      {
+        clientEmail: data.email,
+        date: data.date,
+        startTime: data.startTime,
+        hours: Number.isFinite(data.hours) ? data.hours : 1,
+        joinUrl: data.joinUrl ?? null,
+        locale: data.locale,
+      },
+      undefined,
+      { rescheduleToken: data.rescheduleToken ?? null }
+    )
   } catch (e) {
     // eslint-disable-next-line no-console
-    console.error(`[stripe-webhook] client confirmation email failed: ${errMsg(e)}`)
+    console.error(`[stripe-webhook] client confirmation email failed: ${errorText(e)}`)
   }
 }
 
@@ -310,7 +309,7 @@ async function tryMarkFree(email: string, res: ApiResponse): Promise<MarkFreeOut
     // `burned: false` means another request consumed the free hour first.
     return { ok: true, burned: result?.burned ?? true }
   } catch (e) {
-    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errMsg(e) } })
+    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errorText(e) } })
     return { ok: false, burned: false }
   }
 }
@@ -349,6 +348,9 @@ async function tryCreateEvent(
     hours: number
     joinUrl?: string | null
     timezone?: string
+    locale?: Locale
+    /** The token the client's confirmation email will carry (spec 007 Task 2). */
+    rescheduleToken?: string | null
   },
   res: ApiResponse
 ): Promise<boolean> {
@@ -365,10 +367,12 @@ async function tryCreateEvent(
       startTime: data.startTime,
       hours,
       joinUrl,
+      ...(data.rescheduleToken ? { rescheduleToken: data.rescheduleToken } : {}),
+      ...(data.locale ? { locale: data.locale } : {}),
     })
     return true
   } catch (e) {
-    res.status(500).json({ error: { code: 'GCAL_ERROR', message: errMsg(e) } })
+    res.status(500).json({ error: { code: 'GCAL_ERROR', message: errorText(e) } })
     return false
   }
 }
@@ -477,9 +481,12 @@ async function handleNewBooking(
   const mark = await tryMarkFree(d.email, res)
   if (!mark.ok) return true
   const slotConflictWith = await detectSlotConflict(d)
-  if (!(await tryCreateEvent(d, res))) return true
+  // One token per booking: the SAME value is written to the event and sent in the
+  // confirmation, so the link the client taps resolves (spec 007 Task 7).
+  const rescheduleToken = generateRescheduleToken()
+  if (!(await tryCreateEvent({ ...d, rescheduleToken }, res))) return true
   if (!(await trySendEmail({ ...d, slotConflictWith }, res))) return true
-  await trySendClientEmail(d)
+  await trySendClientEmail({ ...d, rescheduleToken })
   res.status(200).json(bookingBody(d.freeHourApplied, mark.burned, slotConflictWith))
   return true
 }
@@ -552,7 +559,7 @@ async function isDuplicateEvent(
   } catch (e) {
     // Fail safe: never assume "already processed" on a lookup outage. A 5xx
     // makes Stripe retry, which is preferable to dropping a paid booking.
-    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errMsg(e) } })
+    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errorText(e) } })
     return null
   }
 }

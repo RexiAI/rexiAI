@@ -15,9 +15,9 @@ import { createCalendarEvent, findOverlappingBookingId } from '../../src/domain/
 import { sendClientEmail, sendOperatorEmail } from '../../src/domain/email.js'
 import type { Locale } from '../../src/domain/locale.js'
 import { getCalendarProvider } from '../../src/domain/providers.js'
+import { generateRescheduleToken } from '../../src/domain/rescheduleToken.js'
+import { errorText } from '../errorText.js'
 import type { ApiResponse } from '../httpTypes.js'
-
-import { errMsg } from './config.js'
 
 export type DirectBookingInput = {
   email: string
@@ -57,8 +57,12 @@ async function detectSlotConflict(bookingId: string, input: DirectBookingInput):
 async function createCalendarSideEffect(
   bookingId: string,
   input: DirectBookingInput,
-  joinUrl: string
+  joinUrl: string,
+  rescheduleToken: string
 ): Promise<void> {
+  // The event is the only durable booking record on this path (no Stripe
+  // session), so the reschedule state — token included — is written here
+  // (spec 007 Task 2).
   await createCalendarEvent({
     provider: getCalendarProvider(),
     timezone: resolveCalendarTimezone(),
@@ -68,6 +72,8 @@ async function createCalendarSideEffect(
     startTime: input.startTime,
     hours: input.hours,
     joinUrl,
+    rescheduleToken,
+    ...(input.locale ? { locale: input.locale } : {}),
   })
 }
 
@@ -105,15 +111,20 @@ function failStatic(
   cause: unknown
 ): void {
   // eslint-disable-next-line no-console
-  console.error(`[bookings-direct] ${code}: ${errMsg(cause)}`)
+  console.error(`[bookings-direct] ${code}: ${errorText(cause)}`)
   res.status(status).json({ error: { code, message } })
 }
 
-async function trySendClientEmail(input: DirectBookingInput, joinUrl: string): Promise<void> {
+async function trySendClientEmail(
+  input: DirectBookingInput,
+  joinUrl: string,
+  rescheduleToken: string
+): Promise<void> {
   try {
     // First argument keeps the AC-002-06 pinned shape unless this booking carried
     // a locale, which is the one additive field (spec 006 Task 8); the billing
-    // mode travels in the third argument position (Decision 3).
+    // mode and the reschedule token travel in the third argument position
+    // (Decision 3 / spec 007 Task 7).
     await sendClientEmail(
       {
         clientEmail: input.email,
@@ -124,12 +135,12 @@ async function trySendClientEmail(input: DirectBookingInput, joinUrl: string): P
         ...(input.locale ? { locale: input.locale } : {}),
       },
       undefined,
-      { billingDisabled: true }
+      { billingDisabled: true, rescheduleToken }
     )
   } catch (e) {
     // Webhook parity: the booking stands; a client-mail failure is log-only.
     // eslint-disable-next-line no-console
-    console.error(`[bookings-direct] client confirmation email failed: ${errMsg(e)}`)
+    console.error(`[bookings-direct] client confirmation email failed: ${errorText(e)}`)
   }
 }
 
@@ -139,9 +150,10 @@ export async function finishDirectBooking(
   res: ApiResponse
 ): Promise<void> {
   const bookingId = randomUUID()
+  const rescheduleToken = generateRescheduleToken()
   const slotConflictWith = await detectSlotConflict(bookingId, input)
   try {
-    await createCalendarSideEffect(bookingId, input, joinUrl)
+    await createCalendarSideEffect(bookingId, input, joinUrl, rescheduleToken)
   } catch (e) {
     failStatic(res, 500, 'GCAL_ERROR', 'Could not create the calendar event', e)
     return
@@ -155,6 +167,6 @@ export async function finishDirectBooking(
     failStatic(res, 500, 'EMAIL_ERROR', 'Could not notify the operator', e)
     return
   }
-  await trySendClientEmail(input, joinUrl)
+  await trySendClientEmail(input, joinUrl, rescheduleToken)
   res.status(200).json({ checkoutUrl: null, joinUrl, billingDisabled: true })
 }
