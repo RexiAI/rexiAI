@@ -1,4 +1,33 @@
 {
+  // Solution-style root for `tsc -b`: it contributes no files (`files: []`) and each
+  // referenced project keeps its own options, so the repo build is unchanged.
+  //
+  // The `compilerOptions` below exist for tools that read THIS file and type-check
+  // api/** directly instead of following project references. Vercel's Node builder is
+  // one: it runs `tsc --project <tmp>/tsconfig.json` where the temp config `extends`
+  // this file and sets `files: ["api/<entry>.ts"]`. Without an explicit target/lib/
+  // types here, that invocation falls back to tsc's defaults (ES5, no @types), so
+  // node globals resolve to nothing and api/** + src/domain/** fail with TS2591/
+  // TS2503 (process, fs, path, crypto, NodeJS) and TS2554 (Error `cause` and Intl
+  // overloads need ES2022+ libs) — while `tsc -b` and local builds stay green.
+  // Keep these values in sync with tsconfig.node.json, which type-checks the same
+  // files in CI.
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    // `types` alone is not enough for the Vercel case: when a config is reached via
+    // `extends`, type directives are looked up under the EXTENDING config's directory
+    // (Vercel's is a throwaway /tmp path), so the lookup misses this repo's
+    // node_modules and fails with TS2688. `typeRoots` is path-valued, so it resolves
+    // against the file that declares it — this one — and the lookup lands here.
+    "typeRoots": ["./node_modules/@types"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
   "files": [],
   "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
 }

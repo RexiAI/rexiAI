@@ -1876,3 +1876,91 @@ status check — no fix round has run, so no Phase-2 retry is consumed yet. On t
 next round the orchestrator routes the diagnosed fixes (Lint & Format → Prettier
 the archive file; Vercel → investigate the deployment build config), the PR Opener
 re-pushes, and this stage re-checks only the previously failing checks.
+
+---
+
+## Post-PR CI re-check — Phase 2, round 1
+
+Head: `d997ffb` (`fix(reschedule): restore CI green — prettier archive one-pager and declare node types in app tsconfig`).
+Round-0 failures were `Lint & Format` and `Vercel`. Round-1 fix touched
+`tsconfig.app.json` (added `"node"` to `compilerOptions.types`) and prettier-formatted
+the archive one-pager.
+
+command: gh pr checks 88 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-10-28T18:15:00Z
+
+Per-check (bucket):
+- `Lint & Format`  — pass (SUCCESS)        ← was FAIL in round 0, now fixed
+- `Build`          — pass (SUCCESS)
+- `Unit Tests`     — pass (SUCCESS)
+- `Docker Build & Push` — skipping (SKIPPED)
+- `Vercel Preview Comments` — pass (SUCCESS)
+- `Vercel`         — **fail** (FAILURE)     ← was FAIL in round 0, NOT fixed
+
+### Failing check: Vercel (deployment `dpl_9VX1JZrT7gbNXipCGXPzWffNU7Cf`)
+
+command: npx vercel inspect dpl_9VX1JZrT7gbNXipCGXPzWffNU7Cf --logs
+exit: 1 (deployment errored)
+at: 2026-10-28T18:16:00Z
+
+```
+2026-10-28T17:11:20.900Z  > tsc -b && vite build
+2026-10-28T17:11:28.452Z  ✓ built in 263ms        ← `tsc -b` and `vite build` both succeeded
+2026-10-28T17:11:28.779Z  Using TypeScript 6.0.3 (local user-provided)
+src/domain/time.ts(14,12): error TS2591: Cannot find name 'process'. ...
+src/domain/time.ts(14,52): error TS2591: Cannot find name 'process'. ...
+src/domain/time.ts(52,61): error TS2554: Expected 0-1 arguments, but got 2.
+src/domain/time.ts(62,71): error TS2554: Expected 0-1 arguments, but got 2.
+src/domain/time.ts(78,7):  error TS2554: Expected 0-1 arguments, but got 2.
+src/domain/time.ts(114,15): error TS2591: Cannot find name 'process'. ...
+src/domain/time.ts(114,55): error TS2591: Cannot find name 'process'. ...
+src/domain/availability.ts(1,16): error TS2591: Cannot find name 'fs'. ...
+src/domain/availability.ts(2,18): error TS2591: Cannot find name 'path'. ...
+src/domain/availability.ts(38,66): error TS2554: Expected 0-1 arguments, but got 2.
+src/domain/availability.ts(254,17..379,25): error TS2591: Cannot find name 'process'. (×8)
+src/domain/microsoftAuth.ts(28,20..30,24): error TS2591: Cannot find name 'process'. (×3)
+src/domain/rescheduleToken.ts(9,29): error TS2591: Cannot find name 'crypto'. ...
+src/domain/meetingUrl.ts(23,37): error TS2503: Cannot find namespace 'NodeJS'.
+src/domain/meetingUrl.ts(23,57): error TS2591: Cannot find name 'process'. ...
+api/bookings/checkout.ts(90,79): error TS2339: Property 'error' does not exist on type 'PriceResult'.
+api/bookings/validation.ts(57,72): error TS2339: Property 'error' does not exist on type 'PriceResult'.
+api/bookings/validation.ts(68,83): error TS2339: Property 'error' does not exist on type 'PriceResult'.
+api/reschedule/submit.ts(253,53): error TS2339: Property 'code' does not exist on type 'RescheduleValidation'.
+src/domain/freeHour.ts(52,92): error TS2554: Expected 0-1 arguments, but got 2.
+src/domain/freeHour.ts(89,90): error TS2554: Expected 0-1 arguments, but got 2.
+src/domain/webhookDedup.ts(81,92): error TS2554: Expected 0-1 arguments, but got 2.
+status	● Error
+```
+
+### The two error classes the Refactorer flagged
+
+1. **TS2591 / TS2503 (node globals) — the tsconfig fix did NOT land on Vercel.**
+   Round-1 added `"node"` to `tsconfig.app.json` `compilerOptions.types`. That fixed
+   the repo's *own* `tsc -b` project (which, notably, was already green in CI). It did
+   not fix Vercel: the Vercel log shows `tsc -b && vite build` **succeeding**
+   (`✓ built in 263ms`) and only *then* emits `Using TypeScript 6.0.3` plus the
+   TS2591/TS2503 errors. Vercel compiles the `api/**` serverless functions (and their
+   `src/domain/**` imports) with its **own** TypeScript invocation — it does not read
+   `tsconfig.app.json` (or `tsconfig.node.json`, which already had `types: ["node"]`).
+   The node-global errors persist verbatim, so the fix targeted the wrong compilation
+   surface.
+
+2. **TS2554 / TS2339 (lib/type-resolution discrepancies) — still present, unchanged.**
+   `TS2554: Expected 0-1 arguments, but got 2` (date/time formatting calls in
+   `time.ts`, `freeHour.ts`, `availability.ts`, `webhookDedup.ts`) and
+   `TS2339: Property 'error'/'code' does not exist on type 'PriceResult'/'RescheduleValidation'`
+   (`checkout.ts`, `validation.ts`, `reschedule/submit.ts`) persist. These are a
+   Vercel-side lib/type-resolution mismatch (a different `lib`/`@types` set than the
+   repo's own check), consistent with the round-0 discrepancy flag.
+
+### Verdict
+
+**FAIL.** One of the two round-0 failures (`Lint & Format`) is fixed, but `Vercel`
+still fails with the same ~30 errors. The round-1 tsconfig change did not reach the
+compilation surface Vercel actually uses for `api/**` functions. Diagnosis is
+unchanged from round 0: Vercel build-environment / type-resolution discrepancy, not a
+repo-logic defect — but it must be resolved (Vercel build config, function tsconfig
+exposure, or an explicit `api/` tsconfig Vercel picks up) before re-push.
+
+Phase 2, round 1 of max 3. `SPEC_PHASE2_RETRIES=1`.
