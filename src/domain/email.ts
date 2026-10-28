@@ -2,10 +2,23 @@
 // Graph mail (Mail.Send) is not used. The provider-agnostic calendar layer is
 // separate — see calendar.ts.
 import { consentNoticeLines } from './consentNotice.js'
-import { buildDirectClientBody, buildDirectOperatorBody } from './emailDirect.js'
+import {
+  RESCHEDULE_LINK_LABEL,
+  buildDirectClientBody,
+  buildDirectOperatorBody,
+} from './emailDirect.js'
 import { renderHtml, renderText, type BodyLine } from './emailHtml.js'
 import type { Locale } from './locale.js'
 import { localeFreeJoinUrl } from './meetingUrl.js'
+import {
+  buildLimitBlockedOperatorBody,
+  buildRescheduleClientBody,
+  buildRescheduleOperatorBody,
+  type LimitBlockedOperatorInput,
+  type RescheduleClientInput,
+  type RescheduleOperatorInput,
+} from './rescheduleEmail.js'
+import { rescheduleLink } from './rescheduleUrl.js'
 import { getConfiguredTimezone } from './time.js'
 
 // escapeHtml lives in emailHtml.ts (shared with the billing-disabled builders);
@@ -13,14 +26,19 @@ import { getConfiguredTimezone } from './time.js'
 export { escapeHtml } from './emailHtml.js'
 
 /**
- * Billing-mode signal (spec 003 Decision 3). Only the direct path sets it:
- * `{ billingDisabled: true }` selects the billing-disabled email variants, and
- * every other shape (omitted, {}, false) keeps the byte-identical
- * billing-enabled output. AC-002-06 pins the client call's FIRST argument, so
- * the mode rides as an additional argument position, never inside the input.
+ * Per-send options. `billingDisabled` is the billing-mode signal (spec 003
+ * Decision 3): only the direct path sets it, and every other shape (omitted, {},
+ * false) keeps the byte-identical billing-enabled output. AC-002-06 pins the
+ * client call's FIRST argument, so options ride in an additional argument
+ * position, never inside the input.
+ *
+ * `rescheduleToken` follows the same rule (spec 007 Task 7): the confirmation
+ * mail gains its reschedule link from the token that was persisted on the
+ * calendar event, and a booking with no token keeps its pre-007 body.
  */
-export interface EmailBillingMode {
+export interface EmailOptions {
   billingDisabled?: boolean
+  rescheduleToken?: string | null
 }
 
 export interface OperatorEmailInput {
@@ -79,22 +97,36 @@ function getEmailConfig() {
   return { apiKey, from, to }
 }
 
+/** The address pair a send posts with, once the config has been read. */
+interface SendTarget {
+  apiKey: string
+  from: string
+  to: string
+}
+
 /**
- * Shared Resend transport: one URL, one auth-header shape, one error mapping.
- * `errorLabel` preserves each send's distinct thrown prefix, and the payload
- * keys keep the pre-consolidation from/to/subject/text/html order so the
- * serialized request body stays byte-identical to what each send built alone.
+ * Shared Resend transport: one URL, one auth-header shape, one payload order, one
+ * error mapping. `errorLabel` preserves each send's distinct thrown prefix, and
+ * the payload keys keep the pre-consolidation from/to/subject/text/html order so
+ * the serialized request body stays byte-identical to what each send built alone.
+ * The six sends differ only in the address pair, the built body and that prefix.
  */
 async function postResendEmail(
   fetchImpl: typeof fetch,
-  apiKey: string,
-  payload: { from: string; to: string; subject: string; text: string; html: string },
+  target: SendTarget,
+  body: { subject: string; text: string; html: string },
   errorLabel: string
 ): Promise<void> {
   const res = await fetchImpl('https://api.resend.com/emails', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    headers: { Authorization: `Bearer ${target.apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: target.from,
+      to: target.to,
+      subject: body.subject,
+      text: body.text,
+      html: body.html,
+    }),
   })
   if (!res.ok) {
     const errText = await res.text().catch(() => '')
@@ -117,13 +149,11 @@ function buildBody(input: OperatorEmailInput): { subject: string; text: string; 
 export async function sendOperatorEmail(
   input: OperatorEmailInput,
   fetchImpl: typeof fetch = fetch,
-  mode?: EmailBillingMode
+  options?: EmailOptions
 ): Promise<void> {
   const { apiKey, from, to } = getEmailConfig()
-  const { subject, text, html } = mode?.billingDisabled
-    ? buildDirectOperatorBody(input)
-    : buildBody(input)
-  await postResendEmail(fetchImpl, apiKey, { from, to, subject, text, html }, 'Resend failed')
+  const body = options?.billingDisabled ? buildDirectOperatorBody(input) : buildBody(input)
+  await postResendEmail(fetchImpl, { apiKey, from, to }, body, 'Resend failed')
 }
 
 export interface ClientEmailInput {
@@ -147,7 +177,7 @@ function billingModelLines(): BodyLine[] {
   ]
 }
 
-function buildClientLines(input: ClientEmailInput): BodyLine[] {
+function buildClientLines(input: ClientEmailInput, token?: string | null): BodyLine[] {
   const timezone = getConfiguredTimezone()
   const lines: BodyLine[] = [
     { value: 'Tu reunión con RexiAI está confirmada.' },
@@ -159,16 +189,26 @@ function buildClientLines(input: ClientEmailInput): BodyLine[] {
   // order, so one insertion gives the right order in both parts.
   lines.push(...consentNoticeLines(input.locale))
   if (input.joinUrl) lines.push({ label: 'Enlace de la reunión', value: input.joinUrl })
+  // Below the join link, above the billing lines (spec 007 Task 7). Omitted when
+  // the booking has no token, which keeps the pre-007 body byte-identical. This
+  // variant renders a flat escaped-line body that AC-003-25 pins byte for byte,
+  // so the link rides as one labelled line rather than the disabled variant's
+  // anchor paragraph.
+  const link = rescheduleLink(token, input.locale)
+  if (link) lines.push({ label: RESCHEDULE_LINK_LABEL, value: link })
   return [...lines, ...billingModelLines()]
 }
 
-function buildClientBody(input: ClientEmailInput): {
+function buildClientBody(
+  input: ClientEmailInput,
+  token?: string | null
+): {
   subject: string
   text: string
   html: string
 } {
   const subject = `Reserva confirmada: ${input.date} ${input.startTime}`
-  const lines = buildClientLines(input)
+  const lines = buildClientLines(input, token)
   return { subject, text: renderText(lines), html: renderHtml(lines) }
 }
 
@@ -192,20 +232,21 @@ function assertClientSenderUsable(from: string): void {
 export async function sendClientEmail(
   input: ClientEmailInput,
   fetchImpl: typeof fetch = fetch,
-  mode?: EmailBillingMode
+  options?: EmailOptions
 ): Promise<void> {
   const { apiKey, from } = getEmailConfig()
   // The sandbox-sender guard applies to every client-facing send, disabled
   // variant included (AC-003-26): it runs before the body build and before any
   // Resend request.
   assertClientSenderUsable(from)
-  const { subject, text, html } = mode?.billingDisabled
-    ? buildDirectClientBody(input)
-    : buildClientBody(input)
+  const token = options?.rescheduleToken
+  const body = options?.billingDisabled
+    ? buildDirectClientBody(input, token)
+    : buildClientBody(input, token)
   await postResendEmail(
     fetchImpl,
-    apiKey,
-    { from, to: input.clientEmail, subject, text, html },
+    { apiKey, from, to: input.clientEmail },
+    body,
     'Resend client email failed'
   )
 }
@@ -251,11 +292,65 @@ export async function sendPaymentLinkEmail(
   // Client-facing: the Resend sandbox sender cannot deliver to arbitrary
   // customers — same constraint as sendClientEmail.
   assertClientSenderUsable(from)
-  const { subject, text, html } = buildPaymentLinkBody(input)
   await postResendEmail(
     fetchImpl,
-    apiKey,
-    { from, to: input.clientEmail, subject, text, html },
+    { apiKey, from, to: input.clientEmail },
+    buildPaymentLinkBody(input),
     'Resend payment-link email failed'
+  )
+}
+
+/**
+ * The operator's reschedule notice (spec 007 Task 6). On the critical path: the
+ * reschedule endpoint surfaces its failure as a 5xx, because a moved meeting
+ * nobody was told about is the one outcome that must be visible (decision D5).
+ */
+export async function sendRescheduleOperatorEmail(
+  input: RescheduleOperatorInput,
+  fetchImpl: typeof fetch = fetch
+): Promise<void> {
+  const { apiKey, from, to } = getEmailConfig()
+  await postResendEmail(
+    fetchImpl,
+    { apiKey, from, to },
+    buildRescheduleOperatorBody(input),
+    'Resend reschedule operator email failed'
+  )
+}
+
+/**
+ * The operator's "a client was refused by the limit" notice. Best effort: the
+ * client already gets a refusal, so a mail failure must not turn a 4xx into a
+ * 5xx the page reads as "unconfirmed".
+ */
+export async function sendLimitBlockedOperatorEmail(
+  input: LimitBlockedOperatorInput,
+  fetchImpl: typeof fetch = fetch
+): Promise<void> {
+  const { apiKey, from, to } = getEmailConfig()
+  await postResendEmail(
+    fetchImpl,
+    { apiKey, from, to },
+    buildLimitBlockedOperatorBody(input),
+    'Resend limit-blocked operator email failed'
+  )
+}
+
+/**
+ * The client's reschedule confirmation. Best effort by design (decision D5): the
+ * move has already happened, so a delivery failure is logged and swallowed
+ * rather than rolled back.
+ */
+export async function sendRescheduleClientEmail(
+  input: RescheduleClientInput,
+  fetchImpl: typeof fetch = fetch
+): Promise<void> {
+  const { apiKey, from } = getEmailConfig()
+  assertClientSenderUsable(from)
+  await postResendEmail(
+    fetchImpl,
+    { apiKey, from, to: input.clientEmail },
+    buildRescheduleClientBody(input),
+    'Resend reschedule client email failed'
   )
 }
