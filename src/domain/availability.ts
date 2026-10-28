@@ -325,13 +325,36 @@ function weekdayForDate(dateStr: string, timezone: string): string {
   return DAY_NAMES[new Date(dateStr + 'T12:00:00Z').getUTCDay()]
 }
 
+/** The availability windows that apply to one date: exceptions win over the weekly grid. */
+function windowsForDate(config: AvailabilityConfig, dateStr: string): Window[] {
+  if (dateStr in config.exceptions) return config.exceptions[dateStr] ?? []
+  return config.weekly[weekdayForDate(dateStr, config.timezone)] ?? []
+}
+
 export function computeSlotsForDate(config: AvailabilityConfig, dateStr: string): string[] {
-  if (dateStr in config.exceptions) {
-    return slotsFromWindows(config.exceptions[dateStr])
-  }
-  const weekday = weekdayForDate(dateStr, config.timezone)
-  const windows = config.weekly[weekday] ?? []
-  return slotsFromWindows(windows)
+  return slotsFromWindows(windowsForDate(config, dateStr))
+}
+
+/**
+ * True when a slot of `hours` hours starting at `startTime` fits inside the
+ * availability windows for that date. Used by the reschedule path, which must
+ * re-derive this at submit time rather than trust the list the client saw.
+ */
+export function isSlotBookable(
+  config: AvailabilityConfig,
+  date: string,
+  startTime: string,
+  hours: number
+): boolean {
+  const startMin = parseMinutes(startTime)
+  if (startMin === null) return false
+  const endMin = startMin + hours * 60
+  return windowsForDate(config, date).some((w) => {
+    const windowStart = parseMinutes(w.start)
+    const windowEnd = parseMinutes(w.end)
+    if (windowStart === null || windowEnd === null) return false
+    return startMin >= windowStart && endMin <= windowEnd
+  })
 }
 
 export function todayInTimezone(timezone: string): string {
