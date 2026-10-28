@@ -1891,12 +1891,13 @@ exit: 0
 at: 2026-10-28T18:15:00Z
 
 Per-check (bucket):
-- `Lint & Format`  — pass (SUCCESS)        ← was FAIL in round 0, now fixed
-- `Build`          — pass (SUCCESS)
-- `Unit Tests`     — pass (SUCCESS)
+
+- `Lint & Format` — pass (SUCCESS) ← was FAIL in round 0, now fixed
+- `Build` — pass (SUCCESS)
+- `Unit Tests` — pass (SUCCESS)
 - `Docker Build & Push` — skipping (SKIPPED)
 - `Vercel Preview Comments` — pass (SUCCESS)
-- `Vercel`         — **fail** (FAILURE)     ← was FAIL in round 0, NOT fixed
+- `Vercel` — **fail** (FAILURE) ← was FAIL in round 0, NOT fixed
 
 ### Failing check: Vercel (deployment `dpl_9VX1JZrT7gbNXipCGXPzWffNU7Cf`)
 
@@ -1937,9 +1938,9 @@ status	● Error
 
 1. **TS2591 / TS2503 (node globals) — the tsconfig fix did NOT land on Vercel.**
    Round-1 added `"node"` to `tsconfig.app.json` `compilerOptions.types`. That fixed
-   the repo's *own* `tsc -b` project (which, notably, was already green in CI). It did
+   the repo's _own_ `tsc -b` project (which, notably, was already green in CI). It did
    not fix Vercel: the Vercel log shows `tsc -b && vite build` **succeeding**
-   (`✓ built in 263ms`) and only *then* emits `Using TypeScript 6.0.3` plus the
+   (`✓ built in 263ms`) and only _then_ emits `Using TypeScript 6.0.3` plus the
    TS2591/TS2503 errors. Vercel compiles the `api/**` serverless functions (and their
    `src/domain/**` imports) with its **own** TypeScript invocation — it does not read
    `tsconfig.app.json` (or `tsconfig.node.json`, which already had `types: ["node"]`).
@@ -1964,3 +1965,86 @@ repo-logic defect — but it must be resolved (Vercel build config, function tsc
 exposure, or an explicit `api/` tsconfig Vercel picks up) before re-push.
 
 Phase 2, round 1 of max 3. `SPEC_PHASE2_RETRIES=1`.
+
+---
+
+## Post-PR CI re-check — Phase 2, round 2
+
+Head: `b5816a9` (`fix(reschedule): type-check api/** under Vercel's function builder (root tsconfig compilerOptions)`).
+Round-1 failures were `Lint & Format` (fixed in round 1) and `Vercel` (still failing).
+Round-2 fix rewrote the root `tsconfig.json` with explicit `compilerOptions`
+(`target: es2023`, `lib: ["ES2023"]`, `types: ["node"]`, `typeRoots`, `module: nodenext`,
+`strict`, `skipLibCheck`, `noEmit`) so Vercel's Node function builder type-checks
+`api/**` with node types + ES2023 lib, and also carried the Verifier's round-1
+CI-outcome record into this archive one-pager.
+
+command: gh pr checks 88 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-10-28T17:25:32Z
+
+Per-check (bucket):
+
+- `Vercel Preview Comments` — pass (SUCCESS)
+- `Docker Build & Push` — skipping (SKIPPED)
+- `Unit Tests` — pass (SUCCESS)
+- `Lint & Format` — fail (FAILURE)
+- `Build` — pass (SUCCESS)
+- `Vercel` — fail (FAILURE)
+
+### Failing check: Lint & Format (check-run id 122981392440)
+
+command: gh run view --job 122981392440 --log
+exit: 1 (format:check failed)
+at: 2026-10-28T17:24:00Z
+
+```
+> rexiai-website@0.0.0 lint
+> eslint .
+✖ 10 problems (0 errors, 10 warnings)
+> rexiai-website@0.0.0 format:check
+> prettier --check .
+Checking formatting...
+[warn] docs/changes/007-client-requested-reschedule.md
+[warn] Code style issues found in the above file. Run Prettier with --write to fix.
+##[error]Process completed with exit code 1.
+```
+
+ESLint passed (0 errors, 10 warnings); the failure is `format:check`. The round-2
+commit's appended round-1 record used aligned list padding and `*` emphasis, which
+Prettier's markdown formatter rejects (it wants single-space list items and `_`
+emphasis). This is a formatting regression on this archive file introduced by the
+round-2 commit itself — a `prettier --write docs/changes/007-client-requested-reschedule.md`
+run is the remedy.
+
+### Failing check: Vercel (deployment `dpl_Dn4FfL7cDgzBxnG5C8RQfpSR8efp`)
+
+command: npx vercel inspect dpl_Dn4FfL7cDgzBxnG5C8RQfpSR8efp --logs
+exit: 1 (deployment errored)
+at: 2026-10-28T17:24:30Z
+
+```
+2026-10-28T17:22:36.441Z  > tsc -b && vite build
+2026-10-28T17:22:50.535Z  vite v8.3.4 building client environment for production...
+2026-10-28T17:22:51.021Z  ✓ built in 477ms
+2026-10-28T17:23:12.544Z  Build Completed in /vercel/output [39s]
+2026-10-28T17:23:12.745Z  Deploying outputs...
+status	● Error
+```
+
+The round-2 tsconfig fix **resolved the build-stage tsc errors**: the log no longer
+shows the round-0/1 TS2591/TS2503/TS2554/TS2339 errors, and `tsc -b && vite build`
+completes (`✓ built in 477ms`, `Build Completed in /vercel/output [39s]`). The
+deployment now fails at a **later stage** — `Deploying outputs...` → `status ● Error`
+— with no explicit error detail surfaced in the build logs. This is a deploy-stage
+failure, distinct from the build-stage type-resolution failure of rounds 0-1.
+
+### Verdict
+
+**FAIL.** Two checks fail: `Lint & Format` (Prettier `format:check` on this archive
+file — a formatting regression from the round-2 commit's appended round-1 record)
+and `Vercel` (build now green, but deploy fails at the output stage). `Build`,
+`Unit Tests`, and `Vercel Preview Comments` pass; `Docker Build & Push` is skipped.
+The round-2 fix resolved the Vercel type-check errors but not the deployment, and
+introduced a new Prettier failure on the archive one-pager.
+
+Phase 2, round 2 of max 3. `SPEC_PHASE2_RETRIES=2`.
