@@ -6,7 +6,12 @@ import {
 import { getBusyIntervals as getCalendarBusyIntervals } from '../src/domain/calendar.js'
 import { zonedToUtc } from '../src/domain/time.js'
 
+import { errorText } from './errorText.js'
 import type { ApiRequest, ApiResponse } from './httpTypes.js'
+import { requireMethod } from './routeGuards.js'
+
+/** Availability is a read: anything else gets the API's one 405. */
+const GET_ONLY = ['GET']
 
 async function getBusyIntervals(
   dateStr: string,
@@ -68,18 +73,14 @@ function loadConfigOrError(res: ApiResponse) {
     return loadAvailabilityConfig()
   } catch (e) {
     res.status(500).json({
-      error: { code: 'CONFIG_ERROR', message: e instanceof Error ? e.message : String(e) },
+      error: { code: 'CONFIG_ERROR', message: errorText(e) },
     })
     return null
   }
 }
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
-  if (req.method !== 'GET') {
-    return res
-      .status(405)
-      .json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
-  }
+  if (!requireMethod(req, res, GET_ONLY)) return
   const date = validateDateParam(req, res)
   if (!date) return
   const config = loadConfigOrError(res)

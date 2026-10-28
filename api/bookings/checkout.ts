@@ -2,15 +2,14 @@ import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
 import type { Locale } from '../../src/domain/locale.js'
 import { priceCents, PRODUCT_TAX_CODE } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
+import { errorText } from '../errorText.js'
 import type { ApiRequest, ApiResponse } from '../httpTypes.js'
-
-import { errMsg } from './config.js'
 
 async function getFreeAvailable(email: string, res: ApiResponse): Promise<boolean | null> {
   try {
     return await isFreeHourAvailable(email)
   } catch (e) {
-    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errMsg(e) } })
+    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errorText(e) } })
     return null
   }
 }
@@ -72,7 +71,7 @@ async function createSession(opts: SessionOpts) {
     const params = buildSessionParams(opts, baseUrl)
     return await stripe.checkout.sessions.create(params)
   } catch (e) {
-    opts.res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errMsg(e) } })
+    opts.res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errorText(e) } })
     return null
   }
 }

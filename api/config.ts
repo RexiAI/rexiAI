@@ -7,11 +7,11 @@
 import { isBillingEnabled } from '../src/domain/billing.js'
 
 import type { ApiRequest, ApiResponse } from './httpTypes.js'
+import { requireMethod } from './routeGuards.js'
+
+const GET_ONLY = ['GET']
 
 export default async function handler(req: ApiRequest, res: ApiResponse) {
-  if (req.method !== 'GET') {
-    res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
-    return
-  }
+  if (!requireMethod(req, res, GET_ONLY)) return
   res.status(200).json({ billingEnabled: isBillingEnabled() })
 }

@@ -12,11 +12,11 @@ import {
 } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
 import { isValidEmail } from '../../src/domain/validation.js'
+import { errorText } from '../errorText.js'
 import type { ApiRequest, ApiResponse } from '../httpTypes.js'
+import { requireMethod } from '../routeGuards.js'
 
-function errMsg(e: unknown): string {
-  return e instanceof Error ? e.message : String(e)
-}
+const POST_ONLY = ['POST']
 
 function equalsConstantTime(a: string, b: string): boolean {
   const bufA = Buffer.from(a, 'utf8')
@@ -60,11 +60,7 @@ function getBaseUrl(req: ApiRequest): string {
 }
 
 function isPostMethod(req: ApiRequest, res: ApiResponse): boolean {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
-    return false
-  }
-  return true
+  return requireMethod(req, res, POST_ONLY)
 }
 
 type ParsedRecordedBody = { bookingId: string; email: string; actualMinutes: unknown }
@@ -99,7 +95,7 @@ async function getFreeHourAvailability(email: string, res: ApiResponse): Promise
   try {
     return await isFreeHourAvailable(email)
   } catch (e) {
-    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errMsg(e) } })
+    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errorText(e) } })
     return null
   }
 }
@@ -263,7 +259,7 @@ async function createRecordedCheckout(
     const session = await stripe.checkout.sessions.create(params)
     return session as unknown as { url: string; id: string }
   } catch (e) {
-    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errMsg(e) } })
+    res.status(500).json({ error: { code: 'STRIPE_ERROR', message: errorText(e) } })
     return null
   }
 }
@@ -318,7 +314,7 @@ async function handlePaidCheckout(
     })
   } catch (e) {
     // eslint-disable-next-line no-console
-    console.warn(`[recorded-billing] payment-link email failed: ${errMsg(e)}`)
+    console.warn(`[recorded-billing] payment-link email failed: ${errorText(e)}`)
   }
   ctx.res.status(200).json(
     withMismatch(
