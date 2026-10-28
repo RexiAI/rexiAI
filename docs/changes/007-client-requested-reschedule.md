@@ -1692,3 +1692,8 @@ Against `deploy/reschedule/index.html`:
 - **Task 4 - Reschedule validation.** No frontend surface, but it owns the error codes the page maps
   to states (Task 5's mapping table above). Any code renamed there breaks a state silently, so the
   two must move together.
+
+## PR
+
+PR: https://github.com/RexiAI/rexiAI/pull/88
+Commits: 10 at PR open; 11 including this record commit.
