@@ -10,8 +10,8 @@
 ## The problem, in my words
 
 A client books a slot and later needs a different time. Today the only way that
-happens is the client replies to the booking email (*"¿Dudas o necesitas cambiar
-la hora? Responde a este correo."*) and I move it by hand — which means reading
+happens is the client replies to the booking email (_"¿Dudas o necesitas cambiar
+la hora? Responde a este correo."_) and I move it by hand — which means reading
 mail, checking availability, editing the calendar, re-sending a link.
 
 I asked whether this could be done by the client clicking in their calendar and
@@ -180,11 +180,11 @@ reschedule link and shortens `CLIENT_HELP_HTML`. Per `docs/TESTING.md` §"Tests
 That Encode a Defect", the frozen assertions may be updated: scenario IDs
 `AC-003-19` and `AC-003-25` are preserved verbatim; only the help line and the new
 link change; nothing else in the body moves; the test comment must name this
-authorisation. *(Inspection note: `AC-003-19` pins the operator email `toBe` body,
+authorisation. _(Inspection note: `AC-003-19` pins the operator email `toBe` body,
 which Task 7 does not change — the operator email gets no reschedule link
 (AC-007-38) and has no help line — so in practice only `AC-003-25` (enabled client
 `toBe`) and the disabled variant's help-line assertion (`AC-003-22`,
-`toContain('¿Dudas o necesitas cambiar la hora?…')`) change.)*
+`toContain('¿Dudas o necesitas cambiar la hora?…')`) change.)_
 
 **D4 — `location` carries the branded join URL.** The calendar event's `location`
 field holds the branded join URL (byte-identical to the body's join URL, including
@@ -234,6 +234,7 @@ reschedule tokens. Tokens are capability-bearing and travel in email, so they mu
 reveal nothing and be cheap to reject when malformed.
 
 Acceptance criteria:
+
 - `generateRescheduleToken()` returns a fresh token: 32 random bytes hex-encoded,
   lowercase, exactly 64 chars, matching `/^[0-9a-f]{64}$/`.
 - Generation takes **no booking field as input** (email, bookingId, join URL, date,
@@ -255,6 +256,7 @@ adapter method resolves a token back to it.
 
 Extended properties (single-value, same `String {00020329-…} Name <key>` shape as
 `rexi_booking_id`):
+
 - `rexi_booking_id` (existing) — the booking id.
 - `rexi_reschedule_token` — the current token.
 - `rexi_reschedule_count` — decimal string, `"0"` at create.
@@ -265,13 +267,14 @@ Extended properties (single-value, same `String {00020329-…} Name <key>` shape
 - `rexi_locale` — the booking locale (`es`/`en`).
 
 Acceptance criteria:
+
 - `createEvent` accepts the token and (optionally) the locale and writes all seven
   properties above (count `"0"`). Existing callers that do not pass a token must
   still write the other fields — every booking, both billing paths, gets reschedule
   state from the start.
 - New `CalendarAdapter.findBookingByRescheduleToken(token)` resolves a token to the
   booking state `{ bookingId, email, date, startTime, hours, joinUrl, locale,
-  count }` or `null`. `date`/`startTime` come from the event's current start;
+count }` or `null`. `date`/`startTime` come from the event's current start;
   `hours`/`email`/`joinUrl`/`locale`/`count` from the stored properties.
 - Unknown, malformed, or rotated tokens resolve to `null`.
 - `findBookingByRescheduleToken` reads the calendar only — it never touches Stripe.
@@ -285,6 +288,7 @@ A new `moveEvent` adapter method moves an existing event to a new slot, and
 change across a move.
 
 Acceptance criteria:
+
 - `moveEvent` finds the event by `bookingId` (resolving the Graph id internally),
   PATCHes `start`/`end` to the new date/startTime with the **same** `hours`, keeps
   `subject`, `attendees`, body, and `rexi_booking_id` unchanged, and writes the new
@@ -307,6 +311,7 @@ Pure validation that returns a typed result (never throws for expected failures)
 It runs at submit time, after the token resolves, and immediately before the move.
 
 Acceptance criteria:
+
 - Reject with a distinct code (never a throw) for: a past new date; a booking whose
   meeting start is already in the past (token expired); a new start outside the
   availability windows; a new slot occupied by a **different** bookingId
@@ -338,6 +343,7 @@ it reads booking state from the calendar event, never from Stripe.
   client never submits a duration.
 
 Acceptance criteria:
+
 - Method-guarded (GET only resolves, POST only submits; anything else 405).
 - Rate-limited on its own key (`reschedule:<ip>`), independent of the booking key.
 - GET returns `canReschedule` (a boolean) alongside `{ date, startTime, hours }`, and
@@ -357,6 +363,7 @@ Two new email shapes built on the existing `email.ts` / `emailDirect.ts` plumbin
 Both follow the spec 006 consent-notice and locale rules.
 
 Acceptance criteria:
+
 - Operator email: client email, old slot (date/time), new slot (date/time),
   `bookingId`, the **locale-free** join URL (`localeFreeJoinUrl`), and the new
   reschedule count. No consent notice (operator mail never carries it).
@@ -378,6 +385,7 @@ Both client confirmation email variants (billing-enabled in `email.ts`, billing-
 disabled in `emailDirect.ts`) gain the reschedule link.
 
 Acceptance criteria:
+
 - The link is `${MEETING_BASE_URL}/reschedule/<token>?lang=<locale>` — the branded
   host, `/reschedule/<token>` path, `?lang=` matching the booking locale (Spanish
   default when the booking has no locale).
@@ -402,6 +410,7 @@ lowercase hex>`) and the locale from `?lang=`; every state is a fully-written
 `15-design.md` Task 8.)
 
 Acceptance criteria:
+
 - On load with a valid token, the page fetches `GET /api/reschedule?token=<t>`,
   renders the current slot `{ date, startTime, hours }`, then fetches
   `GET /api/availability?date=<current date>` and renders the slot choices. When
@@ -429,54 +438,103 @@ Scenarios: `20-acceptance/AC-007-reschedule-page.md` (AC-007-39 … AC-007-47).
 ## Acceptance scenarios
 
 ## AC-007-01 — Token is 32 random bytes hex-encoded, lowercase, 64 chars
+
 ## AC-007-02 — Generation is independent of booking data and random
+
 ## AC-007-03 — A malformed token is rejected without a calendar call
+
 ## AC-007-04 — Create event writes the full reschedule state
+
 ## AC-007-05 — A token resolves to its booking's current state
+
 ## AC-007-06 — An unknown token resolves to null
+
 ## AC-007-07 — A rotated token no longer resolves
+
 ## AC-007-08 — Move changes start and end, keeps the duration and booking id
+
 ## AC-007-09 — Move releases the old slot
+
 ## AC-007-10 — Location field carries the branded join URL on create
+
 ## AC-007-11 — Location field carries the branded join URL on move
+
 ## AC-007-12 — The room never rotates on reschedule
+
 ## AC-007-13 — Move writes the new token and increments the count
+
 ## AC-007-14 — Cannot reschedule into a past date
+
 ## AC-007-15 — Cannot reschedule a meeting that has already happened
+
 ## AC-007-16 — Cannot move outside the availability windows
+
 ## AC-007-17 — Cannot move into a slot occupied by a different booking
+
 ## AC-007-18 — The submit re-check catches the race between two clients
+
 ## AC-007-19 — A slot overlapping only one's own event is not a conflict
+
 ## AC-007-20 — Cannot exceed the reschedule limit
+
 ## AC-007-21 — A reschedule within the limit succeeds and increments the count
+
 ## AC-007-22 — GET resolves a valid token to the current slot and reschedule eligibility
+
 ## AC-007-23 — GET does not reveal email, bookingId, or join URL
+
 ## AC-007-24 — POST moves the meeting and returns the unchanged join URL
+
 ## AC-007-25 — A wrong, expired, or already-used token returns one generic error
+
 ## AC-007-26 — Reschedule is rate-limited independently of booking
+
 ## AC-007-27 — Wrong method is rejected
+
 ## AC-007-28 — Reschedule works without a Stripe session (billing-disabled parity)
+
 ## AC-007-29 — Operator is notified with old and new slot, bookingId, and count
+
 ## AC-007-30 — Operator email is locale-free and never carries the consent notice
+
 ## AC-007-31 — Client confirmation carries the new slot, notice, and join link
+
 ## AC-007-32 — Client confirmation carries the new rotated token
+
 ## AC-007-33 — Operator is notified when the limit blocks a further reschedule
+
 ## AC-007-34 — An operator-notification failure surfaces loudly and never rolls back the move
+
 ## AC-007-35 — Enabled client email carries the reschedule link
+
 ## AC-007-36 — Disabled (direct) client email carries the reschedule link
+
 ## AC-007-37 — The reschedule URL reveals nothing beyond the token
+
 ## AC-007-38 — The operator email carries no reschedule link
+
 ## AC-007-39 — A valid token renders the current slot and the available-slot picker
+
 ## AC-007-40 — A date with no open slots shows the empty message and keeps the picker
+
 ## AC-007-41 — A successful move renders the new slot and reveals no join URL, booking id, or client email
+
 ## AC-007-42 — With JavaScript disabled the page is usable via a mailto exit
+
 ## AC-007-43 — The token never appears in the DOM, storage, or any URL other than the resolve request
+
 ## AC-007-44 — A wrong, expired, or rotated token renders one invalid state with a mailto exit
+
 ## AC-007-45 — ?lang= selects Spanish or English; absent or unrecognised falls back to Spanish
+
 ## AC-007-46 — A client at the reschedule limit renders the limit state directly
+
 ## AC-007-47 — A 5xx response renders the unconfirmed state with no retry
+
 ## AC-007-48 — GET reports canReschedule false at the limit or after the meeting
+
 ## AC-007-49 — A client-confirmation failure is logged and the move stands
+
 ## AC-007-50 — The client reschedule confirmation is Spanish-body with only the notice localised
 
 ## Verification
@@ -498,13 +556,13 @@ file. Neither is attributable to this branch; both are flagged for follow-up.
 
 Gate-by-gate:
 
-| Gate | Result | Exit | Attribution |
-|---|---|---|---|
-| Scenario traceability | PASS | 0 | 50/50 scenarios traced; all references resolve |
-| Full test suite | PASS | 0 | 519 passed, 1 skipped (pre-existing LIVE-gated test) |
-| Complexity (ESLint) | PASS | 0 | 0 errors, 10 warnings (e2e `no-console`, pre-existing) |
-| Design-principles | PASS (scoped) | 1 plain / 0 blame-scoped | plain FAIL is vendored submodule content, not this diff |
-| Scenario-to-behavior spot check | PASS | — | 3 scenarios verified, assertions match |
+| Gate                            | Result        | Exit                     | Attribution                                             |
+| ------------------------------- | ------------- | ------------------------ | ------------------------------------------------------- |
+| Scenario traceability           | PASS          | 0                        | 50/50 scenarios traced; all references resolve          |
+| Full test suite                 | PASS          | 0                        | 519 passed, 1 skipped (pre-existing LIVE-gated test)    |
+| Complexity (ESLint)             | PASS          | 0                        | 0 errors, 10 warnings (e2e `no-console`, pre-existing)  |
+| Design-principles               | PASS (scoped) | 1 plain / 0 blame-scoped | plain FAIL is vendored submodule content, not this diff |
+| Scenario-to-behavior spot check | PASS          | —                        | 3 scenarios verified, assertions match                  |
 
 ## Evidence: scenario traceability
 
@@ -513,9 +571,9 @@ exit: 0
 at: 2026-10-28T16:41:16Z
 
 {
-  "checks": [1, 2],
-  "passes": ["AC-007-01 — traced to a test", "AC-007-02 — traced to a test", "AC-007-03 — traced to a test", "AC-007-04 — traced to a test", "AC-007-05 — traced to a test", "AC-007-06 — traced to a test", "AC-007-07 — traced to a test", "AC-007-08 — traced to a test", "AC-007-09 — traced to a test", "AC-007-10 — traced to a test", "AC-007-11 — traced to a test", "AC-007-12 — traced to a test", "AC-007-13 — traced to a test", "AC-007-14 — traced to a test", "AC-007-15 — traced to a test", "AC-007-16 — traced to a test", "AC-007-17 — traced to a test", "AC-007-18 — traced to a test", "AC-007-19 — traced to a test", "AC-007-20 — traced to a test", "AC-007-21 — traced to a test", "AC-007-22 — traced to a test", "AC-007-23 — traced to a test", "AC-007-24 — traced to a test", "AC-007-25 — traced to a test", "AC-007-26 — traced to a test", "AC-007-27 — traced to a test", "AC-007-28 — traced to a test", "AC-007-29 — traced to a test", "AC-007-30 — traced to a test", "AC-007-31 — traced to a test", "AC-007-32 — traced to a test", "AC-007-33 — traced to a test", "AC-007-34 — traced to a test", "AC-007-35 — traced to a test", "AC-007-36 — traced to a test", "AC-007-37 — traced to a test", "AC-007-38 — traced to a test", "AC-007-39 — traced to a test", "AC-007-40 — traced to a test", "AC-007-41 — traced to a test", "AC-007-42 — traced to a test", "AC-007-43 — traced to a test", "AC-007-44 — traced to a test", "AC-007-45 — traced to a test", "AC-007-46 — traced to a test", "AC-007-47 — traced to a test", "AC-007-48 — traced to a test", "AC-007-49 — traced to a test", "AC-007-50 — traced to a test"],
-  "fails": []
+"checks": [1, 2],
+"passes": ["AC-007-01 — traced to a test", "AC-007-02 — traced to a test", "AC-007-03 — traced to a test", "AC-007-04 — traced to a test", "AC-007-05 — traced to a test", "AC-007-06 — traced to a test", "AC-007-07 — traced to a test", "AC-007-08 — traced to a test", "AC-007-09 — traced to a test", "AC-007-10 — traced to a test", "AC-007-11 — traced to a test", "AC-007-12 — traced to a test", "AC-007-13 — traced to a test", "AC-007-14 — traced to a test", "AC-007-15 — traced to a test", "AC-007-16 — traced to a test", "AC-007-17 — traced to a test", "AC-007-18 — traced to a test", "AC-007-19 — traced to a test", "AC-007-20 — traced to a test", "AC-007-21 — traced to a test", "AC-007-22 — traced to a test", "AC-007-23 — traced to a test", "AC-007-24 — traced to a test", "AC-007-25 — traced to a test", "AC-007-26 — traced to a test", "AC-007-27 — traced to a test", "AC-007-28 — traced to a test", "AC-007-29 — traced to a test", "AC-007-30 — traced to a test", "AC-007-31 — traced to a test", "AC-007-32 — traced to a test", "AC-007-33 — traced to a test", "AC-007-34 — traced to a test", "AC-007-35 — traced to a test", "AC-007-36 — traced to a test", "AC-007-37 — traced to a test", "AC-007-38 — traced to a test", "AC-007-39 — traced to a test", "AC-007-40 — traced to a test", "AC-007-41 — traced to a test", "AC-007-42 — traced to a test", "AC-007-43 — traced to a test", "AC-007-44 — traced to a test", "AC-007-45 — traced to a test", "AC-007-46 — traced to a test", "AC-007-47 — traced to a test", "AC-007-48 — traced to a test", "AC-007-49 — traced to a test", "AC-007-50 — traced to a test"],
+"fails": []
 }
 
 Note: an early invocation of this script transiently reported one dangling
@@ -536,8 +594,8 @@ at: 2026-10-28T16:34:00Z
 > rexiai-website@0.0.0 test
 > vitest run --exclude '.standards/**'
 
- Test Files  70 passed (70)
-      Tests  519 passed | 1 skipped (520)
+Test Files 70 passed (70)
+Tests 519 passed | 1 skipped (520)
 
 The one skipped test is `describe.skipIf(!LIVE)('live: the bot joins a room and
 records a real participant', …)` in `src/__tests__/AC-006-bot-adapter.test.ts`
@@ -575,10 +633,10 @@ exit: 1
 at: 2026-10-28T16:40:00Z
 
 {
-  "tier": "mvp",
-  "gates": ["complexity", "dry", "yagni", "solid", "component-per-file", "property-tests"],
-  "fails": [{ "message": "Cyclomatic complexity >6 (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::CC=10", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" }],
-  "warns": [{ "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:45:71:main:KISS_LINES=28", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "45" }, { "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:101:124:checkCompensationPairs:KISS_LINES=25", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "101" }, { "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::KISS_LINES=41", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" }, { "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:93:225::KISS_LINES=43", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "93" }, { "message": "Method body >20 lines (node): ./src/pages/Landing.tsx:13:96:Landing:KISS_LINES=75", "file": "./src/pages/Landing.tsx", "line": "13" }, { "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:32:52:Chevron:KISS_LINES=22", "file": "./src/components/ServicesCarousel.tsx", "line": "32" }, { "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:54:160:ServicesCarousel:KISS_LINES=79", "file": "./src/components/ServicesCarousel.tsx", "line": "54" }, { "message": "Method body >20 lines (node): ./api/stripe-webhook.ts:141:160:getRawBookingFields:KISS_LINES=21", "file": "./api/stripe-webhook.ts", "line": "141" }, { "message": "Method body >20 lines (node): ./api/bookings/checkout.ts:44:65:buildSessionParams:KISS_LINES=23", "file": "./api/bookings/checkout.ts", "line": "44" }, { "message": "Method body >20 lines (node): ./api/bookings/recorded-billing.ts:218:240:?:KISS_LINES=24", "file": "./api/bookings/recorded-billing.ts", "line": "218" }, { "message": "Method body >20 lines (python): ./scripts/recording/whisper_transcribe.py:37:64:main:KISS_LINES=23 [approximate heuristic — comprehension/decorator forms can inflate the count; ADR 0006 warn phase]", "file": "./scripts/recording/whisper_transcribe.py", "line": "37" }, { "message": "Possible duplication (11x identical 4-line block, first at ./api/bookings.ts:18): date: string /startTime: string /hours: number /email: string", "file": "./api/bookings.ts", "line": "18" }, { "message": "Possible duplication (5x identical 4-line block, first at ./api/stripe-webhook.ts:277): startTime: string /hours: number /joinUrl?: string | null /date: string", "file": "./api/stripe-webhook.ts", "line": "277" }, { "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:115): email: string /date: string /startTime: string /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "115" }, { "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:115): type: \"problem\", /docs: { /description: /meta: {", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "115" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/bookings.ts:19): startTime: string /hours: number /locale?: Locale /date: string", "file": "./api/bookings.ts", "line": "19" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:117): startTime: string /hours: number /amountTotal: number /date: string", "file": "./api/stripe-webhook.ts", "line": "117" }, { "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:132): schema: [], /}, /create(context) { /},", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "132" }, { "message": "Possible duplication (3x identical 4-line block, first at ./src/domain/email.ts:160): date: string /startTime: string /hours: number /clientEmail: string", "file": "./src/domain/email.ts", "line": "160" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:446): date: string /startTime: string /hours: number /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "446" }, { "message": "Possible duplication (2x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:133): }, /create(context) { /return { /schema: [],", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "133" }, { "message": "Empty method body (java): ./.standards/ci/templates/archunit/OutboxArchRules.java:30", "file": "./.standards/ci/templates/archunit/OutboxArchRules.java", "line": "30" }, { "message": "Empty method body (java): ./.standards/ci/templates/archunit/SagaArchRules.java:33", "file": "./.standards/ci/templates/archunit/SagaArchRules.java", "line": "33" }, { "message": "SRP: possible god file (node) — ./api/stripe-webhook.ts: 610 lines, 8 methods (split by responsibility)", "file": "./api/stripe-webhook.ts", "line": "" }, { "message": "LSP: 4 instanceof checks in one file (node) — ./src/domain/time.ts (suggests broken substitutability or type dispatch)", "file": "./src/domain/time.ts", "line": "" }]
+"tier": "mvp",
+"gates": ["complexity", "dry", "yagni", "solid", "component-per-file", "property-tests"],
+"fails": [{ "message": "Cyclomatic complexity >6 (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::CC=10", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" }],
+"warns": [{ "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:45:71:main:KISS_LINES=28", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "45" }, { "message": "Method body >20 lines (go): ./.standards/ci/templates/go-saga-lint.go:101:124:checkCompensationPairs:KISS_LINES=25", "file": "./.standards/ci/templates/go-saga-lint.go", "line": "101" }, { "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:7:90::KISS_LINES=41", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "7" }, { "message": "Method body >20 lines (node): ./.standards/skills/hallmark/site/examples/cobalt-01/script.js:93:225::KISS_LINES=43", "file": "./.standards/skills/hallmark/site/examples/cobalt-01/script.js", "line": "93" }, { "message": "Method body >20 lines (node): ./src/pages/Landing.tsx:13:96:Landing:KISS_LINES=75", "file": "./src/pages/Landing.tsx", "line": "13" }, { "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:32:52:Chevron:KISS_LINES=22", "file": "./src/components/ServicesCarousel.tsx", "line": "32" }, { "message": "Method body >20 lines (node): ./src/components/ServicesCarousel.tsx:54:160:ServicesCarousel:KISS_LINES=79", "file": "./src/components/ServicesCarousel.tsx", "line": "54" }, { "message": "Method body >20 lines (node): ./api/stripe-webhook.ts:141:160:getRawBookingFields:KISS_LINES=21", "file": "./api/stripe-webhook.ts", "line": "141" }, { "message": "Method body >20 lines (node): ./api/bookings/checkout.ts:44:65:buildSessionParams:KISS_LINES=23", "file": "./api/bookings/checkout.ts", "line": "44" }, { "message": "Method body >20 lines (node): ./api/bookings/recorded-billing.ts:218:240:?:KISS_LINES=24", "file": "./api/bookings/recorded-billing.ts", "line": "218" }, { "message": "Method body >20 lines (python): ./scripts/recording/whisper_transcribe.py:37:64:main:KISS_LINES=23 [approximate heuristic — comprehension/decorator forms can inflate the count; ADR 0006 warn phase]", "file": "./scripts/recording/whisper_transcribe.py", "line": "37" }, { "message": "Possible duplication (11x identical 4-line block, first at ./api/bookings.ts:18): date: string /startTime: string /hours: number /email: string", "file": "./api/bookings.ts", "line": "18" }, { "message": "Possible duplication (5x identical 4-line block, first at ./api/stripe-webhook.ts:277): startTime: string /hours: number /joinUrl?: string | null /date: string", "file": "./api/stripe-webhook.ts", "line": "277" }, { "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:115): email: string /date: string /startTime: string /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "115" }, { "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:115): type: \"problem\", /docs: { /description: /meta: {", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "115" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/bookings.ts:19): startTime: string /hours: number /locale?: Locale /date: string", "file": "./api/bookings.ts", "line": "19" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:117): startTime: string /hours: number /amountTotal: number /date: string", "file": "./api/stripe-webhook.ts", "line": "117" }, { "message": "Possible duplication (3x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:132): schema: [], /}, /create(context) { /},", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "132" }, { "message": "Possible duplication (3x identical 4-line block, first at ./src/domain/email.ts:160): date: string /startTime: string /hours: number /clientEmail: string", "file": "./src/domain/email.ts", "line": "160" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:446): date: string /startTime: string /hours: number /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "446" }, { "message": "Possible duplication (2x identical 4-line block, first at ./.standards/ci/templates/eslint-saga-rules/saga-compensation.js:133): }, /create(context) { /return { /schema: [],", "file": "./.standards/ci/templates/eslint-saga-rules/saga-compensation.js", "line": "133" }, { "message": "Empty method body (java): ./.standards/ci/templates/archunit/OutboxArchRules.java:30", "file": "./.standards/ci/templates/archunit/OutboxArchRules.java", "line": "30" }, { "message": "Empty method body (java): ./.standards/ci/templates/archunit/SagaArchRules.java:33", "file": "./.standards/ci/templates/archunit/SagaArchRules.java", "line": "33" }, { "message": "SRP: possible god file (node) — ./api/stripe-webhook.ts: 610 lines, 8 methods (split by responsibility)", "file": "./api/stripe-webhook.ts", "line": "" }, { "message": "LSP: 4 instanceof checks in one file (node) — ./src/domain/time.ts (suggests broken substitutability or type dispatch)", "file": "./src/domain/time.ts", "line": "" }]
 }
 
 ### Blame-scoped run (this branch's diff only)
@@ -588,10 +646,10 @@ exit: 0
 at: 2026-10-28T16:40:20Z
 
 {
-  "tier": "mvp",
-  "gates": ["complexity", "dry", "yagni", "solid", "component-per-file", "property-tests"],
-  "fails": [],
-  "warns": [{ "message": "Method body >20 lines (node): ./api/stripe-webhook.ts:141:160:getRawBookingFields:KISS_LINES=21", "file": "./api/stripe-webhook.ts", "line": "141" }, { "message": "Method body >20 lines (node): ./api/bookings/checkout.ts:44:65:buildSessionParams:KISS_LINES=23", "file": "./api/bookings/checkout.ts", "line": "44" }, { "message": "Method body >20 lines (node): ./api/bookings/recorded-billing.ts:218:240:?:KISS_LINES=24", "file": "./api/bookings/recorded-billing.ts", "line": "218" }, { "message": "Possible duplication (11x identical 4-line block, first at ./api/bookings.ts:18): date: string /startTime: string /hours: number /email: string", "file": "./api/bookings.ts", "line": "18" }, { "message": "Possible duplication (5x identical 4-line block, first at ./api/stripe-webhook.ts:277): startTime: string /hours: number /joinUrl?: string | null /date: string", "file": "./api/stripe-webhook.ts", "line": "277" }, { "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:115): email: string /date: string /startTime: string /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "115" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/bookings.ts:19): startTime: string /hours: number /locale?: Locale /date: string", "file": "./api/bookings.ts", "line": "19" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:117): startTime: string /hours: number /amountTotal: number /date: string", "file": "./api/stripe-webhook.ts", "line": "117" }, { "message": "Possible duplication (3x identical 4-line block, first at ./src/domain/email.ts:160): date: string /startTime: string /hours: number /clientEmail: string", "file": "./src/domain/email.ts", "line": "160" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:446): date: string /startTime: string /hours: number /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "446" }, { "message": "SRP: possible god file (node) — ./api/stripe-webhook.ts: 610 lines, 8 methods (split by responsibility)", "file": "./api/stripe-webhook.ts", "line": "" }]
+"tier": "mvp",
+"gates": ["complexity", "dry", "yagni", "solid", "component-per-file", "property-tests"],
+"fails": [],
+"warns": [{ "message": "Method body >20 lines (node): ./api/stripe-webhook.ts:141:160:getRawBookingFields:KISS_LINES=21", "file": "./api/stripe-webhook.ts", "line": "141" }, { "message": "Method body >20 lines (node): ./api/bookings/checkout.ts:44:65:buildSessionParams:KISS_LINES=23", "file": "./api/bookings/checkout.ts", "line": "44" }, { "message": "Method body >20 lines (node): ./api/bookings/recorded-billing.ts:218:240:?:KISS_LINES=24", "file": "./api/bookings/recorded-billing.ts", "line": "218" }, { "message": "Possible duplication (11x identical 4-line block, first at ./api/bookings.ts:18): date: string /startTime: string /hours: number /email: string", "file": "./api/bookings.ts", "line": "18" }, { "message": "Possible duplication (5x identical 4-line block, first at ./api/stripe-webhook.ts:277): startTime: string /hours: number /joinUrl?: string | null /date: string", "file": "./api/stripe-webhook.ts", "line": "277" }, { "message": "Possible duplication (4x identical 4-line block, first at ./api/stripe-webhook.ts:115): email: string /date: string /startTime: string /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "115" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/bookings.ts:19): startTime: string /hours: number /locale?: Locale /date: string", "file": "./api/bookings.ts", "line": "19" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:117): startTime: string /hours: number /amountTotal: number /date: string", "file": "./api/stripe-webhook.ts", "line": "117" }, { "message": "Possible duplication (3x identical 4-line block, first at ./src/domain/email.ts:160): date: string /startTime: string /hours: number /clientEmail: string", "file": "./src/domain/email.ts", "line": "160" }, { "message": "Possible duplication (3x identical 4-line block, first at ./api/stripe-webhook.ts:446): date: string /startTime: string /hours: number /bookingId: string", "file": "./api/stripe-webhook.ts", "line": "446" }, { "message": "SRP: possible god file (node) — ./api/stripe-webhook.ts: 610 lines, 8 methods (split by responsibility)", "file": "./api/stripe-webhook.ts", "line": "" }]
 }
 
 ### Attribution determination
@@ -640,7 +698,6 @@ against the scenario's Given/When/Then.
 No false green found: each checked test asserts the scenario's actual behavior,
 not merely a same-ID placeholder.
 
-
 ## No unaccounted behavior
 
 Skimmed the full diff (17 modified files + new files) against Tasks 1–8 and the
@@ -670,10 +727,10 @@ documented decisions D1–D7. Finding: **none unaccounted.**
    design-principles scan, or downgrade vendored example content.
 2. **Scenario-ID collision in a pre-existing tracked test.**
    `src/__tests__/AC-007-bookings.test.ts` is tracked on `main` (unchanged by
-   this branch) and carries `AC-007-01`…`AC-007-08` with *bookings* semantics
+   this branch) and carries `AC-007-01`…`AC-007-08` with _bookings_ semantics
    (free-hour billing, email/duration/off-grid/availability/conflict
-   validation), while this spec's `AC-007-01`…`AC-007-08` are *token / token-
-   store / calendar-move* scenarios. Both resolve under the mechanical gate
+   validation), while this spec's `AC-007-01`…`AC-007-08` are _token / token-
+   store / calendar-move_ scenarios. Both resolve under the mechanical gate
    (the IDs exist in the in-flight scenarios), so the gate does not flag it —
    but the same ID now names two unrelated behaviors. Pre-existing; recorded,
    not touched. Recommendation: renumber one side in a follow-up spec.
@@ -692,7 +749,6 @@ Attempt 2, phase 1 (SPEC_PHASE1_RETRIES=1): one report-format FAIL from
 `check-audit-trail.sh` (evidence-block heading mismatch for the complexity gate);
 fixed by renaming the heading; re-run exits 0. Budget not consumed (the finding
 was report formatting, not a code/design defect).
-
 
 ## Scoped re-verification — attempt 2, phase 1 (audit-trail gate)
 
@@ -755,13 +811,13 @@ branch's working tree is clean; two out-of-scope findings were recorded and not
 fixed (vendored-submodule design-principles FAIL, pre-existing scenario-ID
 collision). Not re-litigated here.
 
-| Gate | Result | Exit | Attribution |
-|---|---|---|---|
-| Scenario traceability | PASS | 0 | 50/50 scenarios traced; all references resolve |
-| Full test suite | PASS | 0 | 519 passed, 1 skipped (pre-existing LIVE-gated test) |
-| Complexity (ESLint) | PASS | 0 | 0 errors, 10 warnings (e2e `no-console`, pre-existing) |
-| Design-principles | PASS (scoped) | 1 plain / 0 blame-scoped | plain FAIL is vendored submodule content, not this diff |
-| Scenario-to-behavior spot check | PASS | — | 3 scenarios verified, assertions match |
+| Gate                            | Result        | Exit                     | Attribution                                             |
+| ------------------------------- | ------------- | ------------------------ | ------------------------------------------------------- |
+| Scenario traceability           | PASS          | 0                        | 50/50 scenarios traced; all references resolve          |
+| Full test suite                 | PASS          | 0                        | 519 passed, 1 skipped (pre-existing LIVE-gated test)    |
+| Complexity (ESLint)             | PASS          | 0                        | 0 errors, 10 warnings (e2e `no-console`, pre-existing)  |
+| Design-principles               | PASS (scoped) | 1 plain / 0 blame-scoped | plain FAIL is vendored submodule content, not this diff |
+| Scenario-to-behavior spot check | PASS          | —                        | 3 scenarios verified, assertions match                  |
 
 Carried forward verbatim; this stage did not modify any Verifier finding.
 
@@ -833,6 +889,7 @@ at: 2026-10-28T16:46:58Z
 
 Error: Cannot find module 'stryker-api/config'
 Require stack:
+
 - /home/dbueno/.npm/_npx/49301fa88e4fa3d5/node_modules/stryker/src/ConfigReader.js
 - /home/dbueno/.npm/_npx/49301fa88e4fa3d5/node_modules/stryker/src/stryker-cli.js
 - /home/dbueno/.npm/_npx/49301fa88e4fa3d5/node_modules/stryker/bin/stryker
@@ -859,11 +916,11 @@ at: 2026-10-28T16:45:48Z
 > rexiai-website@0.0.0 test
 > vitest run --exclude '.standards/**'
 
- RUN  v5.0.1 /home/dbueno/projects/rexiAI
+RUN v5.0.1 /home/dbueno/projects/rexiAI
 
- Test Files  70 passed (70)
-      Tests  519 passed | 1 skipped (520)
-   Duration  22.45s
+Test Files 70 passed (70)
+Tests 519 passed | 1 skipped (520)
+Duration 22.45s
 
 Identical to the Verifier's run (70 files, 519 passed, 1 skipped). The single skip is
 the pre-existing, documented `.skipIf(!LIVE)` live-environment test in
@@ -892,14 +949,14 @@ untested**, per the tier.
 Not re-measured by this stage; carried forward, with the Verifier as the
 re-executing party.
 
-| Measure | Result | Source |
-|---|---|---|
-| Cyclomatic complexity ≤6 (ESLint `complexity`) | 0 errors, 10 warnings | Verifier `25-verification.md` |
-| ESLint warning composition | 10 × `no-console` in `tests/e2e/*.e2e.ts`, all pre-existing | Verifier |
-| Type check (`npx tsc -b --pretty false`) | exit 0 | Verifier |
-| Design-principles, blame-scoped | exit 0, `fails: []`, 11 WARNs (reproduced by this stage) | Verifier + this stage |
-| Design-principles, full tree | exit 1 — one FAIL in vendored `.standards/` example content | Verifier |
-| Property tests (`production`+ only) | skipped — `mvp` tier | `docs/SPEC_PIPELINE.md` §Conformance tiers |
+| Measure                                        | Result                                                      | Source                                     |
+| ---------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------ |
+| Cyclomatic complexity ≤6 (ESLint `complexity`) | 0 errors, 10 warnings                                       | Verifier `25-verification.md`              |
+| ESLint warning composition                     | 10 × `no-console` in `tests/e2e/*.e2e.ts`, all pre-existing | Verifier                                   |
+| Type check (`npx tsc -b --pretty false`)       | exit 0                                                      | Verifier                                   |
+| Design-principles, blame-scoped                | exit 0, `fails: []`, 11 WARNs (reproduced by this stage)    | Verifier + this stage                      |
+| Design-principles, full tree                   | exit 1 — one FAIL in vendored `.standards/` example content | Verifier                                   |
+| Property tests (`production`+ only)            | skipped — `mvp` tier                                        | `docs/SPEC_PIPELINE.md` §Conformance tiers |
 
 No FAIL attributable to this branch. The 11 scoped WARNs are review hints in files
 this branch touched, all below the blocking set:
@@ -921,7 +978,7 @@ WARN is recorded and flagged, never a stop.
    submodule content, absent from the blame-scoped run. Follow-up: exclude
    `.standards/**` from the design-principles scan, or downgrade vendored examples.
 2. Scenario-ID collision: `src/__tests__/AC-007-bookings.test.ts` (tracked on `main`,
-   unchanged) carries `AC-007-01`…`AC-007-08` with *bookings* semantics while this
+   unchanged) carries `AC-007-01`…`AC-007-08` with _bookings_ semantics while this
    spec's `AC-007-01`…`AC-007-08` are token/token-store/calendar-move scenarios. Both
    resolve mechanically, so the traceability gate does not flag it. Pre-existing.
    Follow-up: renumber one side in a separate spec.
@@ -934,13 +991,13 @@ branch's change.
 
 ## Remediation record
 
-| Phase | Attempt | BLOCK | Resolution |
-|---|---|---|---|
-| Phase 1 (pre-PR) | attempt 1 | none | n/a — no BLOCK occurred |
-| Phase 2 (post-PR) | — | none | not started; the pipeline has not pushed |
+| Phase             | Attempt   | BLOCK | Resolution                               |
+| ----------------- | --------- | ----- | ---------------------------------------- |
+| Phase 1 (pre-PR)  | attempt 1 | none  | n/a — no BLOCK occurred                  |
+| Phase 2 (post-PR) | —         | none  | not started; the pipeline has not pushed |
 
-Carried forward from `25-verification.md`: *"Attempt 1, phase 1. No BLOCK, no FAIL
-attributable to this branch. Budget not consumed."* This stage adds no BLOCK of its
+Carried forward from `25-verification.md`: _"Attempt 1, phase 1. No BLOCK, no FAIL
+attributable to this branch. Budget not consumed."_ This stage adds no BLOCK of its
 own (mutation gate skipped; final suite green), so the Phase 1 budget still reads
 **0 of 3 consumed**.
 
@@ -1102,7 +1159,7 @@ here, not a shortcut.
     join page).
   - `--radius-md: 12px` for the date input and the slot chips (matches the 12px button radius the
     booking emails already use).
-  Nothing else gets a radius. No 4px, no 8px, no 16px, no "soft card".
+    Nothing else gets a radius. No 4px, no 8px, no 16px, no "soft card".
 - **Theme**: **light, locked.** `#ffffff` page, `#52525b` body. No `prefers-color-scheme` block, no
   dark variants. This is an explicit deviation from the skill's dark-mode mandate (Section 6.C):
   the page must be a pixel sibling of the join page, which is light-locked, and a client who taps a
@@ -1152,17 +1209,17 @@ document itself, which no task in `10-tasks.md` currently owns - see Task 8 (pro
   - **DECISION NEEDED (human gate) - the limit is invisible until submit.** AC-007-22 forbids extra
     GET fields, so a client already at `MAX_RESCHEDULES` is shown the picker and only learns on
     submit. The page handles it (state `limit`) but the sequence is a UX wart: fill a form, get
-    refused. If you want the page to refuse *before* the client invests effort, the GET response
+    refused. If you want the page to refuse _before_ the client invests effort, the GET response
     needs one additive boolean (e.g. `canReschedule`) and AC-007-22 must be amended. Design does not
     assume it; the shipped states work either way.
   - **DECISION NEEDED (human gate) - the token travels in a query string.** `GET
-    /api/reschedule?token=` puts the capability in the branded host's access logs (Task 5's contract,
-    not the page's choice). The page keeps the token out of the address bar of any *other* URL, out
+/api/reschedule?token=` puts the capability in the branded host's access logs (Task 5's contract,
+    not the page's choice). The page keeps the token out of the address bar of any _other_ URL, out
     of storage, and out of the DOM, but it cannot keep it out of that request line. If log exposure
     matters, the resolve call needs to become a POST or move the token to a header - that is a Task 5
     change, and the page's two fetches would follow it.
   - The page is a same-origin client. If the API answers cross-origin with `Access-Control-Allow-
-    Origin`, the page must not be changed to accommodate it; fix the hosting (see Task 8 hosting
+Origin`, the page must not be changed to accommodate it; fix the hosting (see Task 8 hosting
     contract).
 
 ### Task 6: Reschedule notifications (operator + client)
@@ -1221,7 +1278,7 @@ link or token (AC-007-38).
 - rows: `Cliente`, `Reserva`, `Reunión` (current date/time), `Cambios` (count), `Pedido` (the
   requested date/time, from the POST body).
 - heading: `Intento de cambio bloqueado`; one body line: `El cliente ha intentado mover la reunión
-  y se ha rechazado por límite.` No CTA.
+y se ha rechazado por límite.` No CTA.
 
 - **Watch items (Coder must check)**:
   - **DECISION NEEDED (human gate) - bilingual or Spanish-body?** This design follows spec 006
@@ -1269,7 +1326,7 @@ link or token (AC-007-38).
 **This task does not exist in `10-tasks.md`.** Tasks 1-7 specify the token, the calendar, the
 validation, the API, and the emails; nothing owns "build the page the client actually opens". The
 informal spec's item 1 is exactly that page, and `10-tasks.md`'s scope boundary excludes only
-*hosting*, not the document. **DECISION NEEDED (human gate): add Task 8 with the acceptance
+_hosting_, not the document. **DECISION NEEDED (human gate): add Task 8 with the acceptance
 scenarios below, or state that the page ships under Task 5's contract.** The design is complete
 either way; only ownership is missing. Suggested scenarios: `AC-007-39` (valid token renders the
 picker with the current slot), `AC-007-40` (no open slots shows the empty message and keeps the
@@ -1301,23 +1358,23 @@ than the page the client opened).
 
 #### State enumeration
 
-| # | State id | Trigger | Section id | Primary action |
-|---|---|---|---|---|
-| S1 | `loading` | script starts, resolve in flight | `state-loading-<locale>` | none (transient) |
-| S2 | `load-failed` | resolve network error / timeout / non-404 4xx / 5xx | `state-load-failed-<locale>` | `Reintentar` (tertiary: mailto) |
-| S3 | `invalid` | path token not 64 lowercase hex, or `INVALID_RESCHEDULE_TOKEN` from GET or POST | `state-invalid-<locale>` | mailto only |
-| S4 | `ready` | resolve 200; contains the form and the slot area | `state-ready-<locale>` | `Mover la reunión` (tertiary: mailto) |
-| S4a | `ready` + slot `loading` | availability in flight | `[data-slot-state="loading"]` | same as S4 |
-| S4b | `ready` + slot `empty` | availability 200 with `slots: []` | `[data-slot-state="empty"]` | same as S4 |
-| S4c | `ready` + slot `error` | availability non-200 after a slot request (target the availability request) | `[data-slot-state="error"]` | same as S4 |
-| S4d | `ready` + `slot-rejected` | POST 4xx `SLOT_CONFLICT` or `SLOT_UNAVAILABLE` | `[data-message="slot-rejected"]` | same as S4 |
-| S4e | `ready` + `date-past` | POST 4xx `PAST_DATE` | `[data-message="date-past"]` | same as S4 |
-| S4f | `submitting` | POST in flight | `state-ready-<locale>` with `[data-busy]` | button disabled, label swapped |
-| S5 | `success` | POST 200 | `state-success-<locale>` | none (tertiary: mailto) |
-| S6 | `limit` | POST 4xx `RESCHEDULE_LIMIT` | `state-limit-<locale>` | mailto only |
-| S7 | `rate-limited` | POST or GET 429 | `state-rate-limited-<locale>` | mailto only |
-| S8 | `unconfirmed` | POST network error / timeout / 5xx / unknown 4xx | `state-unconfirmed-<locale>` | mailto only, **no retry** |
-| S9 | `nojs` | JavaScript disabled | `<noscript>` inside `<main>` | mailto only |
+| #   | State id                  | Trigger                                                                         | Section id                                | Primary action                        |
+| --- | ------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------- |
+| S1  | `loading`                 | script starts, resolve in flight                                                | `state-loading-<locale>`                  | none (transient)                      |
+| S2  | `load-failed`             | resolve network error / timeout / non-404 4xx / 5xx                             | `state-load-failed-<locale>`              | `Reintentar` (tertiary: mailto)       |
+| S3  | `invalid`                 | path token not 64 lowercase hex, or `INVALID_RESCHEDULE_TOKEN` from GET or POST | `state-invalid-<locale>`                  | mailto only                           |
+| S4  | `ready`                   | resolve 200; contains the form and the slot area                                | `state-ready-<locale>`                    | `Mover la reunión` (tertiary: mailto) |
+| S4a | `ready` + slot `loading`  | availability in flight                                                          | `[data-slot-state="loading"]`             | same as S4                            |
+| S4b | `ready` + slot `empty`    | availability 200 with `slots: []`                                               | `[data-slot-state="empty"]`               | same as S4                            |
+| S4c | `ready` + slot `error`    | availability non-200 after a slot request (target the availability request)     | `[data-slot-state="error"]`               | same as S4                            |
+| S4d | `ready` + `slot-rejected` | POST 4xx `SLOT_CONFLICT` or `SLOT_UNAVAILABLE`                                  | `[data-message="slot-rejected"]`          | same as S4                            |
+| S4e | `ready` + `date-past`     | POST 4xx `PAST_DATE`                                                            | `[data-message="date-past"]`              | same as S4                            |
+| S4f | `submitting`              | POST in flight                                                                  | `state-ready-<locale>` with `[data-busy]` | button disabled, label swapped        |
+| S5  | `success`                 | POST 200                                                                        | `state-success-<locale>`                  | none (tertiary: mailto)               |
+| S6  | `limit`                   | POST 4xx `RESCHEDULE_LIMIT`                                                     | `state-limit-<locale>`                    | mailto only                           |
+| S7  | `rate-limited`            | POST or GET 429                                                                 | `state-rate-limited-<locale>`             | mailto only                           |
+| S8  | `unconfirmed`             | POST network error / timeout / 5xx / unknown 4xx                                | `state-unconfirmed-<locale>`              | mailto only, **no retry**             |
+| S9  | `nojs`                    | JavaScript disabled                                                             | `<noscript>` inside `<main>`              | mailto only                           |
 
 S4a-c and S4d-f are inline variants inside `ready`, not page swaps: the client's date choice and
 scroll position survive a rejection, and the picker is never replaced by an apology.
@@ -1561,7 +1618,7 @@ wrapper.
 #### Data and rendering
 
 - Two requests on load: `GET /api/reschedule?token=<t>`, then `GET /api/availability?date=<current
-  date>` (the booking's current date, pre-filled into the date input, so the page is useful the
+date>` (the booking's current date, pre-filled into the date input, so the page is useful the
   moment it renders). Both carry `AbortSignal.timeout(12000)`.
 - Changing the date re-requests availability for that date only. No client-side slot computation, no
   caching, no prefetch.
@@ -1573,7 +1630,7 @@ wrapper.
 - Render every dynamic value with `textContent`, never `innerHTML`. `date`, `startTime` and `slots`
   come from the server and are treated as untrusted strings.
 - Date formatting: `new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month:
-  'long', timeZone: 'UTC' })` over `new Date(date + 'T12:00:00Z')`. Parsing at `T12:00:00Z` and
+'long', timeZone: 'UTC' })` over `new Date(date + 'T12:00:00Z')`. Parsing at `T12:00:00Z` and
   formatting in UTC is what stops a `YYYY-MM-DD` from shifting a day. Times are printed exactly as
   the API sends them (`HH:MM`), never re-formatted.
 - The timezone label is `(hora de Madrid)` / `(Madrid time)`, matching the SPA's locked copy. It
@@ -1588,7 +1645,7 @@ wrapper.
   page when the field is focused, which on this page throws the client into a half-scrolled layout.
   `--text-base` is already `1rem`; do not shrink it for the input.
 - Slot chips are real radios inside a `<fieldset>` with a `<legend>`: `<label class="slot"><input
-  type="radio" name="slot" required><span>10:00</span></label>`. Selection is drawn with
+type="radio" name="slot" required><span>10:00</span></label>`. Selection is drawn with
   `input:checked + span` and focus with `input:focus-visible + span`, so the chosen chip and the
   focus ring exist without a class-toggling script. The radio itself is visually hidden but
   focusable (`position: absolute; opacity: 0`), never `display: none`.
@@ -1665,7 +1722,7 @@ Against `deploy/reschedule/index.html`:
    noscript pair), and `grep -c 'danielbueno76'` -> **0**.
 9. Every `fetch(` argument starts with a relative path (`'/api/reschedule'`,
    `'/api/availability?date='`): no host, no `http://`, no interpolated origin. `grep -Ec
-   "fetch\(['\"]https?://|fetch\(['\"]//"` -> **0**.
+"fetch\(['\"]https?://|fetch\(['\"]//"` -> **0**.
 10. `grep -c 'joinUrl\|join_url'` -> **0** (the page never names or renders the join URL).
 11. `grep -c '?token='` -> **1** (the resolve call, per Task 5's contract) and no other occurrence:
     the token is not in any `href`, `mailto:`, or storage call.
@@ -1697,3 +1754,125 @@ Against `deploy/reschedule/index.html`:
 
 PR: https://github.com/RexiAI/rexiAI/pull/88
 Commits: 10 at PR open; 11 including this record commit.
+
+---
+
+# Phase 2 — Post-PR CI check (round 0, initial)
+
+Verifier re-check of PR #88 CI status, per `docs/SPEC_PIPELINE.md` §Post-PR CI
+check-and-remediate loop (phase 2). Round 0 — initial status check, no fix round.
+`SPEC_PHASE2_RETRIES=0`. Head `b960c4a0ac1b72b28e10f0ce67d2010f79312bb2`.
+
+## Overall verdict: FAIL
+
+Two checks failing. Nothing fixed, committed, or pushed by this stage.
+
+## CI workflow note (deviation from the task instructions)
+
+The task instructions assumed a "Self CI" workflow. This child repo's CI workflow
+is named **CI** (`.github/workflows/ci.yml`); there is no "Self CI" workflow
+(`gh run list --branch spec/007-client-requested-reschedule --workflow "Self CI"`
+→ `could not find any workflows named Self CI`, exit 1). The per-check record
+below is from the **CI** workflow plus Vercel's deployment checks.
+
+## Per-check results
+
+| Check                    | Result   | Source                                                                        |
+| ------------------------ | -------- | ----------------------------------------------------------------------------- |
+| CI / Build               | PASS     | run 40730319660, job 122964951313                                             |
+| CI / Unit Tests          | PASS     | run 40730319660, job 122964951663                                             |
+| CI / Lint & Format       | **FAIL** | run 40730319660, job 122964951853                                             |
+| CI / Docker Build & Push | SKIPPED  | run 40730319660, job 122965171475 (push-to-default only, not a PR gate)       |
+| Vercel                   | **FAIL** | commit status context `Vercel`, deployment `dpl_BQPYav42oBYHc8rGtUuXhvBL65ck` |
+| Vercel Preview Comments  | PASS     | check-run 122964764732                                                        |
+
+A second CI run on the same branch (40730280889) was `cancelled` — a duplicate
+trigger, not a result.
+
+## Failing check IDs
+
+- **Lint & Format** — CI workflow, job id `122964951853` (run `40730319660`).
+- **Vercel** — commit status context `Vercel` (Vercel GitHub App status; there is
+  no check-run id — the `check-runs` API returns only the `Vercel Preview Comments`
+  check-run, and `Vercel` appears in the commit-status API as
+  `state: failure`).
+
+## Evidence: CI / Lint & Format (FAIL)
+
+command: gh run view 40730319660 --log-failed
+exit: 0 (the log query succeeded; the job itself exited 1)
+at: 2026-10-28T16:58:28Z
+
+```
+Lint & Format	Run npm run format:check --if-present	> prettier --check .
+Lint & Format	Run npm run format:check --if-present	Checking formatting...
+Lint & Format	Run npm run format:check --if-present	[warn] docs/changes/007-client-requested-reschedule.md
+Lint & Format	Run npm run format:check --if-present	[warn] Code style issues found in the above file. Run Prettier with --write to fix.
+Lint & Format	Run npm run format:check --if-present	##[error]Process completed with exit code 1.
+```
+
+Concrete reason: `prettier --check .` fails on
+`docs/changes/007-client-requested-reschedule.md` (this archive one-pager) —
+code style issues, exit 1. The file was archived without a Prettier pass.
+
+## Evidence: Vercel (FAIL)
+
+command: npx vercel inspect dpl_BQPYav42oBYHc8rGtUuXhvBL65ck --logs
+exit: 1 (deployment errored)
+at: 2026-10-28T16:58:28Z
+
+```
+Warning: Failed to fetch one or more git submodules
+Installing dependencies...
+> tsc -b && vite build
+vite v8.3.4 building client environment for production...
+src/domain/time.ts(14,12): error TS2591: Cannot find name 'process'. ...
+src/domain/time.ts(52,61): error TS2554: Expected 0-1 arguments, but got 2.
+src/domain/availability.ts(1,16): error TS2591: Cannot find name 'fs'. ...
+src/domain/availability.ts(38,66): error TS2554: Expected 0-1 arguments, but got 2.
+src/domain/microsoftAuth.ts(28,20): error TS2591: Cannot find name 'process'. ...
+src/domain/rescheduleToken.ts(9,29): error TS2591: Cannot find name 'crypto'. ...
+src/domain/meetingUrl.ts(23,37): error TS2503: Cannot find namespace 'NodeJS'.
+api/bookings/checkout.ts(90,79): error TS2339: Property 'error' does not exist on type 'PriceResult'.
+api/bookings/validation.ts(57,72): error TS2339: Property 'error' does not exist on type 'PriceResult'.
+api/reschedule/submit.ts(253,53): error TS2339: Property 'code' does not exist on type 'RescheduleValidation'.
+src/domain/freeHour.ts(52,92): error TS2554: Expected 0-1 arguments, but got 2.
+src/domain/webhookDedup.ts(81,92): error TS2554: Expected 0-1 arguments, but got 2.
+status	● Error
+```
+
+Concrete reason: the Vercel preview deployment errored. Its build step runs the
+repo's own `npm run build` (`tsc -b && vite build`) and emitted ~30 TypeScript
+errors of two kinds: (a) missing Node globals (`process`, `crypto`, `fs`, `path`,
+`NodeJS` — `@types/node` not resolving) and (b) lib-dependent 2-arg `Error(...)`
+calls and `.error`/`.code` property accesses that the repo's own type-check does
+not flag.
+
+## Discrepancy flag (Vercel build does not reproduce in the repo's own gates)
+
+The Vercel `tsc` errors do **not** reproduce under this repo's own build, verified
+independently here:
+
+- `npx tsc -b --force --pretty false` → exit 0 (local TS 6.0.3, `@types/node`
+  present in `node_modules/@types/node`).
+- `npx tsc -p tsconfig.node.json --noEmit` → exit 0; `npx tsc -p tsconfig.app.json
+--noEmit` → exit 0.
+- CI's **Build** job (run 40730319660) — the _identical_ `npm run build` command —
+  is green.
+
+The Vercel log opens with `Warning: Failed to fetch one or more git submodules`,
+and the node-global errors are the signature of `@types/node` / `types: ["node"]`
+failing to resolve in Vercel's environment despite being a declared devDependency
+(`"@types/node": "^26.6.5"`). Taken together: this is a Vercel build-environment
+discrepancy (submodule fetch + type-resolution), not a defect the repo's own
+`tsc -b` gate catches. Routing signal for the orchestrator: infra/config, not a
+Coder logic fix — but the two CI signals disagree, so a human or the fix round
+should confirm Vercel's build config before re-pushing.
+
+## Remediation budget
+
+Phase 2, round 0 of max 3. `SPEC_PHASE2_RETRIES=0`. This round is the initial
+status check — no fix round has run, so no Phase-2 retry is consumed yet. On the
+next round the orchestrator routes the diagnosed fixes (Lint & Format → Prettier
+the archive file; Vercel → investigate the deployment build config), the PR Opener
+re-pushes, and this stage re-checks only the previously failing checks.

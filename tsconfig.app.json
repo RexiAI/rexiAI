@@ -4,7 +4,13 @@
     "target": "es2023",
     "lib": ["ES2023", "DOM"],
     "module": "esnext",
-    "types": ["vite/client"],
+    // "node" is required, not optional: "include": ["src"] pulls src/domain/**/*.ts into
+    // this (browser) project, and those modules use Node globals (process, NodeJS.ProcessEnv,
+    // fs, path, crypto). Declaring it here makes the program self-sufficient instead of
+    // relying on @types/node leaking in transitively from a node-builtin import elsewhere in
+    // the program — that leak is environment-dependent and made Vercel's `tsc -b` fail with
+    // TS2591/TS2503 while local and CI builds stayed green.
+    "types": ["vite/client", "node"],
     "allowArbitraryExtensions": true,
     // spec 004: src/__tests__ import the zero-dep units under scripts/recording/*.mjs.
     // allowJs pulls those plain-ESM files into the program for export inference;
