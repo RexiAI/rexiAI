@@ -1433,3 +1433,166 @@ No visual or copy surface, no directives:
 5. **Name validation bound** (open question 5 in `10-tasks.md`). If a max length
    is confirmed, the field needs a `maxLength` plus a `nameTooLong` message in
    both dictionaries — and only then. Not added speculatively.
+
+---
+
+# Post-PR CI check (phase 2)
+
+**Round:** 0 (initial CI status check — no fix round yet) · **Phase 2 counter:** 0 of max 3 used
+**PR:** #89 (https://github.com/RexiAI/rexiAI/pull/89) · **Branch:** `spec/008-customer-name-and-recording-folders` · **Head:** `bdfbedd0cb3630663d47ce05ead406ed18397c8b`
+**Workflow:** `CI` (run 40863528825) · **Checked at:** 2026-10-29T11:14:50Z
+
+**Overall verdict: FAIL** — the CI run completed with conclusion `failure`.
+Three checks are red; the failures are code defects (TypeScript build errors +
+AC-008 assertion failures), not platform limits.
+
+## Per-check status
+
+| Check | Type | Conclusion | Bucket |
+| --- | --- | --- | --- |
+| `Lint & Format` | check-run | success | pass |
+| `Unit Tests` | check-run | failure | fail |
+| `Build` | check-run | failure | fail |
+| `Docker Build & Push` | check-run | skipped (needs `Build`) | — |
+| `Vercel Preview Comments` | check-run | success (bot comment) | pass |
+| `Vercel` | commit-status (deployment) | failure | fail |
+
+## Evidence: CI status query
+
+command: gh pr checks 89 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-10-29T11:12:20Z
+
+```
+[
+  {"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},
+  {"bucket":"fail","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/HhrLbESAE973mBdjd1E1QFET32bA","name":"Vercel","state":"FAILURE","workflow":""}
+]
+```
+
+(`gh pr checks` surfaces only the Vercel items here; the GitHub Actions `CI`
+jobs surface via the check-runs API — see next block.)
+
+## Evidence: check-runs (terminal state)
+
+command: gh api repos/RexiAI/rexiAI/commits/bdfbedd0cb3630663d47ce05ead406ed18397c8b/check-runs --jq '.check_runs[] | {id, name, status, conclusion}'
+exit: 0
+at: 2026-10-29T11:14:30Z
+
+```
+{"conclusion":"skipped","id":123412715221,"name":"Docker Build \u0026 Push","status":"completed"}
+{"conclusion":"success","id":123412579354,"name":"Lint \u0026 Format","status":"completed"}
+{"conclusion":"failure","id":123412579232,"name":"Unit Tests","status":"completed"}
+{"conclusion":"failure","id":123412578967,"name":"Build","status":"completed"}
+{"conclusion":"success","id":123412514004,"name":"Vercel Preview Comments","status":"completed"}
+```
+
+## Failing check IDs
+
+| Check | Check-run / job ID | Conclusion |
+| --- | --- | --- |
+| `Build` | check-run id 123412578967 (job 123412578967) | failure |
+| `Unit Tests` | check-run id 123412579232 (job 123412579232) | failure |
+| `Vercel` | commit-status (deployment `dpl_HhrLbESAE973mBdjd1E1QFET32bA`) | failure |
+
+## Evidence: `Build` failure log
+
+command: gh run view 40863528825 --log-failed --job 123412578967
+exit: 0 (last 4000 bytes)
+at: 2026-10-29T11:13:40Z
+
+```
+api/bookings.ts(101,5): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'CreateCheckoutInput'.
+src/__tests__/AC-008-direct-name.test.ts(45,9): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'DirectBookingInput'.
+src/__tests__/AC-008-operator-email-name.test.ts(59,54): error TS2353: Object literal may only specify known properties, and 'clientName' does not exist in type 'OperatorEmailInput'.
+src/__tests__/AC-008-operator-email-name.test.ts(70,54): error TS2353: Object literal may only specify known properties, and 'clientName' does not exist in type 'OperatorEmailInput'.
+src/__tests__/AC-008-operator-email-name.test.ts(82,56): error TS2353: Object literal may only specify known properties, and 'clientName' does not exist in type 'OperatorEmailInput'.
+src/__tests__/AC-008-operator-email-name.test.ts(93,45): error TS2353: Object literal may only specify known properties, and 'clientName' does not exist in type 'OperatorEmailInput'.
+src/__tests__/AC-008-operator-email-name.test.ts(94,57): error TS2353: Object literal may only specify known properties, and 'clientName' does not exist in type 'OperatorEmailInput'.
+src/__tests__/AC-008-operator-email-name.test.ts(115,53): error TS2353: Object literal may only specify known properties, and 'clientName' does not exist in type 'OperatorEmailInput'.
+src/__tests__/AC-008-recording-folders.test.ts(144,13): error TS2339: Property 'dir' does not exist on type '{ ok: boolean; }'.
+src/__tests__/AC-008-recording-resolve-name.test.ts(11,10): error TS2459: Module '"../../scripts/recording/pipeline.mjs"' declares 'insightContext' locally, but it is not exported.
+src/__tests__/AC-008-recording-resolve-name.test.ts(43,24): error TS2339: Property 'name' does not exist on type '{ bookingId: any; email: any; quotedHours: number; joinUrl: any; }'.
+src/__tests__/AC-008-recording-resolve-name.test.ts(44,24): error TS2339: Property 'date' does not exist on type '{ bookingId: any; email: any; quotedHours: number; joinUrl: any; }'.
+src/__tests__/AC-008-recording-resolve-name.test.ts(63,24): error TS2339: Property 'name' does not exist on type '{ bookingId: any; email: any; quotedHours: number; joinUrl: any; }'.
+Process completed with exit code 1.
+```
+
+## Evidence: `Unit Tests` failure log
+
+command: gh run view 40863528825 --log-failed
+exit: 0 (last 6000 bytes)
+at: 2026-10-29T11:13:40Z
+
+```
+AssertionError: expected 'Cliente: ana@example.com\nFecha: 2027…' to contain 'Nombre: Ana López\nCliente: ana@examp…'
+ ❯ src/__tests__/AC-008-operator-email-name.test.ts:72:18
+AssertionError: expected '<p>Cliente: ana@example.com<br/>Fecha…' to contain '&lt;script&gt;'
+ ❯ src/__tests__/AC-008-operator-email-name.test.ts:85:20
+TypeError: The "path" argument must be of type string. Received undefined
+ ❯ src/__tests__/AC-008-recording-folders.test.ts:151:17
+  Serialized Error: { code: 'ERR_INVALID_ARG_TYPE' }
+AssertionError: expected undefined to be 'Ana López' // Object.is equality
+ ❯ src/__tests__/AC-008-recording-resolve-name.test.ts:43:30
+TypeError: insightContext is not a function
+ ❯ src/__tests__/AC-008-recording-resolve-name.test.ts:67:21
+AssertionError: expected undefined to be 'Ana López' // Object.is equality
+ ❯ src/__tests__/AC-008-stripe-metadata-name.test.ts:47:34
+AssertionError: expected { Object (clientEmail, date, ...) } to deeply equal ObjectContaining{…}
+ ❯ src/__tests__/AC-008-webhook-name.test.ts:101:50
+Process completed with exit code 1.
+```
+
+## Evidence: `Vercel` deployment failure (commit status)
+
+command: npx vercel inspect dpl_HhrLbESAE973mBdjd1E1QFET32bA --logs
+exit: 0 (last 3000 bytes)
+at: 2026-10-29T11:14:10Z
+
+```
+api/bookings.ts(101,5): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type 'CreateCheckoutInput'.
+src/__tests__/AC-008-recording-resolve-name.test.ts(11,10): error TS2459: Module '"../../scripts/recording/pipeline.mjs"' declares 'insightContext' locally, but it is not exported.
+...
+Error: [BUILD_UTILS_SPAWN_1] Command "npm run build" exited with 1
+status  ● Error
+```
+
+The Vercel deployment failed because its build step (`npm run build` → `tsc -b && vite build`)
+hits the **same TypeScript errors** as the `Build` check. This is **not** the
+Hobby-plan 12-serverless-function cap (`exceeded_serverless_functions_per_deployment`)
+— the deploy never got past `tsc`; it is the same code defect, surfacing twice.
+
+## Concrete failure reason (single root cause)
+
+The implementation never added the `name`/`clientName`/`dir` fields the tests
+assert. The acceptance tests (written by the Coder) expect the Task 3–8 data
+shapes, but the production types were not extended to carry them:
+
+1. `CreateCheckoutInput` (`api/bookings/checkout.ts`), `DirectBookingInput`
+   (`api/bookings/direct.ts`), and `OperatorEmailInput` (`src/domain/email.ts`)
+   lack the `name` / `clientName` field — `tsc` rejects the object literals at
+   `api/bookings.ts:101` and across the AC-008 test files.
+2. `scripts/recording/pipeline.mjs` declares `insightContext` locally but does
+   not export it; `reservationFields` (`scripts/recording/billing.mjs`) does not
+   return `name`/`date` (the `bookingId/email/quotedHours/joinUrl` shape in the
+   error is the pre-Task-7 shape).
+3. `api/bookings.ts` reserve path and the folder-rename result do not carry
+   `dir` (Task 8) — hence the `ERR_INVALID_ARG_TYPE` "path must be string" and
+   the `expected undefined to be 'Ana López'` failures.
+
+This is the same class of failure the Verifier's phase-1 suite run is meant to
+catch, but it did not reproduce locally because `npm test` (Vitest) does **not**
+run `tsc` — the TS type errors only surface under `npm run build`, and the test
+runtime assertions pass with `undefined` where the production types were never
+wired. The phase-1 Verifier ran `npm test` (green) and `npm run lint` (green) but
+not `npm run build`; CI's `Build` job is the first place `tsc -b` runs.
+
+## Round-0 disposition
+
+No fix attempted (this is the initial status check). The orchestrator must route
+the fix to the Coder (behavior/type defects — Tasks 3, 4, 5, 6, 7, 8 data shapes)
+and re-push; the Verifier will re-check only the previously-failing checks in
+round 1. Phase 2 counter: 0 of max 3 used.
+
+**Overall verdict: FAIL** — failing checks: `Build` (123412578967),
+`Unit Tests` (123412579232), `Vercel` (deployment `dpl_HhrLbESAE973mBdjd1E1QFET32bA`).

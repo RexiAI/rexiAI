@@ -23,6 +23,19 @@ export interface BodyLine {
   value: string
 }
 
+/**
+ * Operator-facing customer-name row (spec 008 Task 4). Lives here, in the leaf
+ * module both builders already import, so the billing-enabled and billing-disabled
+ * variants cannot drift and email.ts <-> emailDirect.ts stay cycle-free.
+ *
+ * Absent/empty name => no row at all, which is what keeps a name-less booking's
+ * output byte-identical to the pre-name email.
+ */
+export function clientNameRows(clientName?: string | null): BodyLine[] {
+  if (!clientName) return []
+  return [{ label: 'Nombre', value: clientName }]
+}
+
 export function renderText(lines: BodyLine[]): string {
   return lines.map((l) => (l.label ? `${l.label}: ${l.value}` : l.value)).join('\n')
 }

@@ -72,7 +72,7 @@ export async function runCli({ argv, env, deps, log = console }) {
     return { exitCode: 1 }
   }
   const dir = sessionDirFor(target)
-  const { ok } = await processSessionDir({
+  const { ok, dir: workDir } = await processSessionDir({
     dir,
     room: opts.room,
     dryRun: opts.dryRun,
@@ -80,5 +80,7 @@ export async function runCli({ argv, env, deps, log = console }) {
     deps,
     log,
   })
-  return { exitCode: ok ? 0 : 1 }
+  // `workDir` is the directory the run ended in: the organise step (spec 008
+  // Task 8) renames a session in place, so it may differ from `dir`.
+  return { exitCode: ok ? 0 : 1, dir: workDir }
 }
