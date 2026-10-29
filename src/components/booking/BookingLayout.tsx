@@ -3,8 +3,8 @@ import type { Dictionary } from '../../i18n/dictionary'
 import { BookingConfirmation } from './BookingConfirmation'
 import { DateField } from './fields/DateField'
 import { DurationField } from './fields/DurationField'
-import { EmailField } from './fields/EmailField'
 import { SlotField } from './fields/SlotField'
+import { TextField } from './fields/TextField'
 import type { BookingFields } from './hooks/useBookingFields'
 
 /**
@@ -75,10 +75,21 @@ export function BookingLayout({
           conflictError={fields.conflictError}
         />
         <DurationField hours={fields.hours} setHours={fields.setHours} />
-        <EmailField
-          email={fields.email}
-          setEmail={fields.setEmail}
+        <TextField
+          fieldId="email"
+          value={fields.email}
+          onChange={fields.setEmail}
           error={fields.errors['email']}
+          input={{ type: 'email' }}
+          copy={{ label: dict.booking.form.emailLabel, helper: dict.booking.form.emailHelper }}
+        />
+        <TextField
+          fieldId="name"
+          value={fields.name}
+          onChange={fields.setName}
+          error={fields.errors['name']}
+          input={{ type: 'text', autoComplete: 'name', last: true }}
+          copy={{ label: dict.booking.form.nameLabel, helper: dict.booking.form.nameHelper }}
         />
         <button type="submit" disabled={fields.submitting} className="booking-submit">
           {submitButtonLabel(dict, billingEnabled, fields.submitting)}

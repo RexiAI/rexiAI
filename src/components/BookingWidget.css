@@ -63,7 +63,10 @@
   border-color: var(--color-red-700);
 }
 
-.booking-input--email {
+/* The field that hugs the submit button (the last one before the CTA) keeps a
+   4px gap instead of the standard 12px. Named for position, not for a field:
+   the modifier moved from email to name when the name field landed (spec 008). */
+.booking-input--last {
   margin-bottom: var(--space-1);
 }
 

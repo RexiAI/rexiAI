@@ -18,6 +18,7 @@ type BookingResponse = {
 }
 
 async function postBooking(payload: {
+  name: string
   email: string
   date: string
   startTime: string
@@ -74,6 +75,10 @@ function handleBookingResponse(
 
 async function doSubmit(fields: BookingFields, dict: Dictionary, locale: Locale) {
   const result = await postBooking({
+    // Trimmed before it leaves the browser (15-design Task 1): the value the user
+    // sees is the value that gets stored, emailed and turned into a folder name.
+    // The API trims again, so this is parity, not the correctness guarantee.
+    name: fields.name.trim(),
     email: fields.email,
     date: fields.date,
     startTime: fields.selectedSlot,
@@ -98,6 +103,7 @@ async function runBookingSubmit(
     selectedSlot: fields.selectedSlot,
     email: fields.email,
     hours: fields.hours,
+    name: fields.name,
   })
   fields.setErrors(v)
   if (Object.keys(v).length > 0) return
