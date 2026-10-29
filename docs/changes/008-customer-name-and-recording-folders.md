@@ -1179,7 +1179,9 @@ passed.
 - Before pushing, action out-of-scope finding 3 (prettier `specs/**` +
   `docs/changes/**`).
 
-PR: (appended by stage 5b — the PR Opener writes the PR URL and commit count here)
+PR: https://github.com/RexiAI/rexiAI/pull/89
+
+Commits: 10 (8 task commits + the archive commit + this record commit)
 
 ## 15-design.md
 
