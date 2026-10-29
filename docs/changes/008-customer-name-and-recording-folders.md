@@ -1596,3 +1596,103 @@ round 1. Phase 2 counter: 0 of max 3 used.
 
 **Overall verdict: FAIL** — failing checks: `Build` (123412578967),
 `Unit Tests` (123412579232), `Vercel` (deployment `dpl_HhrLbESAE973mBdjd1E1QFET32bA`).
+
+---
+
+## Post-PR CI check (phase 2) — round 1 (scoped re-check after round-0 fix)
+
+**Round:** 1 (scoped re-check of the round-0 failures) · **Phase 2 counter:** 1 of max 3 used
+**PR:** #89 (https://github.com/RexiAI/rexiAI/pull/89) · **Branch:** `spec/008-customer-name-and-recording-folders` · **Head:** `29a40d910c69ed5f9b1bb03ddc014297fc412c61`
+**Workflow:** `CI` (run 40865146069) · **Checked at:** 2026-10-29T11:27:07Z
+
+**Overall verdict: FAIL** — the round-0 `Build` (tsc type errors) and `Unit Tests`
+(runtime `undefined` / `ERR_INVALID_ARG_TYPE`) failures are both **resolved**, and
+`Vercel` is now **green** (its round-0 failure was the same `tsc` build error, now
+gone; no Hobby-plan function cap). The one remaining red check is `Lint & Format`,
+a Prettier markdown-formatting failure on this archive one-pager itself — exactly
+the failure out-of-scope finding #3 predicted. A documentation formatting defect,
+not a code defect and not a platform limit.
+
+## Per-check status
+
+| Check | Type | Conclusion | Bucket |
+| --- | --- | --- | --- |
+| `Build` | check-run | success | pass |
+| `Unit Tests` | check-run | success | pass |
+| `Lint & Format` | check-run | failure | fail |
+| `Docker Build & Push` | check-run | skipped | — |
+| `Vercel` | commit-status (deployment) | success | pass |
+| `Vercel Preview Comments` | check-run | success (bot comment) | pass |
+
+## Evidence: CI status query
+
+command: gh pr checks 89 --json name,state,bucket,workflow
+exit: 0
+at: 2026-10-29T11:27:07Z
+
+```
+[{"bucket":"pass","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"skipping","name":"Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","name":"Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"fail","name":"Lint & Format","state":"FAILURE","workflow":"CI"},{"bucket":"pass","name":"Build","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","name":"Vercel","state":"SUCCESS","workflow":""}]
+```
+
+## Evidence: check-runs (terminal state)
+
+command: gh api repos/RexiAI/rexiAI/commits/29a40d910c69ed5f9b1bb03ddc014297fc412c61/check-runs --jq '.check_runs[] | {id, name, status, conclusion}'
+exit: 0
+at: 2026-10-29T11:27:07Z
+
+```
+{"conclusion":"success","id":123418116427,"name":"Vercel Preview Comments","status":"completed"}
+{"conclusion":"skipped","id":123418032357,"name":"Docker Build & Push","status":"completed"}
+{"conclusion":"success","id":123417902690,"name":"Build","status":"completed"}
+{"conclusion":"failure","id":123417902628,"name":"Lint & Format","status":"completed"}
+{"conclusion":"success","id":123417902277,"name":"Unit Tests","status":"completed"}
+```
+
+## Failing check IDs
+
+| Check | Check-run / job ID | Conclusion |
+| --- | --- | --- |
+| `Lint & Format` | check-run id 123417902628 (job 123417902628) | failure |
+
+## Evidence: `Lint & Format` failure log
+
+command: gh run view 40865146069 --log-failed
+exit: 0 (excerpt)
+at: 2026-10-29T11:27:07Z
+
+```
+Lint & Format	Run npm run format:check --if-present	> prettier --check .
+Lint & Format	Run npm run format:check --if-present	Checking formatting...
+Lint & Format	Run npm run format:check --if-present	[warn] docs/changes/008-customer-name-and-recording-folders.md
+Lint & Format	Run npm run format:check --if-present	[warn] Code style issues found in the above file. Run Prettier with --write to fix.
+Lint & Format	Run npm run format:check --if-present	##[error]Process completed with exit code 1.
+```
+
+## Concrete failure reason
+
+`npm run format:check` runs `prettier --check .`. Prettier flags this archive
+one-pager (`docs/changes/008-customer-name-and-recording-folders.md`) for
+non-normalized markdown: the round-0 section's tables use hand-aligned column
+padding (wide `---` separator rows and padded cells) that Prettier rewrites to
+single-space cell style. Confirmed locally: `npx prettier --check` on the file
+exits 1, and a `prettier` diff shows the over-aligned tables at lines ~1451–1496.
+
+This is out-of-scope finding #3 (carried forward from `25-verification.md`)
+materializing: "the archive one-pager … will likely carry the same formatting and
+fail the CI `Lint & Format` job in phase 2 unless it is `prettier --write`-cleaned
+before the push, or `specs/` + `docs/changes/` are added to `.prettierignore`."
+
+## Round-1 disposition
+
+`Build` and `Unit Tests` are **resolved** (round-0 head `bdfbedd` → round-1 head
+`29a40d9` restored the `name`/`clientName`/`dir` thread through types and runtime).
+`Vercel` is **green** and shows **no** `exceeded_serverless_functions_per_deployment`
+(Hobby 12-function cap) — the round-0 Vercel failure was the shared `tsc` build
+error, not a platform limit.
+
+Fix for round 2 (route to the PR Opener / orchestrator): either
+`npx prettier --write docs/changes/008-customer-name-and-recording-folders.md` and
+re-push, or add `docs/changes/` (and `specs/`) to `.prettierignore` — the
+out-of-scope finding's proposed remedy. Phase 2 counter: 1 of max 3 used.
+
+**Overall verdict: FAIL** — failing check: `Lint & Format` (123417902628).
