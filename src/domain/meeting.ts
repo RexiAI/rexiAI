@@ -15,6 +15,12 @@
 import { randomBytes } from 'crypto'
 
 import { normalizeLocale } from './locale.js'
+import { meetingBaseUrl } from './meetingUrl.js'
+
+// The brand's URL-shape helper now lives in the meetingUrl leaf module so the
+// email path can use it without touching this file (see meetingUrl.ts); the
+// re-export keeps meeting.ts's documented surface unchanged.
+export { meetingBaseUrl }
 
 export interface MeetingInput {
   date: string
@@ -26,21 +32,6 @@ export interface MeetingInput {
 }
 
 export type MeetingResult = { status: 'ok'; joinUrl: string } | { status: 'error'; message: string }
-
-/** The configured brand, or null when it is missing/unusable (fail loud, never guess). */
-export function meetingBaseUrl(env: NodeJS.ProcessEnv = process.env): string | null {
-  const raw = (env['MEETING_BASE_URL'] ?? '').replace(/\/+$/, '')
-  if (!raw) return null
-  try {
-    const url = new URL(raw)
-    // The join URL is pinned to https: a plain-http brand would make the client
-    // page look like the phishing signal this spec exists to remove.
-    if (url.protocol !== 'https:') return null
-    return raw
-  } catch {
-    return null
-  }
-}
 
 export async function createMeetingLink(input: MeetingInput): Promise<MeetingResult> {
   const base = meetingBaseUrl()

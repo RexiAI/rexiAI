@@ -14,6 +14,7 @@ import { consentNotice, consentNoticeLines, noticeLangAttribute } from './consen
 import type { ClientEmailInput, OperatorEmailInput } from './email.js'
 import { clientNameRows, escapeHtml, renderText, type BodyLine } from './emailHtml.js'
 import { localeFreeJoinUrl } from './meetingUrl.js'
+import { rescheduleLink } from './rescheduleUrl.js'
 import { getConfiguredTimezone } from './time.js'
 
 export interface EmailBody {
@@ -27,15 +28,25 @@ export interface EmailBody {
 const CALENDAR_TITLE = 'Sesión con RexiAI'
 const CALENDAR_DETAILS_PREFIX = 'Enlace de acceso a la sesión: '
 const CALENDAR_CTA_LABEL = 'Añadir a Google Calendar'
-const JOIN_CTA_LABEL = 'Unirse a la reunión'
+export const JOIN_CTA_LABEL = 'Unirse a la reunión'
 const WORDMARK = 'RexiAI'
 const OPERATOR_HEADING = 'Nueva reserva recibida'
 const OPERATOR_PREHEADER = 'Fecha, hora y enlace de acceso, listos para revisar.'
 const CLIENT_HEADING = 'Tu reserva está confirmada'
 const CLIENT_PREHEADER = 'Los detalles de tu sesión y cómo entrar, en este correo.'
 const CLIENT_REASSURANCE = 'Para entrar a la sesión, usa el botón de abajo a la hora indicada.'
-const CLIENT_HELP_HTML = '¿Dudas o necesitas cambiar la hora? Responde a este correo.'
-const CLIENT_HELP_TEXT = '¿Dudas? Responde a este correo.'
+// AUTHORISED CHANGE (spec 007 10-tasks.md decision D3, human-approved): Task 7
+// shortens the help line from "¿Dudas o necesitas cambiar la hora? Responde a
+// este correo." to this one, because the old wording pointed at a route the
+// reschedule page replaces and left the client two contradictory instructions.
+// It is now the same string in the text and the HTML part, so there is one
+// constant rather than two names for one sentence.
+export const CLIENT_HELP_TEXT = '¿Dudas? Responde a este correo.'
+// Reschedule line (spec 007 Task 7): sentence split so the link text is
+// meaningful out of context, styled like the calendar link so it never competes
+// with the one primary button.
+export const RESCHEDULE_LEAD = '¿Necesitas otra hora? '
+export const RESCHEDULE_LINK_LABEL = 'Cambiar la hora'
 const CLIENT_CONFIRMED_LINE = 'Tu reserva con RexiAI está confirmada.'
 const CONFLICT_LEAD = 'ATENCIÓN:'
 
@@ -53,7 +64,7 @@ function conflictSentence(bookingId: string): string {
 
 /** Grammar-aware duration for the disabled variant only (the frozen enabled
  *  line `${hours} horas` is untouched). */
-function directDuration(hours: number): string {
+export function directDuration(hours: number): string {
   return hours === 1 ? '1 hora' : `${hours} horas`
 }
 
@@ -70,7 +81,7 @@ function directCalendarUrl(input: OperatorEmailInput | ClientEmailInput, joinUrl
   })
 }
 
-function factRows(
+export function factRows(
   input: { date: string; startTime: string; hours: number },
   timezone: string
 ): BodyLine[] {
@@ -98,7 +109,7 @@ function directTextLines(
   return [...rows, ...ctaLines, ...tail]
 }
 
-function tableHtml(rows: BodyLine[]): string {
+export function tableHtml(rows: BodyLine[]): string {
   const cells = rows
     .map(
       (r) =>
@@ -123,7 +134,7 @@ function alertHtml(bookingId: string): string {
 
 /** Bulletproof padding-based button (Litmus pattern, 15-design): one primary
  *  CTA per email; the join URL is attribute-escaped like every dynamic sink. */
-function joinButtonHtml(joinUrl: string): string {
+export function joinButtonHtml(joinUrl: string): string {
   return (
     '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;"><tr>' +
     '<td style="background:#18181b;border-radius:12px;padding:14px 24px;text-align:center;">' +
@@ -133,17 +144,40 @@ function joinButtonHtml(joinUrl: string): string {
   )
 }
 
-/** Secondary CTA: deliberately a plain text link, visually subordinate to the
+/** The one secondary-link treatment: a plain text link, subordinate to the
  *  button (15-design; Sender/Stripo/Mailsoftly one-primary-CTA rule). */
-function calendarLinkHtml(calendarUrl: string): string {
+function secondaryAnchor(href: string, label: string): string {
   return (
-    '<p style="margin:16px 0 0;">' +
-    `<a href="${escapeHtml(calendarUrl)}" rel="noopener" style="color:#52525b;font-size:14px;text-decoration:underline;">` +
-    `${CALENDAR_CTA_LABEL}</a></p>`
+    `<a href="${escapeHtml(href)}" rel="noopener" ` +
+    'style="color:#52525b;font-size:14px;text-decoration:underline;">' +
+    `${escapeHtml(label)}</a>`
   )
 }
 
-interface DirectEmailModel {
+/** Secondary CTA: its own paragraph, deliberately less prominent than the button. */
+export function secondaryLinkHtml(href: string, label: string): string {
+  return `<p style="margin:16px 0 0;">${secondaryAnchor(href, label)}</p>`
+}
+
+function calendarLinkHtml(calendarUrl: string): string {
+  return secondaryLinkHtml(calendarUrl, CALENDAR_CTA_LABEL)
+}
+
+/**
+ * The reschedule line for the booking confirmation (spec 007 Task 7): one 14px
+ * paragraph, lead sentence plus link, below the join CTA and above the help line.
+ * An empty href renders nothing, so a booking with no token and an unconfigured
+ * brand both drop the line instead of printing a dead link.
+ */
+export function rescheduleHtml(url: string): string {
+  if (!url) return ''
+  return (
+    '<p style="margin:16px 0 0;font-size:14px;line-height:1.5;">' +
+    `${escapeHtml(RESCHEDULE_LEAD)}${secondaryAnchor(url, RESCHEDULE_LINK_LABEL)}</p>`
+  )
+}
+
+export interface DirectEmailModel {
   preheader: string
   heading: string
   intro: string
@@ -153,6 +187,8 @@ interface DirectEmailModel {
   notice: string
   joinUrl: string
   calendarUrl: string
+  /** Rendered reschedule line ('' when the booking has no token). */
+  reschedule?: string
   help: string
 }
 
@@ -173,10 +209,14 @@ const CARD_OPEN =
   'line-height:1.5;color:#18181b;">'
 const CARD_CLOSE = '</div></div>'
 
-/** Reading-order map: preheader → wordmark → H1 → (conflict) → facts → notice →
- *  CTAs → footer. Key facts always precede the CTAs in document order
- *  (AC-003-15/22), and the consent notice sits between them (AC-006-07). */
-function renderDirectHtml(m: DirectEmailModel): string {
+/**
+ * Reading-order map: preheader → wordmark → H1 → (conflict) → facts → notice →
+ * CTAs → reschedule → help → footer. Key facts always precede the CTAs in
+ * document order (AC-003-15/22), the consent notice sits between them
+ * (AC-006-07), and the reschedule link sits below the CTAs (spec 007 Task 7).
+ * Shared by the booking mails and the reschedule mails: one card, one rhythm.
+ */
+export function renderDirectHtml(m: DirectEmailModel): string {
   const blocks = [
     `<span style="display:none">${escapeHtml(m.preheader)}</span>`,
     WORDMARK_TOP_HTML,
@@ -186,6 +226,7 @@ function renderDirectHtml(m: DirectEmailModel): string {
     tableHtml(m.rows),
     m.notice,
     m.joinUrl ? joinButtonHtml(m.joinUrl) + calendarLinkHtml(m.calendarUrl) : '',
+    m.reschedule ?? '',
     m.help ? `<p style="${HELP_STYLE}">${escapeHtml(m.help)}</p>` : '',
     WORDMARK_FOOT_HTML,
   ].join('')
@@ -198,7 +239,7 @@ function renderDirectHtml(m: DirectEmailModel): string {
  * so a screen reader switches voice for those two lines inside the Spanish mail;
  * the Spanish path emits no attribute at all.
  */
-function noticeHtml(locale: unknown): string {
+export function noticeHtml(locale: unknown): string {
   const attribute = noticeLangAttribute(locale)
   return consentNotice(locale)
     .map((line) => `<p style="${INTRO_STYLE}"${attribute}>${escapeHtml(line)}</p>`)
@@ -241,7 +282,7 @@ function clientModel(
     notice: noticeHtml(locale),
     joinUrl,
     calendarUrl,
-    help: CLIENT_HELP_HTML,
+    help: CLIENT_HELP_TEXT,
   }
 }
 
@@ -266,11 +307,20 @@ export function buildDirectOperatorBody(input: OperatorEmailInput): EmailBody {
   }
 }
 
-export function buildDirectClientBody(input: ClientEmailInput): EmailBody {
+/**
+ * `rescheduleToken` is the token persisted on the calendar event (spec 007 Task
+ * 7). Omitted or unusable means no line at all, which is what keeps every
+ * pre-007 booking's mail byte-identical.
+ */
+export function buildDirectClientBody(
+  input: ClientEmailInput,
+  rescheduleToken?: string | null
+): EmailBody {
   const timezone = getConfiguredTimezone()
   const joinUrl = input.joinUrl ?? ''
   const calendarUrl = directCalendarUrl(input, joinUrl)
   const facts = factRows(input, timezone)
+  const link = rescheduleLink(rescheduleToken, input.locale)
   // Notice after the facts and before the CTAs: the client is told before they
   // can join (AC-006-07/09). It renders whether or not a join URL exists.
   const textRows: BodyLine[] = [
@@ -278,10 +328,15 @@ export function buildDirectClientBody(input: ClientEmailInput): EmailBody {
     ...facts,
     ...consentNoticeLines(input.locale),
   ]
-  const help: BodyLine[] = [{ value: CLIENT_HELP_TEXT }]
+  // Below the CTAs and above the help line (15-design Task 7).
+  const tail: BodyLine[] = [
+    ...(link ? [{ value: `${RESCHEDULE_LEAD}${RESCHEDULE_LINK_LABEL}: ${link}` }] : []),
+    { value: CLIENT_HELP_TEXT },
+  ]
+  const model = clientModel(facts, joinUrl, calendarUrl, input.locale)
   return {
     subject: `Tu reserva está confirmada: ${input.date} ${input.startTime}`,
-    text: renderText(directTextLines(textRows, joinUrl, calendarUrl, help)),
-    html: renderDirectHtml(clientModel(facts, joinUrl, calendarUrl, input.locale)),
+    text: renderText(directTextLines(textRows, joinUrl, calendarUrl, tail)),
+    html: renderDirectHtml({ ...model, reschedule: link ? rescheduleHtml(link) : '' }),
   }
 }

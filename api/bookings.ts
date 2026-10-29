@@ -1,7 +1,6 @@
 import { isBillingEnabled } from '../src/domain/billing.js'
 import type { Locale } from '../src/domain/locale.js'
 import { createMeetingLink, type MeetingResult } from '../src/domain/meeting.js'
-import { checkRateLimit, getClientIp } from '../src/domain/rateLimit.js'
 
 import { hasConflict } from './bookings/calendar.js'
 import { createCheckout } from './bookings/checkout.js'
@@ -9,24 +8,12 @@ import { finishDirectBooking } from './bookings/direct.js'
 import type { BookingRequestFields } from './bookings/types.js'
 import { prepareBookingInput } from './bookings/validation.js'
 import type { ApiRequest, ApiResponse } from './httpTypes.js'
+import { enforceRateLimit, requireMethod } from './routeGuards.js'
 
-function isPostMethod(req: ApiRequest, res: ApiResponse): boolean {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed' } })
-    return false
-  }
-  return true
-}
-
-// Runs before validation and before any Stripe or Graph call, so a spam burst
-// costs nothing downstream. Best-effort only — see src/domain/rateLimit.ts.
-function enforceRateLimit(req: ApiRequest, res: ApiResponse): boolean {
-  const result = checkRateLimit(`bookings:${getClientIp(req)}`)
-  if (result.allowed) return true
-  res.setHeader?.('Retry-After', String(result.retryAfterSeconds))
-  res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests' } })
-  return false
-}
+// This endpoint's own rate-limit bucket: a spam burst costs nothing downstream
+// because the guard runs before validation and before any Stripe or Graph call.
+const RATE_LIMIT_BUCKET = 'bookings'
+const POST_ONLY = ['POST']
 
 type BookingInput = BookingRequestFields
 
@@ -88,8 +75,8 @@ function buildBookingResponse(checkout: { url: string | null }, meeting: Meeting
 
 /** Method, rate limit, field validation and the first slot probe. */
 async function runPreflight(req: ApiRequest, res: ApiResponse) {
-  if (!isPostMethod(req, res)) return null
-  if (!enforceRateLimit(req, res)) return null
+  if (!requireMethod(req, res, POST_ONLY)) return null
+  if (!enforceRateLimit(req, res, RATE_LIMIT_BUCKET)) return null
   const input = prepareBookingInput(req, res)
   if (!input) return null
   if (await checkSlotConflict(input, res)) return null

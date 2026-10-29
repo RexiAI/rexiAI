@@ -1,0 +1,869 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Cambiar la hora · RexiAI</title>
+    <!--
+      Branded reschedule page (spec 007 Task 8). Served from meet.rexi-ai.com, a
+      different host from the SPA, so it is ONE self-contained document: inline
+      styles, no framework, no webfont, no icons, no external request other than
+      the page's own two API calls.
+
+      Language comes from ?lang= alone (es | en; anything else is Spanish). There
+      is no device-language sniffing, no cookie, no stored preference and no
+      locale path segment, exactly like the join page.
+
+      The token is read from location.pathname and is never written into the DOM,
+      a data-* attribute, storage, history, or any href: it travels only in the
+      resolve request line and in the POST body.
+
+      The token values below are copied from src/index.css (:root), the source of
+      truth, plus the two-step radius scale the emails already use. The
+      duplication is deliberate: this page must not fetch the SPA bundle to
+      render a handful of words.
+    -->
+    <style>
+      :root {
+        --color-zinc-900: #18181b;
+        --color-zinc-600: #52525b;
+        --color-zinc-500: #71717a;
+        --color-zinc-200: #e4e4e7;
+        --color-white: #ffffff;
+        --space-3: 0.75rem;
+        --space-4: 1rem;
+        --space-6: 1.5rem;
+        --text-sm: 0.8125rem;
+        --text-sm2: 0.875rem;
+        --text-base: 1rem;
+        --text-2xl: 1.75rem;
+        --text-3xl: 2rem;
+        --radius-full: 9999px;
+        --radius-md: 12px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        text-size-adjust: 100%;
+      }
+
+      body {
+        margin: 0;
+        background: var(--color-white);
+        color: var(--color-zinc-600);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+
+      /* Same column as the join page, top-aligned on purpose: this page's height
+         changes as slots arrive, and a vertically centred form jumps on a phone. */
+      .page {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: var(--space-4);
+        min-height: 100dvh;
+        max-width: 32rem;
+        margin: 0 auto;
+        padding: var(--space-6);
+        padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
+      }
+
+      /* One rhythm between blocks. States are sections, and only one is rendered
+         (the hidden attribute keeps the rest out of layout and off screen). */
+      section:not([hidden]) {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+        width: 100%;
+      }
+
+      section:focus {
+        outline: none;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: var(--text-2xl);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        color: var(--color-zinc-900);
+      }
+
+      p {
+        margin: 0;
+        font-size: var(--text-base);
+        line-height: 1.5;
+      }
+
+      .meta {
+        font-size: var(--text-sm2);
+        color: var(--color-zinc-500);
+      }
+
+      .help {
+        font-size: var(--text-sm2);
+        color: var(--color-zinc-500);
+      }
+
+      .status p {
+        font-size: var(--text-sm2);
+        color: var(--color-zinc-500);
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--color-zinc-200);
+      }
+
+      label.field,
+      legend {
+        font-size: var(--text-sm2);
+        font-weight: 600;
+        color: var(--color-zinc-900);
+      }
+
+      fieldset {
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+
+      legend {
+        padding: 0;
+      }
+
+      /* 16px minimum: below it iOS Safari zooms the page on focus and throws the
+         client into a half-scrolled layout. Control borders are zinc-500, which
+         clears the 3:1 non-text contrast floor; zinc-200 is a hairline only. */
+      input[type='date'] {
+        width: 100%;
+        min-height: 44px;
+        padding: var(--space-3);
+        border: 1px solid var(--color-zinc-500);
+        border-radius: var(--radius-md);
+        background: var(--color-white);
+        color: var(--color-zinc-900);
+        font-family: inherit;
+        font-size: var(--text-base);
+      }
+
+      .slots {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3);
+      }
+
+      .slot {
+        display: inline-flex;
+        position: relative;
+      }
+
+      /* Visually hidden but focusable: never display:none, or the radio stops
+         existing for keyboard and screen-reader users. */
+      .slot input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+      }
+
+      .slot span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 5rem;
+        min-height: 44px;
+        padding: var(--space-3);
+        border: 1px solid var(--color-zinc-500);
+        border-radius: var(--radius-md);
+        color: var(--color-zinc-900);
+        font-size: var(--text-base);
+      }
+
+      .slot input:checked + span {
+        border-color: var(--color-zinc-900);
+        background: var(--color-zinc-900);
+        color: var(--color-white);
+      }
+
+      .action {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        padding: var(--space-3) var(--space-6);
+        border: 0;
+        border-radius: var(--radius-full);
+        background: var(--color-zinc-900);
+        color: var(--color-white);
+        font-family: inherit;
+        font-size: var(--text-base);
+        font-weight: 600;
+        line-height: 1.5;
+      }
+
+      .action[disabled] {
+        opacity: 1;
+        color: var(--color-zinc-200);
+      }
+
+      .action:focus-visible,
+      .recover:focus-visible,
+      input:focus-visible,
+      .slot input:focus-visible + span {
+        outline: 2px solid var(--color-zinc-900);
+        outline-offset: 2px;
+      }
+
+      .recover {
+        display: inline-block;
+        min-height: 44px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--color-zinc-900);
+        font-family: inherit;
+        font-size: var(--text-base);
+        text-decoration: underline;
+      }
+
+      @media (min-width: 480px) {
+        h1 {
+          font-size: var(--text-3xl);
+        }
+
+        .action {
+          display: inline-block;
+          width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section id="state-loading-es" hidden data-title="Cargando tu reunión · RexiAI">
+        <h1>Cargando tu reunión</h1>
+        <p>En un momento verás los huecos disponibles.</p>
+      </section>
+
+      <section id="state-loading-en" hidden data-title="Loading your meeting · RexiAI" lang="en">
+        <h1>Loading your meeting</h1>
+        <p>The available slots will appear in a moment.</p>
+      </section>
+
+      <section
+        id="state-load-failed-es"
+        hidden
+        data-title="No hemos podido cargar tu reunión · RexiAI"
+      >
+        <h1>No hemos podido cargar tu reunión</h1>
+        <p>Puede ser la conexión o un fallo nuestro. No se ha cambiado nada.</p>
+        <p>Vuelve a intentarlo o escríbenos.</p>
+        <button class="action" type="button" data-role="retry-load">Reintentar</button>
+        <a class="recover" href="mailto:info@rexi-ai.com">Escribir a RexiAI</a>
+      </section>
+
+      <section
+        id="state-load-failed-en"
+        hidden
+        data-title="We could not load your meeting · RexiAI"
+        lang="en"
+      >
+        <h1>We could not load your meeting</h1>
+        <p>It may be the connection, or a fault on our side. Nothing has been changed.</p>
+        <p>Try again, or email us.</p>
+        <button class="action" type="button" data-role="retry-load">Try again</button>
+        <a class="recover" href="mailto:info@rexi-ai.com">Email RexiAI</a>
+      </section>
+
+      <section id="state-invalid-es" hidden data-title="Este enlace ya no sirve · RexiAI">
+        <h1>Este enlace ya no sirve</h1>
+        <p>
+          Puede que ya hayas cambiado la hora, que la reunión ya haya tenido lugar o que el enlace
+          esté incompleto.
+        </p>
+        <p>Si ya la has cambiado, el correo nuevo trae un enlace nuevo.</p>
+        <p>Si necesitas moverla igualmente, escríbenos.</p>
+        <a class="recover" href="mailto:info@rexi-ai.com">Escribir a RexiAI</a>
+      </section>
+
+      <section
+        id="state-invalid-en"
+        hidden
+        data-title="This link no longer works · RexiAI"
+        lang="en"
+      >
+        <h1>This link no longer works</h1>
+        <p>
+          You may have already changed the time, the meeting may already have taken place, or the
+          link may be incomplete.
+        </p>
+        <p>If you already changed it, the new email has a new link.</p>
+        <p>If you still need to move the meeting, email us.</p>
+        <a class="recover" href="mailto:info@rexi-ai.com">Email RexiAI</a>
+      </section>
+
+      <section id="state-ready-es" hidden data-title="Cambiar la hora de tu reunión · RexiAI">
+        <h1>Cambia la hora de tu reunión</h1>
+        <p>
+          Esta página es de RexiAI. Desde aquí puedes mover tu reunión a otro hueco disponible, sin
+          responder al correo.
+        </p>
+        <p class="meta">
+          Ahora mismo: <time data-role="current-date" datetime=""></time> a las
+          <span data-role="current-time"></span> (hora de Madrid).
+        </p>
+        <p class="meta">
+          La reunión dura lo mismo:
+          <span data-role="duration" data-one="1 hora" data-many="horas">1 hora</span>.
+        </p>
+        <form data-role="form">
+          <label class="field" for="date-es">Nueva fecha</label>
+          <input id="date-es" data-role="date" type="date" required />
+          <p class="help">Elige un día para ver los huecos disponibles.</p>
+          <fieldset>
+            <legend>Huecos disponibles</legend>
+            <div class="status" data-role="status" role="status">
+              <p data-slot-state="loading">Cargando huecos...</p>
+              <p data-slot-state="empty" hidden>Sin huecos ese día. Prueba otra fecha.</p>
+              <p data-slot-state="error" hidden>
+                No hemos podido cargar los huecos. Vuelve a intentarlo.
+                <button class="recover" type="button" data-role="retry-slots">Reintentar</button>
+              </p>
+              <p data-message="slot-rejected" hidden>
+                Ese hueco ya no está disponible. Elige otro.
+              </p>
+              <p data-message="date-past" hidden>Esa fecha ya ha pasado. Elige otra.</p>
+            </div>
+            <div class="slots" data-role="chips"></div>
+          </fieldset>
+          <button
+            class="action"
+            type="submit"
+            data-role="submit"
+            data-idle-label="Mover la reunión"
+            data-busy-label="Moviendo tu reunión..."
+          >
+            Mover la reunión
+          </button>
+        </form>
+        <p class="help">Si algo no funciona, escribe a info@rexi-ai.com.</p>
+      </section>
+
+      <section id="state-ready-en" hidden data-title="Change your meeting time · RexiAI" lang="en">
+        <h1>Change the time of your meeting</h1>
+        <p>
+          This page belongs to RexiAI. From here you can move your meeting to another available
+          slot, without replying to the email.
+        </p>
+        <p class="meta">
+          Right now: <time data-role="current-date" datetime=""></time> at
+          <span data-role="current-time"></span> (Madrid time).
+        </p>
+        <p class="meta">
+          The meeting keeps its length:
+          <span data-role="duration" data-one="1 hour" data-many="hours">1 hour</span>.
+        </p>
+        <form data-role="form">
+          <label class="field" for="date-en">New date</label>
+          <input id="date-en" data-role="date" type="date" required />
+          <p class="help">Pick a day to see available slots.</p>
+          <fieldset>
+            <legend>Available slots</legend>
+            <div class="status" data-role="status" role="status">
+              <p data-slot-state="loading">Loading slots...</p>
+              <p data-slot-state="empty" hidden>No slots that day. Try another date.</p>
+              <p data-slot-state="error" hidden>
+                We could not load the slots. Try again.
+                <button class="recover" type="button" data-role="retry-slots">Try again</button>
+              </p>
+              <p data-message="slot-rejected" hidden>
+                That slot is no longer available. Please choose another.
+              </p>
+              <p data-message="date-past" hidden>
+                That date has already passed. Please choose another.
+              </p>
+            </div>
+            <div class="slots" data-role="chips"></div>
+          </fieldset>
+          <button
+            class="action"
+            type="submit"
+            data-role="submit"
+            data-idle-label="Move the meeting"
+            data-busy-label="Moving your meeting..."
+          >
+            Move the meeting
+          </button>
+        </form>
+        <p class="help">If something does not work, email info@rexi-ai.com.</p>
+      </section>
+
+      <section id="state-success-es" hidden data-title="Reunión movida · RexiAI">
+        <h1>Tu reunión se ha movido</h1>
+        <p class="meta">
+          Nuevo hueco: <time data-role="new-date" datetime=""></time> a las
+          <span data-role="new-time"></span> (hora de Madrid).
+        </p>
+        <p>
+          Te hemos enviado un correo con la nueva hora y el enlace para entrar. El enlace de la
+          reunión no cambia.
+        </p>
+        <p>Si algo no cuadra, escribe a info@rexi-ai.com.</p>
+        <a class="recover" href="mailto:info@rexi-ai.com">Escribir a RexiAI</a>
+      </section>
+
+      <section id="state-success-en" hidden data-title="Meeting moved · RexiAI" lang="en">
+        <h1>Your meeting has moved</h1>
+        <p class="meta">
+          New slot: <time data-role="new-date" datetime=""></time> at
+          <span data-role="new-time"></span> (Madrid time).
+        </p>
+        <p>
+          We have emailed you the new time and the link to join. The meeting link does not change.
+        </p>
+        <p>If something does not look right, email info@rexi-ai.com.</p>
+        <a class="recover" href="mailto:info@rexi-ai.com">Email RexiAI</a>
+      </section>
+
+      <section
+        id="state-limit-es"
+        hidden
+        data-title="Esta reunión ya no se puede mover desde aquí · RexiAI"
+      >
+        <h1>Esta reunión ya no se puede mover desde aquí</h1>
+        <p>Ya se ha cambiado el máximo de veces permitido desde esta página.</p>
+        <p>Escríbenos y la movemos nosotros.</p>
+        <a class="recover" href="mailto:info@rexi-ai.com">Escribir a RexiAI</a>
+      </section>
+
+      <section
+        id="state-limit-en"
+        hidden
+        data-title="This meeting can no longer be moved from here · RexiAI"
+        lang="en"
+      >
+        <h1>This meeting can no longer be moved from here</h1>
+        <p>It has been changed as many times as this page allows.</p>
+        <p>Email us and we will move it for you.</p>
+        <a class="recover" href="mailto:info@rexi-ai.com">Email RexiAI</a>
+      </section>
+
+      <section id="state-rate-limited-es" hidden data-title="Demasiados intentos · RexiAI">
+        <h1>Demasiados intentos</h1>
+        <p>Espera un minuto y vuelve a intentarlo. No se ha cambiado nada.</p>
+        <p>Si tienes prisa, escríbenos.</p>
+        <a class="recover" href="mailto:info@rexi-ai.com">Escribir a RexiAI</a>
+      </section>
+
+      <section id="state-rate-limited-en" hidden data-title="Too many attempts · RexiAI" lang="en">
+        <h1>Too many attempts</h1>
+        <p>Wait a minute and try again. Nothing has been changed.</p>
+        <p>If it is urgent, email us.</p>
+        <a class="recover" href="mailto:info@rexi-ai.com">Email RexiAI</a>
+      </section>
+
+      <section id="state-unconfirmed-es" hidden data-title="Cambio sin confirmar · RexiAI">
+        <h1>No sabemos si el cambio se ha hecho</h1>
+        <p>El cambio puede haberse hecho igualmente. No lo repitas desde esta página.</p>
+        <p>
+          Revisa tu correo en unos minutos. Si no llega la confirmación, escríbenos y lo
+          comprobamos.
+        </p>
+        <a class="recover" href="mailto:info@rexi-ai.com">Escribir a RexiAI</a>
+      </section>
+
+      <section
+        id="state-unconfirmed-en"
+        hidden
+        data-title="Change not confirmed · RexiAI"
+        lang="en"
+      >
+        <h1>We could not confirm the change</h1>
+        <p>The change may have gone through anyway. Do not repeat it from this page.</p>
+        <p>
+          Check your email in a few minutes. If no confirmation arrives, email us and we will check.
+        </p>
+        <a class="recover" href="mailto:info@rexi-ai.com">Email RexiAI</a>
+      </section>
+
+      <noscript>
+        <div data-role="nojs-es">
+          <h1>Cambia la hora por correo</h1>
+          <p>
+            Esta página necesita JavaScript para mostrar los huecos disponibles. Escríbenos y
+            movemos la reunión nosotros.
+          </p>
+          <a class="recover" href="mailto:info@rexi-ai.com">info@rexi-ai.com</a>
+        </div>
+        <div data-role="nojs-en" lang="en">
+          <h1>Change the time by email</h1>
+          <p>
+            This page needs JavaScript to show the available slots. Email us and we will move the
+            meeting for you.
+          </p>
+          <a class="recover" href="mailto:info@rexi-ai.com">info@rexi-ai.com</a>
+        </div>
+      </noscript>
+    </main>
+
+    <!--
+      Synchronous, runs before the first paint: reads the token from the pathname
+      and the language from ?lang=, reveals exactly one already-rendered section,
+      then resolves the booking. No timers, no navigation, no history rewriting,
+      no storage, and no markup injection: every dynamic value is set with
+      textContent.
+    -->
+    <script>
+      ;(function () {
+        var TOKEN_PATTERN = /^\/reschedule\/([0-9a-f]{64})\/?$/
+
+        var state = { locale: 'es', token: null, submitted: false }
+
+        function readLocale(search) {
+          return new URLSearchParams(search).get('lang') === 'en' ? 'en' : 'es'
+        }
+
+        function matchToken(pathname) {
+          var match = TOKEN_PATTERN.exec(pathname)
+          return match ? match[1] : null
+        }
+
+        function sectionFor(name, locale) {
+          // A missing locale/state pair falls back to Spanish: a blank page is
+          // never an acceptable failure mode.
+          return (
+            document.getElementById('state-' + name + '-' + locale) ||
+            document.getElementById('state-' + name + '-es')
+          )
+        }
+
+        function show(name) {
+          var sections = document.querySelectorAll('main section')
+          for (var i = 0; i < sections.length; i += 1) sections[i].setAttribute('hidden', '')
+          var target = sectionFor(name, state.locale)
+          if (!target) return null
+          target.removeAttribute('hidden')
+          document.documentElement.lang = state.locale
+          document.title = target.getAttribute('data-title') || document.title
+          // Move focus so a screen reader announces the new state instead of
+          // silence after a swap.
+          target.setAttribute('tabindex', '-1')
+          if (target.focus) target.focus()
+          return target
+        }
+
+        function currentSection(name) {
+          return sectionFor(name, state.locale)
+        }
+
+        function timeoutSignal() {
+          return typeof AbortSignal !== 'undefined' && AbortSignal.timeout
+            ? AbortSignal.timeout(12000)
+            : undefined
+        }
+
+        function request(url, init) {
+          var options = init || {}
+          var signal = timeoutSignal()
+          if (signal) options.signal = signal
+          return fetch(url, options)
+        }
+
+        function codeOf(body) {
+          return body?.error?.code || ''
+        }
+
+        function longDate(iso) {
+          // Parsed at noon UTC and formatted in UTC: a plain YYYY-MM-DD would
+          // otherwise shift a day for anyone west of Greenwich.
+          try {
+            return new Intl.DateTimeFormat(state.locale, {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              timeZone: 'UTC',
+            }).format(new Date(iso + 'T12:00:00Z'))
+          } catch (e) {
+            return iso
+          }
+        }
+
+        function setText(root, selector, value) {
+          var node = root.querySelector(selector)
+          if (node) node.textContent = value
+        }
+
+        // One of N labelled siblings visible, the rest hidden. Both the slot
+        // picker's states and the form's inline messages are this same shape, so
+        // the loop exists once; `name` falsy hides all of them.
+        function revealOne(root, attribute, name) {
+          var nodes = root.querySelectorAll('[' + attribute + ']')
+          for (var i = 0; i < nodes.length; i += 1) {
+            if (nodes[i].getAttribute(attribute) === name) nodes[i].removeAttribute('hidden')
+            else nodes[i].setAttribute('hidden', '')
+          }
+        }
+
+        function setDate(root, selector, iso) {
+          var node = root.querySelector(selector)
+          if (!node) return
+          node.setAttribute('datetime', iso)
+          node.textContent = longDate(iso)
+        }
+
+        function fillCurrent(root, body) {
+          setDate(root, '[data-role="current-date"]', body.date)
+          setText(root, '[data-role="current-time"]', body.startTime)
+          var duration = root.querySelector('[data-role="duration"]')
+          if (duration) {
+            var label =
+              body.hours === 1
+                ? duration.getAttribute('data-one')
+                : body.hours + ' ' + duration.getAttribute('data-many')
+            duration.textContent = label
+          }
+          var input = root.querySelector('input[data-role="date"]')
+          if (input) input.value = body.date
+        }
+
+        function fillSuccess(root, body) {
+          setDate(root, '[data-role="new-date"]', body.date)
+          setText(root, '[data-role="new-time"]', body.startTime)
+        }
+
+        function setSlotState(root, name) {
+          revealOne(root, 'data-slot-state', name)
+          var chips = root.querySelector('[data-role="chips"]')
+          if (chips) {
+            if (name) chips.setAttribute('hidden', '')
+            else chips.removeAttribute('hidden')
+          }
+        }
+
+        function showMessage(root, name) {
+          revealOne(root, 'data-message', name)
+        }
+
+        function renderSlots(root, slots) {
+          var host = root.querySelector('[data-role="chips"]')
+          if (!host) return
+          host.textContent = ''
+          for (var i = 0; i < slots.length; i += 1) {
+            var label = document.createElement('label')
+            label.className = 'slot'
+            var input = document.createElement('input')
+            input.type = 'radio'
+            input.name = 'slot'
+            input.value = slots[i]
+            input.required = true
+            var text = document.createElement('span')
+            text.textContent = slots[i]
+            label.appendChild(input)
+            label.appendChild(text)
+            host.appendChild(label)
+          }
+        }
+
+        function loadSlots(root, date) {
+          setSlotState(root, 'loading')
+          return request('/api/availability?date=' + encodeURIComponent(date)).then(
+            function (res) {
+              if (!res.ok) {
+                setSlotState(root, 'error')
+                return
+              }
+              return res.json().then(
+                function (body) {
+                  var slots = body && body.slots ? body.slots : []
+                  if (!slots.length) {
+                    setSlotState(root, 'empty')
+                    return
+                  }
+                  renderSlots(root, slots)
+                  setSlotState(root, '')
+                },
+                function () {
+                  setSlotState(root, 'error')
+                }
+              )
+            },
+            function () {
+              setSlotState(root, 'error')
+            }
+          )
+        }
+
+        function ready(body) {
+          if (body.canReschedule === false) {
+            show('limit')
+            return null
+          }
+          var root = currentSection('ready')
+          show('ready')
+          fillCurrent(root, body)
+          return loadSlots(root, body.date)
+        }
+
+        function resolve() {
+          show('loading')
+          return request('/api/reschedule?token=' + state.token).then(
+            function (res) {
+              if (res.status === 429) {
+                show('rate-limited')
+                return null
+              }
+              return res.json().then(
+                function (body) {
+                  if (!res.ok) {
+                    show(
+                      res.status === 404 || codeOf(body) === 'INVALID_RESCHEDULE_TOKEN'
+                        ? 'invalid'
+                        : 'load-failed'
+                    )
+                    return null
+                  }
+                  return ready(body)
+                },
+                function () {
+                  show('load-failed')
+                  return null
+                }
+              )
+            },
+            function () {
+              show('load-failed')
+              return null
+            }
+          )
+        }
+
+        function setBusy(root, busy) {
+          var button = root.querySelector('button[type="submit"]')
+          if (!button) return
+          var label = button.getAttribute(busy ? 'data-busy-label' : 'data-idle-label')
+          if (label) button.textContent = label
+          if (busy) button.setAttribute('disabled', '')
+          else button.removeAttribute('disabled')
+        }
+
+        function inlineReject(root, name) {
+          state.submitted = false
+          setBusy(root, false)
+          showMessage(root, name)
+        }
+
+        // A submit refusal either replaces the whole page or shows an inline form
+        // message. Both mappings are stated once, as data, so `settle` stays flat.
+        function refusalPage(code) {
+          if (code === 'INVALID_RESCHEDULE_TOKEN') return 'invalid'
+          if (code === 'RESCHEDULE_LIMIT') return 'limit'
+          return ''
+        }
+
+        function refusalMessage(code) {
+          if (code === 'SLOT_CONFLICT' || code === 'SLOT_UNAVAILABLE') return 'slot-rejected'
+          if (code === 'PAST_DATE') return 'date-past'
+          return ''
+        }
+
+        function settle(root, res, body) {
+          if (res.ok) {
+            fillSuccess(currentSection('success'), body)
+            return show('success')
+          }
+          if (res.status === 429) return show('rate-limited')
+          var code = codeOf(body)
+          var page = refusalPage(code)
+          if (page) return show(page)
+          var message = refusalMessage(code)
+          if (message) return inlineReject(root, message)
+          // A 5xx can arrive AFTER the move landed (operator mail failure), so the
+          // only honest answer is "we could not confirm it" with no retry.
+          return show('unconfirmed')
+        }
+
+        function onSubmit(event) {
+          event.preventDefault()
+          // A phone double-tap is the realistic double submit, and a second
+          // request would move the event twice with a token that is already
+          // rotating. The flag is set BEFORE the await.
+          if (state.submitted) return
+          var root = currentSection('ready')
+          var form = root.querySelector('form')
+          var input = root.querySelector('input[data-role="date"]')
+          var chosen = form.querySelector('input[name="slot"]:checked')
+          if (!chosen || !input || !input.value) return
+          state.submitted = true
+          setBusy(root, true)
+          showMessage(root, '')
+          var payload = { token: state.token, date: input.value, startTime: chosen.value }
+          request('/api/reschedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          }).then(
+            function (res) {
+              return res.json().then(
+                function (body) {
+                  settle(root, res, body)
+                },
+                function () {
+                  settle(root, res, {})
+                }
+              )
+            },
+            function () {
+              show('unconfirmed')
+            }
+          )
+        }
+
+        /** Listener wiring that tolerates a section or control that is not there. */
+        function listen(node, type, handler) {
+          if (node && node.addEventListener) node.addEventListener(type, handler)
+        }
+
+        function wire(root) {
+          var input = root.querySelector('input[data-role="date"]')
+          listen(root.querySelector('form'), 'submit', onSubmit)
+          listen(input, 'change', function () {
+            showMessage(root, '')
+            loadSlots(root, input.value)
+          })
+          listen(root.querySelector('[data-role="retry-slots"]'), 'click', function () {
+            loadSlots(root, input ? input.value : '')
+          })
+        }
+
+        function wireRetryLoad() {
+          var buttons = document.querySelectorAll('[data-role="retry-load"]')
+          for (var i = 0; i < buttons.length; i += 1) {
+            buttons[i].addEventListener('click', function () {
+              resolve()
+            })
+          }
+        }
+
+        state.locale = readLocale(window.location.search)
+        state.token = matchToken(window.location.pathname)
+        document.documentElement.lang = state.locale
+        wire(currentSection('ready'))
+        wireRetryLoad()
+
+        if (!state.token) show('invalid')
+        else resolve()
+      })()
+    </script>
+  </body>
+</html>

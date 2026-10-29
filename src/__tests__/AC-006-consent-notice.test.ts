@@ -165,7 +165,12 @@ describe('AC-006 recording-consent notice', () => {
     expect(payload.html).toContain('Los detalles de tu sesión y cómo entrar, en este correo.')
     expect(payload.html).toContain(`href="${JOIN}"`)
     expect(payload.html).toContain('>Añadir a Google Calendar</a>')
-    expect(payload.html).toContain('¿Dudas o necesitas cambiar la hora? Responde a este correo.')
+    // AUTHORISED CHANGE (spec 007 10-tasks.md decision D3, human-approved): the
+    // help line this scenario pins was shortened by spec 007 Task 7 (the
+    // reschedule page now owns "change the hour"). Scenario ID preserved
+    // verbatim; only this one line of the locked body changes, and the text part
+    // above already carried the short form.
+    expect(payload.html).toContain('¿Dudas? Responde a este correo.')
     expect(payload.html).toContain('Duración')
   })
 })

@@ -15,6 +15,14 @@ export interface CreateCalendarEventInput {
   email: string
   joinUrl: string | null
   bookingId: string
+  /**
+   * The booking's reschedule token (spec 007 Task 2). Omitted for a caller that
+   * has none to offer — the rest of the reschedule state is still written, so
+   * every booking, on both billing paths, is reschedulable from the start.
+   */
+  rescheduleToken?: string | null
+  /** The booking's locale (`es`/`en`); stored so a move needs no other record. */
+  locale?: string | null
 }
 
 export interface CalendarSlot {
@@ -33,6 +41,44 @@ export interface SlotInput {
   hours: number
 }
 
+/**
+ * Everything a move needs about a booking, recovered from the calendar event
+ * itself (spec 007 Task 2). There is no booking database: the billing-disabled
+ * path has no Stripe session at all, so the event IS the record.
+ */
+export interface BookingRescheduleState {
+  bookingId: string
+  email: string
+  /** The booking's CURRENT date, read from the event's start. */
+  date: string
+  /** The booking's CURRENT start time, read from the event's start. */
+  startTime: string
+  hours: number
+  joinUrl: string | null
+  locale: 'es' | 'en'
+  /** How many reschedules have already happened. */
+  count: number
+}
+
+/** A move to a new slot, carrying the state the event must keep. */
+export interface MoveCalendarEventInput {
+  provider?: CalendarProvider
+  timezone: string
+  bookingId: string
+  /** The NEW date. */
+  date: string
+  /** The NEW start time; the duration stays `hours`. */
+  startTime: string
+  hours: number
+  joinUrl?: string | null
+  email?: string
+  locale?: string | null
+  /** The rotated token written to the event. */
+  rescheduleToken: string
+  /** The count written to the event (already incremented by the caller). */
+  rescheduleCount: number
+}
+
 export interface CalendarAdapter {
   createEvent(
     input: CreateCalendarEventInput,
@@ -41,6 +87,13 @@ export interface CalendarAdapter {
   findEventByBookingId(bookingId: string, client?: CalendarClient): Promise<boolean>
   findOverlappingBookingId(input: SlotInput, client?: CalendarClient): Promise<string | null>
   getBusyIntervals(date: string, timezone: string, client?: CalendarClient): Promise<CalendarSlot[]>
+  /** Resolves a reschedule token to its booking, or null when it is dead. */
+  findBookingByRescheduleToken(
+    token: string,
+    client?: CalendarClient
+  ): Promise<BookingRescheduleState | null>
+  /** Moves the ONE existing event; the room and bookingId never change. */
+  moveEvent(input: MoveCalendarEventInput, client?: CalendarClient): Promise<void>
 }
 
 function resolveAdapter(): CalendarAdapter {
@@ -75,4 +128,24 @@ export function findOverlappingBookingId(input: SlotInput): Promise<string | nul
 
 export function getBusyIntervals(date: string, timezone: string): Promise<CalendarSlot[]> {
   return resolveAdapter().getBusyIntervals(date, timezone)
+}
+
+export function findBookingByRescheduleToken(
+  token: string,
+  opts?: { fetchImpl?: typeof fetch }
+): Promise<BookingRescheduleState | null> {
+  return resolveAdapter().findBookingByRescheduleToken(
+    token,
+    opts?.fetchImpl ? { fetchImpl: opts.fetchImpl } : undefined
+  )
+}
+
+export function moveCalendarEvent(
+  input: MoveCalendarEventInput,
+  opts?: { fetchImpl?: typeof fetch }
+): Promise<void> {
+  return resolveAdapter().moveEvent(
+    input,
+    opts?.fetchImpl ? { fetchImpl: opts.fetchImpl } : undefined
+  )
 }

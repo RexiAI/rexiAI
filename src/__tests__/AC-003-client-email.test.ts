@@ -123,8 +123,14 @@ describe('AC-003 client email (billing disabled)', () => {
     // Service framing under the headline, help line under the CTAs (15-design).
     expect(html).toContain('Para entrar a la sesión, usa el botón de abajo a la hora indicada.')
     expect(html.indexOf('Para entrar a la sesión')).toBeLessThan(joinCtaAt)
-    expect(html).toContain('¿Dudas o necesitas cambiar la hora? Responde a este correo.')
-    expect(html.indexOf('¿Dudas o necesitas cambiar la hora?')).toBeGreaterThan(joinCtaAt)
+    // AUTHORISED CHANGE (spec 007 10-tasks.md decision D3, human-approved): the
+    // help line shortens from "¿Dudas o necesitas cambiar la hora? Responde a
+    // este correo." to this one, because the reschedule page now owns "change the
+    // hour" and the old wording pointed at the wrong route. Nothing else in this
+    // body moves, and the scenario ID is preserved verbatim.
+    expect(html).toContain('¿Dudas? Responde a este correo.')
+    expect(html.indexOf('¿Dudas?')).toBeGreaterThan(joinCtaAt)
+    expect(html).not.toContain('¿Dudas o necesitas cambiar la hora?')
     expect(html).toContain('max-width:600px')
     expect(html).toContain('display:none')
     expect(html).toContain('Los detalles de tu sesión y cómo entrar, en este correo.')

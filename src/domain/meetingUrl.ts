@@ -1,15 +1,38 @@
-// URL shapes for a meeting room (spec 006 Task 1): the real Jitsi room, the room
-// name inside a join URL, and the locale-free variant for operator mail.
+// URL shapes for a meeting room (spec 006 Task 1): the branded base, the real
+// Jitsi room, the room name inside a join URL, and the locale-free variant for
+// operator mail.
 //
 // Leaf module on purpose. `meeting.ts` is mocked wholesale by older booking tests
 // (`vi.mock('../domain/meeting', () => ({ createMeetingLink }))`), so anything the
 // EMAIL path needs must not live there — a mock that only supplies
-// `createMeetingLink` would make these helpers undefined at render time.
+// `createMeetingLink` would make these helpers undefined at render time. That is
+// why `meetingBaseUrl` lives here and `meeting.ts` re-exports it.
+
+import { normalizeLocale } from './locale.js'
 
 /** Where the call actually happens. Fixed per the spec: the bot joins meet.jit.si. */
 export const REAL_MEETING_HOST = 'https://meet.jit.si'
 
 const ROOM_PATTERN = /^rexi-[0-9a-f]{16}$/
+
+/**
+ * The configured brand, or null when it is missing/unusable (fail loud, never
+ * guess). Moved here from meeting.ts for the reason above; meeting.ts re-exports
+ * it so the module's documented surface is unchanged.
+ */
+export function meetingBaseUrl(env: NodeJS.ProcessEnv = process.env): string | null {
+  const raw = (env['MEETING_BASE_URL'] ?? '').replace(/\/+$/, '')
+  if (!raw) return null
+  try {
+    const url = new URL(raw)
+    // The join URL is pinned to https: a plain-http brand would make the client
+    // page look like the phishing signal this spec exists to remove.
+    if (url.protocol !== 'https:') return null
+    return raw
+  } catch {
+    return null
+  }
+}
 
 /** The real meet.jit.si room for a room name: no query, no fragment, never the brand. */
 export function realRoomUrl(room: string): string {
@@ -33,6 +56,21 @@ export function roomFromJoinUrl(joinUrl: string): string | null {
 /** True when a string is a well-formed room name (lowercase hex only). */
 export function isRoomName(value: string): boolean {
   return ROOM_PATTERN.test(value)
+}
+
+/**
+ * The same join URL with its `lang` parameter set to the booking locale, or the
+ * URL unchanged when it is not a URL at all. A booking created before `?lang=`
+ * existed still reaches the right language instead of falling back to default.
+ */
+export function withLocale(joinUrl: string, locale?: unknown): string {
+  try {
+    const url = new URL(joinUrl)
+    url.searchParams.set('lang', normalizeLocale(locale))
+    return url.toString()
+  } catch {
+    return joinUrl
+  }
 }
 
 /**
