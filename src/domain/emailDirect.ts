@@ -12,7 +12,7 @@
 import { buildCalendarTemplateUrl } from './calendarLink.js'
 import { consentNotice, consentNoticeLines, noticeLangAttribute } from './consentNotice.js'
 import type { ClientEmailInput, OperatorEmailInput } from './email.js'
-import { escapeHtml, renderText, type BodyLine } from './emailHtml.js'
+import { clientNameRows, escapeHtml, renderText, type BodyLine } from './emailHtml.js'
 import { localeFreeJoinUrl } from './meetingUrl.js'
 import { rescheduleLink } from './rescheduleUrl.js'
 import { getConfiguredTimezone } from './time.js'
@@ -293,6 +293,7 @@ export function buildDirectOperatorBody(input: OperatorEmailInput): EmailBody {
   const joinUrl = localeFreeJoinUrl(input.joinUrl ?? '')
   const calendarUrl = directCalendarUrl(input, joinUrl)
   const rows: BodyLine[] = [
+    ...clientNameRows(input.clientName),
     { label: 'Cliente', value: input.clientEmail },
     ...factRows(input, timezone),
   ]

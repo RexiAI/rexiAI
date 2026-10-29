@@ -7,7 +7,7 @@ import {
   buildDirectClientBody,
   buildDirectOperatorBody,
 } from './emailDirect.js'
-import { renderHtml, renderText, type BodyLine } from './emailHtml.js'
+import { clientNameRows, renderHtml, renderText, type BodyLine } from './emailHtml.js'
 import type { Locale } from './locale.js'
 import { localeFreeJoinUrl } from './meetingUrl.js'
 import {
@@ -43,6 +43,10 @@ export interface EmailOptions {
 
 export interface OperatorEmailInput {
   clientEmail: string
+  /** The customer's name, rendered as a `Nombre` line above `Cliente`. Optional so
+   *  a legacy (pre-spec-008) booking or a recorded-billing session renders the
+   *  byte-identical pre-name email instead of an empty row. */
+  clientName?: string
   date: string
   startTime: string
   hours: number
@@ -72,6 +76,7 @@ function amountLine(input: OperatorEmailInput): BodyLine {
 function buildLines(input: OperatorEmailInput): BodyLine[] {
   const timezone = getConfiguredTimezone()
   const lines: BodyLine[] = [
+    ...clientNameRows(input.clientName),
     { label: 'Cliente', value: input.clientEmail },
     { label: 'Fecha', value: input.date },
     { label: `Hora (${timezone})`, value: input.startTime },

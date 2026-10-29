@@ -5,7 +5,7 @@ import {
 } from '../../src/domain/availability.js'
 import { normalizeLocale, type Locale } from '../../src/domain/locale.js'
 import { priceCents } from '../../src/domain/pricing.js'
-import { isValidEmail } from '../../src/domain/validation.js'
+import { isValidEmail, NAME_MAX_LENGTH } from '../../src/domain/validation.js'
 import type { ApiRequest, ApiResponse } from '../httpTypes.js'
 
 import { getWindowsForDate, isCovered } from './calendar.js'
@@ -14,6 +14,24 @@ import { loadConfigOrError } from './config.js'
 function validateEmail(email: string, res: ApiResponse): boolean {
   if (!isValidEmail(email)) {
     res.status(400).json({ error: { code: 'INVALID_EMAIL', message: 'Invalid email' } })
+    return false
+  }
+  return true
+}
+
+/**
+ * Name at the API boundary (spec 008 Task 2): required, trimmed, bounded — no
+ * character allow-list, deliberately. A name becomes a directory name only in the
+ * recording processor, which sanitises it there (Task 8); rejecting `<` or `/`
+ * here would refuse real names for a path concern that never reaches this layer.
+ */
+function validateName(name: string, res: ApiResponse): boolean {
+  if (name === '') {
+    res.status(400).json({ error: { code: 'INVALID_NAME', message: 'Name is required' } })
+    return false
+  }
+  if (name.length > NAME_MAX_LENGTH) {
+    res.status(400).json({ error: { code: 'INVALID_NAME', message: 'Name is too long' } })
     return false
   }
   return true
@@ -111,6 +129,7 @@ function loadAndValidateSlot(
 
 function extractBookingFields(body: unknown): {
   email: string
+  name: string
   date: string
   startTime: string
   hoursRaw: unknown
@@ -118,9 +137,12 @@ function extractBookingFields(body: unknown): {
 } {
   const b = (body ?? {}) as Record<string, unknown>
   const email = typeof b.email === 'string' ? b.email.trim() : ''
+  // Same trim pattern as email: the trimmed name is the one that gets stored,
+  // emailed and later turned into a folder name.
+  const name = typeof b.name === 'string' ? b.name.trim() : ''
   const date = typeof b.date === 'string' ? b.date : ''
   const startTime = typeof b.startTime === 'string' ? b.startTime : ''
-  return { email, date, startTime, hoursRaw: b.hours, localeRaw: b.locale }
+  return { email, name, date, startTime, hoursRaw: b.hours, localeRaw: b.locale }
 }
 
 /**
@@ -134,18 +156,34 @@ function normalizeBookingLocale(raw: unknown): Locale | undefined {
   return normalizeLocale(raw)
 }
 
+/** The request-shape validators, in pin order (name after email, before date). */
+function fieldsValid(raw: ReturnType<typeof extractBookingFields>, res: ApiResponse): boolean {
+  if (!validateEmail(raw.email, res)) return false
+  if (!validateName(raw.name, res)) return false
+  if (!validateDate(raw.date, res)) return false
+  return validateTime(raw.startTime, res)
+}
+
 function validateInput(
   body: unknown,
   res: ApiResponse
-): { email: string; date: string; startTime: string; hours: number; locale?: Locale } | null {
-  const { email, date, startTime, hoursRaw, localeRaw } = extractBookingFields(body)
-  if (!validateEmail(email, res)) return null
-  if (!validateDate(date, res)) return null
-  if (!validateTime(startTime, res)) return null
-  const hours = validateHours(hoursRaw, res)
+): {
+  email: string
+  name: string
+  date: string
+  startTime: string
+  hours: number
+  locale?: Locale
+} | null {
+  const raw = extractBookingFields(body)
+  if (!fieldsValid(raw, res)) return null
+  const hours = validateHours(raw.hoursRaw, res)
   if (hours === null) return null
-  const locale = normalizeBookingLocale(localeRaw)
-  return locale ? { email, date, startTime, hours, locale } : { email, date, startTime, hours }
+  const { email, name, date, startTime } = raw
+  const locale = normalizeBookingLocale(raw.localeRaw)
+  return locale
+    ? { email, name, date, startTime, hours, locale }
+    : { email, name, date, startTime, hours }
 }
 
 export function prepareBookingInput(req: ApiRequest, res: ApiResponse) {

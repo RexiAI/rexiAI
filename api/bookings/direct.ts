@@ -13,20 +13,15 @@ import { randomUUID } from 'crypto'
 
 import { createCalendarEvent, findOverlappingBookingId } from '../../src/domain/calendar.js'
 import { sendClientEmail, sendOperatorEmail } from '../../src/domain/email.js'
-import type { Locale } from '../../src/domain/locale.js'
 import { getCalendarProvider } from '../../src/domain/providers.js'
 import { generateRescheduleToken } from '../../src/domain/rescheduleToken.js'
 import { errorText } from '../errorText.js'
 import type { ApiResponse } from '../httpTypes.js'
 
-export type DirectBookingInput = {
-  email: string
-  date: string
-  startTime: string
-  hours: number
-  /** The booking's locale; selects the client consent notice (spec 006 Task 8). */
-  locale?: Locale
-}
+import type { BookingRequestFields } from './types.js'
+
+/** This path has no Stripe session: the booking facts are exactly what it needs. */
+export type DirectBookingInput = BookingRequestFields
 
 // Mirrors resolveCalendarTimezone in api/stripe-webhook.ts (minus the session
 // metadata input, which this path does not have).
@@ -88,6 +83,7 @@ async function notifyOperator(
   // object keeps AC-002-06's pinned shape.
   await sendOperatorEmail(
     {
+      clientName: input.name,
       clientEmail: input.email,
       date: input.date,
       startTime: input.startTime,

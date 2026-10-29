@@ -5,7 +5,7 @@ import {
   findEventByBookingId,
   findOverlappingBookingId,
 } from '../src/domain/calendar.js'
-import { sendClientEmail, sendOperatorEmail } from '../src/domain/email.js'
+import { sendClientEmail, sendOperatorEmail, type OperatorEmailInput } from '../src/domain/email.js'
 import { markFreeHourUsed } from '../src/domain/freeHour.js'
 import { normalizeLocale, type Locale } from '../src/domain/locale.js'
 import { getCalendarProvider } from '../src/domain/providers.js'
@@ -114,6 +114,7 @@ type BookingData =
   | {
       bookingId: string
       email: string
+      name: string
       date: string
       startTime: string
       hours: number
@@ -127,6 +128,7 @@ type BookingData =
   | {
       bookingId: string
       email: string
+      name: string
       date: string
       startTime: string
       hours: number
@@ -145,6 +147,9 @@ function getRawBookingFields(session: Stripe.Checkout.Session) {
     bookingId: session.id,
     metadata,
     email: metaValue(metadata, 'email', getCustomerEmail(session)),
+    // Absent for a legacy booking or a recorded-billing session: '' keeps the
+    // operator email's Nombre line out without any null handling downstream.
+    name: metaValue(metadata, 'name', ''),
     date: metaValue(metadata, 'date', ''),
     startTime: metaValue(metadata, 'start_time', ''),
     hours: parseInt(metaValue(metadata, 'hours', '1'), 10),
@@ -180,6 +185,7 @@ function buildRecordedBillingData(
   return {
     bookingId: origBookingId,
     email: raw.email,
+    name: raw.name,
     date: raw.date,
     startTime: raw.startTime,
     hours: raw.hours,
@@ -200,6 +206,7 @@ function buildStandardBookingData(
   return {
     bookingId: raw.bookingId,
     email: raw.email,
+    name: raw.name,
     date: raw.date,
     startTime: raw.startTime,
     hours: raw.hours,
@@ -230,31 +237,41 @@ async function checkAlreadyExists(bookingId: string, res: ApiResponse): Promise<
   }
 }
 
-async function trySendEmail(
-  data: {
-    email: string
-    date: string
-    startTime: string
-    hours: number
-    amountTotal: number
-    bookingId: string
-    joinUrl?: string | null
-    kind?: 'reservation' | 'charge'
-    slotConflictWith?: string | null
-  },
-  res: ApiResponse
-): Promise<boolean> {
+type OperatorEmailFields = {
+  email: string
+  clientName?: string
+  date: string
+  startTime: string
+  hours: number
+  amountTotal: number
+  bookingId: string
+  joinUrl?: string | null
+  kind?: 'reservation' | 'charge'
+  slotConflictWith?: string | null
+}
+
+/**
+ * The operator-email payload for one booking. Additive fields are spread only
+ * when present: a session with no name metadata (a legacy booking, or the
+ * recorded-billing charge) must produce the pre-spec-008 body byte for byte.
+ */
+function operatorEmailPayload(data: OperatorEmailFields): OperatorEmailInput {
+  return {
+    clientEmail: data.email,
+    date: data.date,
+    startTime: data.startTime,
+    hours: Number.isFinite(data.hours) ? data.hours : 1,
+    amountCents: data.amountTotal,
+    joinUrl: data.joinUrl ?? null,
+    ...(data.clientName ? { clientName: data.clientName } : {}),
+    ...(data.kind ? { kind: data.kind } : {}),
+    ...(data.slotConflictWith ? { slotConflictWith: data.slotConflictWith } : {}),
+  }
+}
+
+async function trySendEmail(data: OperatorEmailFields, res: ApiResponse): Promise<boolean> {
   try {
-    await sendOperatorEmail({
-      clientEmail: data.email,
-      date: data.date,
-      startTime: data.startTime,
-      hours: Number.isFinite(data.hours) ? data.hours : 1,
-      amountCents: data.amountTotal,
-      joinUrl: data.joinUrl ?? null,
-      ...(data.kind ? { kind: data.kind } : {}),
-      ...(data.slotConflictWith ? { slotConflictWith: data.slotConflictWith } : {}),
-    })
+    await sendOperatorEmail(operatorEmailPayload(data))
     emailSentForBooking.add(data.bookingId)
     return true
   } catch (e) {
@@ -386,7 +403,7 @@ async function handleExistingBooking(
     res.status(200).json({ received: true, deduped: true })
     return true
   }
-  if (await trySendEmail(d, res)) {
+  if (await trySendEmail({ ...d, clientName: d.name }, res)) {
     res.status(200).json({ received: true, dedupedEmailSent: true })
   }
   return true
@@ -485,7 +502,7 @@ async function handleNewBooking(
   // confirmation, so the link the client taps resolves (spec 007 Task 7).
   const rescheduleToken = generateRescheduleToken()
   if (!(await tryCreateEvent({ ...d, rescheduleToken }, res))) return true
-  if (!(await trySendEmail({ ...d, slotConflictWith }, res))) return true
+  if (!(await trySendEmail({ ...d, clientName: d.name, slotConflictWith }, res))) return true
   await trySendClientEmail({ ...d, rescheduleToken })
   res.status(200).json(bookingBody(d.freeHourApplied, mark.burned, slotConflictWith))
   return true

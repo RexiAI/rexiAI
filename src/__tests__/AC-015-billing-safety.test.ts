@@ -101,6 +101,7 @@ describe('AC-015', () => {
       id: 'bk_1',
       customer_email: 'returning@example.com',
       metadata: {
+        name: 'Ana López',
         email: 'returning@example.com',
         date: '2027-03-01',
         start_time: '10:00',
@@ -123,6 +124,7 @@ describe('AC-015', () => {
     const res = makeRes()
     await bookingsHandler(
       makeBookingReq({
+        name: 'Ana López',
         email: 'returning@example.com',
         date: '2027-03-01',
         startTime: '10:00',
@@ -140,6 +142,7 @@ describe('AC-015', () => {
     const res = makeRes()
     await bookingsHandler(
       makeBookingReq({
+        name: 'Ana López',
         email: 'returning@example.com',
         date: '2027-03-01',
         startTime: '10:00',
@@ -227,6 +230,7 @@ describe('AC-015', () => {
     const res = makeRes()
     await bookingsHandler(
       makeBookingReq({
+        name: 'Ana López',
         email: 'returning@example.com',
         date: '2027-03-01',
         startTime: '10:00',
@@ -246,6 +250,7 @@ describe('AC-015', () => {
     const res = makeRes()
     await bookingsHandler(
       makeBookingReq({
+        name: 'Ana López',
         email: 'returning@example.com',
         date: '2027-03-01',
         startTime: '10:00',

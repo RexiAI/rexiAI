@@ -61,7 +61,13 @@ exceptions: {}
 const JOIN_URL = 'https://meet.jit.si/rexi-direct-003'
 const CLIENT = 'client@example.com'
 const OPERATOR = 'operator@example.com'
-const VALID_BODY = { email: CLIENT, date: '2027-03-01', startTime: '10:00', hours: 1 }
+const VALID_BODY = {
+  name: 'Ana López',
+  email: CLIENT,
+  date: '2027-03-01',
+  startTime: '10:00',
+  hours: 1,
+}
 
 // Banned billing set (same list and same 'EUR' token rule as the module-level
 // AC-003 email tests — see AC-003-operator-email.test.ts for the rationale).

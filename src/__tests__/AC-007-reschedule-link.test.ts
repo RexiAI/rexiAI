@@ -231,7 +231,13 @@ exceptions: {}
       await bookingsHandler(
         {
           method: 'POST',
-          body: { email: CLIENT, date: '2027-03-01', startTime: '10:00', hours: 1 },
+          body: {
+            name: 'Ana López',
+            email: CLIENT,
+            date: '2027-03-01',
+            startTime: '10:00',
+            hours: 1,
+          },
           headers: { 'x-forwarded-for': '198.51.100.4' },
         } as any,
         res

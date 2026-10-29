@@ -38,6 +38,9 @@ async function bookSession(dict: typeof es | typeof en) {
   fireEvent.click(screen.getByText('10:00'))
   const emailInput = document.getElementById('booking-email') as HTMLInputElement
   fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+  fireEvent.change(document.getElementById('booking-name') as HTMLInputElement, {
+    target: { value: 'Ana López' },
+  })
   fireEvent.click(screen.getByRole('button', { name: dict.freeMode.submit }))
   await waitFor(() => screen.getByText(dict.booking.confirmation.title))
 }

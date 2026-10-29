@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/RexiAI/rexiAI/compare/v1.8.0...v1.9.0) (2026-10-29)
+
+
+### Features
+
+* **bookings:** capture customer name and organize recordings into <name>_<date> folders ([#89](https://github.com/RexiAI/rexiAI/issues/89)) ([13da865](https://github.com/RexiAI/rexiAI/commit/13da86528c87440710f745114c9faa1b71ae8fa0))
+
 # [1.8.0](https://github.com/RexiAI/rexiAI/compare/v1.7.0...v1.8.0) (2026-10-26)
 
 

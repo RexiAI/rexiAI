@@ -75,6 +75,9 @@ describe('AC-011', () => {
     // duration default 1, change maybe keep
     const emailInput = document.getElementById('booking-email') as HTMLInputElement
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
+    fireEvent.change(document.getElementById('booking-name') as HTMLInputElement, {
+      target: { value: 'Ana López' },
+    })
     const submit = screen.getByRole('button', { name: /Reservar y pagar/i })
     fireEvent.click(submit)
     await waitFor(() =>

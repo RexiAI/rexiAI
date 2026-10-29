@@ -95,7 +95,13 @@ function reservationFields(session, meta) {
   const email = meta['email'] || session.customer_email || ''
   const quotedHours = Number.parseInt(meta['quoted_hours'] || '0', 10)
   const joinUrl = meta['join_url'] || ''
-  return { bookingId: session.id, email, quotedHours, joinUrl }
+  // Spec 008 Task 7: the name and the MEETING date, resolved the same way email
+  // already is. Both ride the reservation object, so every path that already
+  // propagates `email` propagates these too. Absent keys degrade to '' — a legacy
+  // reservation must not throw here.
+  const name = meta['name'] || ''
+  const date = meta['date'] || ''
+  return { bookingId: session.id, email, name, date, quotedHours, joinUrl }
 }
 
 function reservationFromSession(session, room) {
