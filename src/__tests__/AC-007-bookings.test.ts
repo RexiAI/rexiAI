@@ -60,7 +60,13 @@ describe('AC-007', () => {
   it('AC-007-01: First-timer one-hour booking creates a zero-euro checkout session', async () => {
     const req: any = {
       method: 'POST',
-      body: { email: 'first@example.com', date: '2027-03-01', startTime: '10:00', hours: 1 },
+      body: {
+        name: 'Ana López',
+        email: 'first@example.com',
+        date: '2027-03-01',
+        startTime: '10:00',
+        hours: 1,
+      },
       headers: { host: 'example.com', 'x-forwarded-proto': 'https' },
     }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
@@ -82,7 +88,13 @@ describe('AC-007', () => {
     stripeMocks.mockList.mockResolvedValue({ data: [] })
     const req: any = {
       method: 'POST',
-      body: { email: 'first@example.com', date: '2027-03-01', startTime: '10:00', hours: 2 },
+      body: {
+        name: 'Ana López',
+        email: 'first@example.com',
+        date: '2027-03-01',
+        startTime: '10:00',
+        hours: 2,
+      },
       headers: { host: 'example.com' },
     }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
@@ -102,7 +114,13 @@ describe('AC-007', () => {
     })
     const req: any = {
       method: 'POST',
-      body: { email: 'returning@example.com', date: '2027-03-01', startTime: '10:00', hours: 2 },
+      body: {
+        name: 'Ana López',
+        email: 'returning@example.com',
+        date: '2027-03-01',
+        startTime: '10:00',
+        hours: 2,
+      },
       headers: { host: 'example.com' },
     }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
@@ -117,7 +135,13 @@ describe('AC-007', () => {
   it('AC-007-04: Invalid email rejected without calling Stripe', async () => {
     const req: any = {
       method: 'POST',
-      body: { email: 'not-an-email', date: '2027-03-01', startTime: '10:00', hours: 1 },
+      body: {
+        name: 'Ana López',
+        email: 'not-an-email',
+        date: '2027-03-01',
+        startTime: '10:00',
+        hours: 1,
+      },
     }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
     await bookingsHandler(req, res)
@@ -133,7 +157,13 @@ describe('AC-007', () => {
       stripeMocks.mockList.mockResolvedValue({ data: [] })
       const req: any = {
         method: 'POST',
-        body: { email: 'a@b.com', date: '2027-03-01', startTime: '10:00', hours: h },
+        body: {
+          name: 'Ana López',
+          email: 'a@b.com',
+          date: '2027-03-01',
+          startTime: '10:00',
+          hours: h,
+        },
       }
       const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
       await bookingsHandler(req, res)
@@ -145,7 +175,13 @@ describe('AC-007', () => {
   it('AC-007-06: Off-grid start time rejected', async () => {
     const req: any = {
       method: 'POST',
-      body: { email: 'a@b.com', date: '2027-03-01', startTime: '09:15', hours: 1 },
+      body: {
+        name: 'Ana López',
+        email: 'a@b.com',
+        date: '2027-03-01',
+        startTime: '09:15',
+        hours: 1,
+      },
     }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
     await bookingsHandler(req, res)
@@ -156,7 +192,13 @@ describe('AC-007', () => {
   it('AC-007-07: Start outside availability rejected', async () => {
     const req: any = {
       method: 'POST',
-      body: { email: 'a@b.com', date: '2027-03-01', startTime: '18:00', hours: 1 },
+      body: {
+        name: 'Ana López',
+        email: 'a@b.com',
+        date: '2027-03-01',
+        startTime: '18:00',
+        hours: 1,
+      },
     }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }
     await bookingsHandler(req, res)
@@ -168,7 +210,13 @@ describe('AC-007', () => {
     calendarMocks.mockHasConflict.mockResolvedValue(true)
     const req: any = {
       method: 'POST',
-      body: { email: 'a@b.com', date: '2027-03-01', startTime: '10:00', hours: 1 },
+      body: {
+        name: 'Ana López',
+        email: 'a@b.com',
+        date: '2027-03-01',
+        startTime: '10:00',
+        hours: 1,
+      },
       headers: { host: 'example.com' },
     }
     const res: any = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() }

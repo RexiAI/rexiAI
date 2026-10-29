@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIp } from '../src/domain/rateLimit.js'
 import { hasConflict } from './bookings/calendar.js'
 import { createCheckout } from './bookings/checkout.js'
 import { finishDirectBooking } from './bookings/direct.js'
+import type { BookingRequestFields } from './bookings/types.js'
 import { prepareBookingInput } from './bookings/validation.js'
 import type { ApiRequest, ApiResponse } from './httpTypes.js'
 
@@ -27,13 +28,7 @@ function enforceRateLimit(req: ApiRequest, res: ApiResponse): boolean {
   return false
 }
 
-type BookingInput = {
-  email: string
-  date: string
-  startTime: string
-  hours: number
-  locale?: Locale
-}
+type BookingInput = BookingRequestFields
 
 async function resolveMeeting(input: {
   date: string
@@ -103,6 +98,7 @@ async function runPreflight(req: ApiRequest, res: ApiResponse) {
 
 function reserve(input: BookingInput, meeting: MeetingResult, req: ApiRequest, res: ApiResponse) {
   return createCheckout({
+    name: input.name,
     email: input.email,
     date: input.date,
     startTime: input.startTime,
