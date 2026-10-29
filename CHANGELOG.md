@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/RexiAI/rexiAI/compare/v1.9.0...v1.10.0) (2026-10-29)
+
+
+### Features
+
+* **reschedule:** client-requested reschedule link, API and page ([#88](https://github.com/RexiAI/rexiAI/issues/88)) ([b10b481](https://github.com/RexiAI/rexiAI/commit/b10b48105c2523400744a0ceb2f04c16ae9b2783))
+
 # [1.9.0](https://github.com/RexiAI/rexiAI/compare/v1.8.0...v1.9.0) (2026-10-29)
 
 
