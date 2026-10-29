@@ -12,6 +12,7 @@ import path from 'node:path'
 import { homedir } from 'node:os'
 
 import { assessFreeSpace } from './disk.mjs'
+import { organizeSessionDir } from './folder.mjs'
 import { collectSessionMp4s } from './media.mjs'
 import { transcribe, TRANSCRIBED_MARKER } from './transcribe.mjs'
 import { runInsightStage, ANALYZED_MARKER } from './insight.mjs'
@@ -151,11 +152,15 @@ async function probeSession({ target, deps, log }) {
 }
 
 /** What the brief needs: room + session date + best-effort attribution, never fabricated. */
-function insightContext({ room, mp4s, target, attribution }) {
+export function insightContext({ room, mp4s, target, attribution }) {
   return {
     room,
     sessionDate: sessionDateFromMp4(mp4s[0] || target),
     clientEmail: attribution?.email,
+    // Spec 008 Task 7: mirrors clientEmail, so a reservation without a name
+    // yields undefined here and nothing downstream has to guard for an object
+    // that is missing the key.
+    clientName: attribution?.name,
     bookingId: attribution?.bookingId,
     unattributed: !attribution,
   }
@@ -173,9 +178,13 @@ function resolveRoomOrThrow({ dir, room, target, log }) {
 }
 
 /**
- * Run every stage for one session directory. Returns { ok } where ok=false only
- * when the billing stage was ATTEMPTED and failed (today's exit-code meaning,
+ * Run every stage for one session directory. Returns { ok, dir } where ok=false
+ * only when the billing stage was ATTEMPTED and failed (today's exit-code meaning,
  * preserved for the billing-enabled path); all other skip verdicts are success.
+ *
+ * `dir` is the directory the run ends in: the organise step (spec 008 Task 8)
+ * renames the session in place to `<name>_<date>` as the LAST act, so it is
+ * returned rather than assumed.
  *
  * @param {{ dir: string, room?: string|null, dryRun?: boolean,
  *   env: Record<string, string|undefined>,
@@ -184,10 +193,10 @@ function resolveRoomOrThrow({ dir, room, target, log }) {
  */
 export async function processSessionDir({ dir, room, dryRun = false, env, deps, log = console }) {
   const facts = collectSessionFacts(dir)
-  if (!facts) return { ok: true }
+  if (!facts) return { ok: true, dir }
   if (allStagesComplete(dir)) {
     log.log(`  ${dir}: all stages already marked — nothing to do.`)
-    return { ok: true }
+    return { ok: true, dir }
   }
 
   const { target, mp4s } = facts
@@ -205,15 +214,27 @@ export async function processSessionDir({ dir, room, dryRun = false, env, deps, 
     dryRun,
     log,
   })
+  const ok = billing !== 'failed'
+  const context = insightContext({ room: resolvedRoom, mp4s, target, attribution })
 
   // A silent recording never transcribes or analyzes (AC-004-43); the existing
   // warning path and the billing behavior above are unchanged.
-  if (!audio) return { ok: billing !== 'failed' }
+  if (audio) {
+    await transcriptionStage({ dir, mp4s, env, deps, dryRun, log })
+    await insightStage({ dir, context, deps, dryRun, log, env })
+  }
 
-  const context = insightContext({ room: resolvedRoom, mp4s, target, attribution })
-  await transcriptionStage({ dir, mp4s, env, deps, dryRun, log })
-  await insightStage({ dir, context, deps, dryRun, log, env })
-  return { ok: billing !== 'failed' }
+  // Organise LAST (spec 008 Task 8): only a recording whose stages have run earns
+  // the <name>_<date> rename, and a throw here leaves the directory unmarked —
+  // sweepSessionDirs contains it and the next scan retries.
+  const organisedDir = organizeSessionDir({
+    dir,
+    attribution,
+    sessionDate: context.sessionDate,
+    dryRun,
+    log,
+  })
+  return { ok, dir: organisedDir }
 }
 
 /**

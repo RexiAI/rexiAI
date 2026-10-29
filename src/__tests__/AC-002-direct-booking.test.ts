@@ -69,7 +69,13 @@ exceptions: {}
 const JOIN_URL = 'https://meet.jit.si/rexi-direct-test'
 const CLIENT = 'client@example.com'
 // 2027-03-01 is a Monday; 10:00 for 1 hour sits inside the 09:00-13:00 window.
-const VALID_BODY = { email: CLIENT, date: '2027-03-01', startTime: '10:00', hours: 1 }
+const VALID_BODY = {
+  name: 'Ana López',
+  email: CLIENT,
+  date: '2027-03-01',
+  startTime: '10:00',
+  hours: 1,
+}
 const SUCCESS_BODY = { checkoutUrl: null, joinUrl: JOIN_URL, billingDisabled: true }
 
 const ENV_KEYS = [

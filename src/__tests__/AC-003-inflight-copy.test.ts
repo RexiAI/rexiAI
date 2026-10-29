@@ -59,6 +59,9 @@ async function startHeldSubmit(billingEnabled: boolean, idleLabel: string): Prom
   fireEvent.change(document.getElementById('booking-email') as HTMLInputElement, {
     target: { value: 'test@example.com' },
   })
+  fireEvent.change(document.getElementById('booking-name') as HTMLInputElement, {
+    target: { value: 'Ana López' },
+  })
   const submit = document.querySelector('.booking-submit') as HTMLElement
   expect(submit.textContent).toBe(idleLabel)
   fireEvent.click(submit)

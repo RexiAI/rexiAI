@@ -98,7 +98,7 @@ function makeBillingReq(body: Record<string, unknown>) {
 function makeBookingReq(ip = '203.0.113.7') {
   return {
     method: 'POST',
-    body: { email: CLIENT, date: '2027-03-01', startTime: '10:00', hours: 2 },
+    body: { name: 'Ana López', email: CLIENT, date: '2027-03-01', startTime: '10:00', hours: 2 },
     headers: { host: 'example.com', 'x-forwarded-proto': 'https', 'x-forwarded-for': ip },
   } as any
 }

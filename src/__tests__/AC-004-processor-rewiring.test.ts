@@ -161,10 +161,17 @@ describe('AC-004 processor rewiring', () => {
     const { log } = captureLog()
     const fetch = makeFetch(() => ({ status: 200, body: { data: [], has_more: false } }))
 
-    await processSessionDir({ dir, env: {}, deps: depsOf(chain.runner, fetch), log })
+    // Spec 008 Task 8 renames the session in place as the last act: the returned
+    // path is where the stage markers actually land.
+    const { dir: organized } = await processSessionDir({
+      dir,
+      env: {},
+      deps: depsOf(chain.runner, fetch),
+      log,
+    })
 
-    expect(exists(dir, 'transcript.json')).toBe(true)
-    expect(exists(dir, '.rexi-transcribed')).toBe(true)
+    expect(exists(organized, 'transcript.json')).toBe(true)
+    expect(exists(organized, '.rexi-transcribed')).toBe(true)
     // The marker still guards billing exactly as today: no POST ever attempted.
     expect(billingPosts(fetch)).toHaveLength(0)
   })
@@ -175,12 +182,19 @@ describe('AC-004 processor rewiring', () => {
     const { lines, log } = captureLog()
     const fetch = makeFetch(() => ({ status: 200, body: { data: [], has_more: false } }))
 
-    await processSessionDir({ dir, env: {}, deps: depsOf(chain.runner, fetch), log })
+    // Spec 008 Task 8 renames the session in place as the last act: the returned
+    // path is where the stage markers actually land.
+    const { dir: organized } = await processSessionDir({
+      dir,
+      env: {},
+      deps: depsOf(chain.runner, fetch),
+      log,
+    })
 
     // Stages complete with zero Stripe configuration; billing fails closed with a
     // clear skip log — the old startup hard-exit at the entry is gone (next test).
-    expect(exists(dir, 'transcript.json')).toBe(true)
-    expect(exists(dir, '.rexi-analyzed')).toBe(true)
+    expect(exists(organized, 'transcript.json')).toBe(true)
+    expect(exists(organized, '.rexi-analyzed')).toBe(true)
     expect(lines.join('\n')).toMatch(/SKIP billing/i)
     expect(billingPosts(fetch)).toHaveLength(0)
   })
@@ -197,13 +211,20 @@ describe('AC-004 processor rewiring', () => {
     const { lines, log } = captureLog()
     const fetch = stripeFetch([]) // no session matches the room
 
-    await processSessionDir({ dir, env: BILLING_ENV, deps: depsOf(chain.runner, fetch), log })
+    // Spec 008 Task 8 renames the session in place as the last act: the returned
+    // path is where the stage markers actually land.
+    const { dir: organized } = await processSessionDir({
+      dir,
+      env: BILLING_ENV,
+      deps: depsOf(chain.runner, fetch),
+      log,
+    })
 
     expect(lines.join('\n')).toMatch(/unattributed/i)
-    expect(exists(dir, 'transcript.json')).toBe(true)
-    expect(fs.readFileSync(`${dir}/customer-brief.md`, 'utf8')).toMatch(/unattributed/i)
+    expect(exists(organized, 'transcript.json')).toBe(true)
+    expect(fs.readFileSync(`${organized}/customer-brief.md`, 'utf8')).toMatch(/unattributed/i)
     expect(billingPosts(fetch)).toHaveLength(0)
-    expect(exists(dir, '.rexi-billed')).toBe(false)
+    expect(exists(organized, '.rexi-billed')).toBe(false)
   })
 
   it('AC-004-41: an attribution lookup that THROWS is non-fatal — still transcribes', async () => {
@@ -212,11 +233,18 @@ describe('AC-004 processor rewiring', () => {
     const { lines, log } = captureLog()
     const fetch = makeFetch(withOllama(() => ({ status: 401, body: { error: 'bad key' } }))) // throws inside lookup
 
-    await processSessionDir({ dir, env: BILLING_ENV, deps: depsOf(chain.runner, fetch), log })
+    // Spec 008 Task 8 renames the session in place as the last act: the returned
+    // path is where the stage markers actually land.
+    const { dir: organized } = await processSessionDir({
+      dir,
+      env: BILLING_ENV,
+      deps: depsOf(chain.runner, fetch),
+      log,
+    })
 
     expect(lines.join('\n')).toMatch(/unattributed/i)
-    expect(exists(dir, 'transcript.json')).toBe(true)
-    expect(exists(dir, '.rexi-analyzed')).toBe(true)
+    expect(exists(organized, 'transcript.json')).toBe(true)
+    expect(exists(organized, '.rexi-analyzed')).toBe(true)
   })
 
   it('AC-004-42: the billing-enabled path is unchanged', async () => {
@@ -231,7 +259,7 @@ describe('AC-004 processor rewiring', () => {
     const { log } = captureLog()
     const fetch = stripeFetch(RESERVATION)
 
-    const { ok } = await processSessionDir({
+    const { ok, dir: organized } = await processSessionDir({
       dir,
       env: BILLING_ENV,
       deps: depsOf(chain.runner, fetch),
@@ -249,7 +277,7 @@ describe('AC-004 processor rewiring', () => {
       email: 'client@example.com',
       actualMinutes: 90,
     })
-    expect(exists(dir, '.rexi-billed')).toBe(true)
+    expect(exists(organized, '.rexi-billed')).toBe(true)
   })
 
   it('AC-004-43: silent recording — existing warning, no transcription or insight markers, billing as today', async () => {
@@ -258,7 +286,7 @@ describe('AC-004 processor rewiring', () => {
     const { lines, log } = captureLog()
     const fetch = stripeFetch(RESERVATION)
 
-    const { ok } = await processSessionDir({
+    const { ok, dir: organized } = await processSessionDir({
       dir,
       env: BILLING_ENV,
       deps: depsOf(chain.runner, fetch),
@@ -272,14 +300,14 @@ describe('AC-004 processor rewiring', () => {
       'transcript.json',
       'customer-brief.md',
     ]) {
-      expect(exists(dir, f)).toBe(false)
+      expect(exists(organized, f)).toBe(false)
     }
     expect(
       chain.calls.filter((c) => c.cmd === 'bl' || c.cmd === 'gh' || c.cmd === 'python3')
     ).toHaveLength(0)
     // A billing-enabled deployment still bills the silent recording, exactly as today.
     expect(billingPosts(fetch).length).toBeGreaterThan(0)
-    expect(exists(dir, '.rexi-billed')).toBe(true)
+    expect(exists(organized, '.rexi-billed')).toBe(true)
     expect(ok).toBe(true)
   })
 
@@ -295,7 +323,7 @@ describe('AC-004 processor rewiring', () => {
       )
       return d
     })
-    const [dirA, dirB] = dirs
+    const dirA = dirs[0]
     const badFfmpeg = (call: Call) => call.cmd === 'ffmpeg' && String(call.args).includes(dirA)
     const behavior = (call: Call) => (badFfmpeg(call) ? { fail: true } : ffprobeAudioOk(call))
 
@@ -303,14 +331,23 @@ describe('AC-004 processor rewiring', () => {
     const { lines, log } = captureLog()
     const fetch = makeFetch(() => ({ status: 200, body: { data: [], has_more: false } }))
 
+    // Spec 008 Task 8 renames each COMPLETED session dir in place, so the
+    // successful siblings are identified by "everything except the failed dir".
+    const organized = () =>
+      fs
+        .readdirSync(root)
+        .map((n) => path.join(root, n))
+        .filter((d) => d !== dirA)
+
     const result = await scanAll({ rootDir: root, env: {}, deps: depsOf(first.runner, fetch), log })
 
     expect(result.failed).toEqual([dirA]) // logged with its path, counted in the summary
     expect(result.processed).toBe(2) // B and C fully processed in the same run
     expect(lines.join('\n')).toContain(dirA)
     expect(lines.join('\n')).toMatch(/Failures:\s*1/)
-    expect(exists(dirA, '.rexi-transcribed')).toBe(false) // A left unmarked
-    expect(exists(dirB, '.rexi-analyzed')).toBe(true)
+    expect(exists(dirA, '.rexi-transcribed')).toBe(false) // A left unmarked (and un-renamed)
+    expect(organized()).toHaveLength(2)
+    expect(organized().every((d) => exists(d, '.rexi-analyzed'))).toBe(true)
     // containment: scanAll returned normally — the sweep exits 0 (runCli scan mode)
 
     // second scan: A attempted again (unmarked), B/C completed stages skipped via markers
@@ -325,7 +362,7 @@ describe('AC-004 processor rewiring', () => {
     expect(second.calls.some((c) => c.cmd === 'ffmpeg' && String(c.args).includes(dirA))).toBe(true)
     expect(again.failed).toEqual([dirA])
     expect(again.processed).toBe(2)
-    for (const d of dirs.slice(1)) {
+    for (const d of organized()) {
       expect(
         second.calls.filter(
           (c) =>
@@ -367,13 +404,20 @@ describe('AC-004 processor rewiring', () => {
     const { lines, log } = captureLog()
     const fetch = stripeFetch(RESERVATION)
 
-    await processSessionDir({ dir, env: BILLING_ENV, deps: depsOf(chain.runner, fetch), log })
+    // Spec 008 Task 8 renames the session in place as the last act: the returned
+    // path is where the stage markers actually land.
+    const { dir: organized } = await processSessionDir({
+      dir,
+      env: BILLING_ENV,
+      deps: depsOf(chain.runner, fetch),
+      log,
+    })
 
     expect(lines.join('\n')).toMatch(/exceeds the 480 min ceiling/)
     expect(billingPosts(fetch)).toHaveLength(0)
-    expect(exists(dir, '.rexi-billed')).toBe(false)
-    expect(exists(dir, '.rexi-transcribed')).toBe(true) // still transcribes…
-    expect(exists(dir, '.rexi-analyzed')).toBe(true) // …and analyzes
+    expect(exists(organized, '.rexi-billed')).toBe(false)
+    expect(exists(organized, '.rexi-transcribed')).toBe(true) // still transcribes…
+    expect(exists(organized, '.rexi-analyzed')).toBe(true) // …and analyzes
   })
 
   it('AC-004-46: CLI modes preserved — scan, one-off, room+recording, usage', () => {
@@ -442,7 +486,7 @@ describe('AC-004 processor rewiring', () => {
     const { log } = captureLog()
     const fetch = makeFetch(() => ({ status: 200, body: { data: [], has_more: false } }))
 
-    const { exitCode } = await runCli({
+    const { exitCode, dir: organized = dir } = await runCli({
       argv: ['--jibri-dir', dir],
       env: {},
       deps: depsOf(chain.runner, fetch),
@@ -450,7 +494,7 @@ describe('AC-004 processor rewiring', () => {
     })
 
     expect(exitCode).toBe(0)
-    expect(exists(dir, '.rexi-analyzed')).toBe(true)
+    expect(exists(organized, '.rexi-analyzed')).toBe(true)
   })
 
   it('unit: runCli one-off without any mp4 exits 1 with the classic error', async () => {
@@ -476,7 +520,7 @@ describe('AC-004 processor rewiring', () => {
     const { log } = captureLog()
     const fetch = stripeFetch(RESERVATION, 500)
 
-    const { exitCode } = await runCli({
+    const { exitCode, dir: organized = dir } = await runCli({
       argv: ['--jibri-dir', dir],
       env: BILLING_ENV,
       deps: depsOf(chain.runner, fetch),
@@ -484,9 +528,9 @@ describe('AC-004 processor rewiring', () => {
     })
 
     expect(exitCode).toBe(1)
-    expect(exists(dir, '.rexi-billed')).toBe(false)
+    expect(exists(organized, '.rexi-billed')).toBe(false)
     // marker independence: the transcription/insight stages still completed
-    expect(exists(dir, '.rexi-transcribed')).toBe(true)
+    expect(exists(organized, '.rexi-transcribed')).toBe(true)
   })
 
   it('unit: sessionDateFromMp4 parses the Jibri timestamp; falls back to a date', () => {

@@ -46,6 +46,9 @@ async function bookThrough(dict: typeof es | typeof en): Promise<HTMLElement> {
   fireEvent.change(document.getElementById('booking-email') as HTMLInputElement, {
     target: { value: 'test@example.com' },
   })
+  fireEvent.change(document.getElementById('booking-name') as HTMLInputElement, {
+    target: { value: 'Ana López' },
+  })
   fireEvent.click(screen.getByRole('button', { name: dict.freeMode.submit }))
   await waitFor(() => screen.getByText(dict.booking.confirmation.title))
   const panel = document.querySelector('.booking-confirmation') as HTMLElement

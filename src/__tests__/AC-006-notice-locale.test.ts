@@ -270,7 +270,14 @@ describe('AC-006 locale-aware consent notice', () => {
     function makeBookingReq(body: Record<string, unknown>) {
       return {
         method: 'POST',
-        body: { email: CLIENT, date: '2027-03-01', startTime: '10:00', hours: 1, ...body },
+        body: {
+          name: 'Ana López',
+          email: CLIENT,
+          date: '2027-03-01',
+          startTime: '10:00',
+          hours: 1,
+          ...body,
+        },
         headers: {
           host: 'example.com',
           'x-forwarded-proto': 'https',

@@ -251,11 +251,12 @@ describe('AC-005 disk guard', () => {
     expect(one.exitCode).toBe(0)
     expect(c1.calls.filter((c) => c.cmd === 'df')).toHaveLength(0)
 
-    // --jibri-dir one-off: same
+    // --jibri-dir one-off: same. Spec 008 Task 8 renames the session dir in
+    // place, so the second call targets the directory the first one ended in.
     const c2 = runnerWith(dfReports(2))
     const cap2 = levelLog()
     const two = await runCli({
-      argv: ['--jibri-dir', session],
+      argv: ['--jibri-dir', one.dir ?? session],
       env: {},
       deps: { runner: c2.runner, fetch: fetch as never },
       log: cap2.log as never,

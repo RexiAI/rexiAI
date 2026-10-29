@@ -1,10 +1,10 @@
 import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
-import type { Locale } from '../../src/domain/locale.js'
 import { priceCents, PRODUCT_TAX_CODE } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
 import type { ApiRequest, ApiResponse } from '../httpTypes.js'
 
 import { errMsg } from './config.js'
+import type { BookingRequestFields } from './types.js'
 
 async function getFreeAvailable(email: string, res: ApiResponse): Promise<boolean | null> {
   try {
@@ -23,18 +23,13 @@ function getBaseUrl(req: ApiRequest): string {
   return `${p}://${h}`
 }
 
-type SessionOpts = {
-  email: string
-  date: string
-  startTime: string
-  hours: number
+// The booking facts are declared once, in ./types.ts; this path adds only what the
+// checkout round trip itself needs.
+type SessionOpts = BookingRequestFields & {
   freeAvailable: boolean
   req: ApiRequest
   res: ApiResponse
   joinUrl?: string | null
-  /** Captured at booking time; survives the checkout round trip in metadata so the
-   *  webhook's confirmation email can render the notice in the right language. */
-  locale?: Locale
 }
 
 // The booking is a €0 reservation: nothing is captured here and the free hour is
@@ -44,6 +39,10 @@ const RESERVATION_UNIT_AMOUNT = 0
 
 function buildSessionParams(opts: SessionOpts, baseUrl: string) {
   const metadata: Record<string, string> = {
+    // The customer's name: required at the API boundary, carried through the
+    // Stripe round trip so the webhook email and the recording processor can use
+    // it without a second source of truth (spec 008).
+    name: opts.name,
     email: opts.email,
     date: opts.date,
     start_time: opts.startTime,
@@ -92,23 +91,19 @@ function isValidDuration(hours: number, freeAvailable: boolean, res: ApiResponse
   return false
 }
 
-export type CreateCheckoutInput = {
-  email: string
-  date: string
-  startTime: string
-  hours: number
-  locale?: Locale
+export type CreateCheckoutInput = BookingRequestFields & {
   req: ApiRequest
   res: ApiResponse
   joinUrl?: string | null
 }
 
 export async function createCheckout(input: CreateCheckoutInput) {
-  const { email, date, startTime, hours, req, res } = input
+  const { name, email, date, startTime, hours, req, res } = input
   const freeAvailable = await getFreeAvailable(email, res)
   if (freeAvailable === null) return null
   if (!isValidDuration(hours, freeAvailable, res)) return null
   return createSession({
+    name,
     email,
     date,
     startTime,

@@ -47,6 +47,8 @@ async function fillValid(result: { current: { fields: ReturnType<typeof useBooki
     result.current.fields.setDate('2027-03-01')
     result.current.fields.setSelectedSlot('10:00')
     result.current.fields.setEmail('test@example.com')
+    // The name is required (spec 008 Task 1): every submit here is a valid one.
+    result.current.fields.setName('Ana López')
   })
 }
 
