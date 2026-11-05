@@ -193,6 +193,11 @@
   font-size: var(--text-sm);
 }
 
+.footer__link {
+  color: var(--color-zinc-600);
+  text-decoration: underline;
+}
+
 /* result views */
 .result-view {
   display: flex;

@@ -88,7 +88,10 @@ export function Landing() {
       <footer className="footer">
         <span>RexiAI</span>
         <span>
-          © {new Date().getFullYear()} RexiAI. {dict.footer.rights}.
+          © {new Date().getFullYear()} RexiAI. {dict.footer.rights}.{' '}
+          <a href="/privacy" className="footer__link">
+            {dict.footer.privacy}
+          </a>
         </span>
       </footer>
     </div>
