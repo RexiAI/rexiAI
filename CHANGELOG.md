@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/RexiAI/rexiAI/compare/v1.10.0...v1.11.0) (2026-11-05)
+
+
+### Features
+
+* **privacy:** add bilingual privacy policy page at /privacy ([#93](https://github.com/RexiAI/rexiAI/issues/93)) ([fcff367](https://github.com/RexiAI/rexiAI/commit/fcff3677af396cb4be1d257a501ba8abec958a34))
+
 # [1.10.0](https://github.com/RexiAI/rexiAI/compare/v1.9.0...v1.10.0) (2026-10-29)
 
 
