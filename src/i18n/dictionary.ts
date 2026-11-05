@@ -114,6 +114,7 @@ export const es = {
   },
   footer: {
     rights: 'Todos los derechos reservados',
+    privacy: 'Política de privacidad',
   },
 } as const
 
@@ -230,6 +231,7 @@ export const en = {
   },
   footer: {
     rights: 'All rights reserved',
+    privacy: 'Privacy policy',
   },
 } as const
 
