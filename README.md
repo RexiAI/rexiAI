@@ -25,6 +25,23 @@ React 19 + Vite + TypeScript SPA on Vercel with serverless booking APIs.
 
 3. Add same vars to Vercel project env (Dashboard → Settings → Environment Variables).
 
+### Privacy policy identity
+
+`/privacy` prints the data controller's identity (LSSI-CE art. 10, RGPD art. 13).
+Those four values are deployment config, not source:
+
+```
+VITE_LEGAL_NAME=      # e.g. "Daniel Bueno Pacheco"
+VITE_LEGAL_NIF=       # NIF for an autónomo
+VITE_LEGAL_ADDRESS=   # full fiscal address
+VITE_LEGAL_EMAIL=     # where rights requests go
+```
+
+They are public — the page renders them — but they stay out of git because the
+controller's NIF and address are personal data. Vite inlines `VITE_*` at **build**
+time, so they must be set in Vercel too and followed by a redeploy. An unset value
+renders the `«…»` placeholder instead of a wrong one.
+
 ## Availability
 
 Edit `config/availability.yaml` — weekly windows + per-date exceptions. Redeploy after edits. Timezone must remain `Europe/Madrid`.
