@@ -13,6 +13,7 @@
     "test": "vitest run --exclude '.standards/**'"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "stripe": "^23.0.1",
