@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/RexiAI/rexiAI/compare/v1.13.0...v1.13.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **ux:** link privacy from the nav and close the landing-page audit gaps ([#101](https://github.com/RexiAI/rexiAI/issues/101)) ([8adb28c](https://github.com/RexiAI/rexiAI/commit/8adb28c1a9825db4bc2d8787e3ba4f819338f061))
+
 # [1.13.0](https://github.com/RexiAI/rexiAI/compare/v1.12.0...v1.13.0) (2026-11-08)
 
 
