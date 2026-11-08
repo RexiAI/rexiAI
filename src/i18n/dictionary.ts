@@ -1,5 +1,12 @@
 export type Locale = 'es' | 'en'
 
+/**
+ * `es` is the single source of the dictionary shape: `Dictionary` below is
+ * derived from it, so the key set and value kinds are declared once. Without a
+ * `const` assertion object properties widen to `string` / `string[]`, which is
+ * the type every locale is checked against — a key missing from `en`, or
+ * misspelled in it, is a compile error.
+ */
 export const es = {
   nav: {
     services: 'Servicios',
@@ -11,55 +18,78 @@ export const es = {
     en: 'EN',
   },
   hero: {
-    catchphrase: 'Olvídate de tu Excel. Automatiza, con o sin IA.',
-    subtext: 'Productos SaaS, webs y apps que resuelven problemas reales para negocios reales.',
-    ctaBooking: 'Reserva tu hora',
-    ctaContact: 'Escríbenos',
+    catchphrase: 'Tu negocio funciona con una hoja de cálculo que solo una persona entiende.',
+    subtext:
+      'La sustituyo por software que funciona solo: herramientas internas, productos SaaS y aplicaciones web. Alcance en una llamada, precio fijo, entregado en semanas. El código es tuyo.',
+    ctaBooking: 'Reserva una hora gratis',
+    ctaMicrocopy: 'Te llevas un plan de una página y un precio fijo.',
+    ctaContact: 'Escríbeme',
   },
   services: {
-    title: 'Servicios',
-    carouselPrev: 'Anterior',
-    carouselNext: 'Adelante',
-    carouselPosition: 'Ir a la posición',
-    carouselRole: 'carrusel',
+    title: 'Lo que construyo',
     items: [
       {
-        id: 'saas',
+        id: 'internal-tools',
+        title: 'Herramientas internas',
+        description:
+          'El proceso que vive en tres hojas de cálculo y en la cabeza de una persona, reconstruido como una sola herramienta que tu equipo abre de verdad.',
+      },
+      {
+        id: 'saas-products',
         title: 'Productos SaaS',
-        description: 'Software a medida que automatiza tus procesos y escala con tu negocio.',
-        meta: 'SaaS · Producto',
+        description:
+          'Si lo que necesitas no existe, construyo la v1: autenticación, facturación, despliegues, las partes aburridas bien hechas.',
       },
       {
-        id: 'webs',
-        title: 'Sitios web',
-        description: 'Webs rápidas y claras que convierten visitas en clientes.',
-        meta: 'Web · Frontend',
+        id: 'websites-and-apps',
+        title: 'Webs y aplicaciones',
+        description: 'Rápidas, claras y convierten. Sin page builders, sin plantillas.',
+      },
+    ],
+  },
+  proof: {
+    title: 'Publicado, no presentación',
+    intro:
+      'Todavía no hay logos de clientes. Todo lo de abajo está en producción, construido y mantenido por mí.',
+    items: [
+      {
+        name: 'tax-advisor',
+        line: 'Asesoría fiscal con IA para autónomos en España.',
+        href: 'https://github.com/RexiAI/tax-advisor',
       },
       {
-        id: 'apps',
-        title: 'Aplicaciones',
-        description: 'Apps móviles y de escritorio pensadas para usar a diario.',
-        meta: 'App · Móvil',
+        name: 'pensions-system',
+        line: 'Cálculo de pensiones, de principio a fin.',
+        href: 'https://github.com/RexiAI/pensions-system',
       },
       {
-        id: 'consulting',
-        title: 'Consultoría',
-        description: 'Te ayudamos a decidir qué construir y cómo hacerlo bien.',
-        meta: 'Consultoría · Estrategia',
+        name: 'my-engineering-standards',
+        line: 'El estándar de ingeniería contra el que se construye todo lo anterior: pipeline de especificaciones, puertas de CI, con mutation testing.',
+        href: 'https://github.com/RexiAI/my-engineering-standards',
       },
-    ] as const,
+    ],
+  },
+  about: {
+    title: 'Quién lo construye',
+    name: 'Daniel Bueno',
+    role: 'Fundador, RexiAI',
+    location: 'Con base en España (Europe/Madrid). Trabajo en inglés y en español.',
+    email: 'info@rexi-ai.com',
+    githubLabel: 'github.com/RexiAI',
+    githubUrl: 'https://github.com/RexiAI',
+    // Empty until a real bio is supplied: a data edit, not a code change.
+    bio: '',
   },
   booking: {
     title: 'Reserva tu sesión',
-    narrative:
-      'Elige fecha y hora. Primera hora gratis para clientes nuevos, después 30 EUR por hora.',
-    steps: [
-      'Elige fecha y hueco disponible',
-      'Indica duración y tu email',
-      'Paga de forma segura con Stripe',
-    ],
-    pricingRules: 'Primera hora gratis para clientes nuevos, después 30 EUR/hora',
-    pricingExample: '1h gratis · 2h 30 EUR · 3h 60 EUR · 4h 90 EUR',
+    narrativeFree:
+      'La primera hora es gratis. Describes el proceso que te está comiendo la semana; te vas con un plan de una página y un precio fijo para la construcción. Sin cargo, sin compromiso, sin presentación.',
+    narrativePaid:
+      'Primera hora gratis. Después, 30 EUR por hora, prepagado — pagas el bloque que reservas, nada se factura después.',
+    stepsFree: ['Elige un hueco', 'Cuéntame qué está roto', 'Recibe el plan y el precio'],
+    stepsPaid: ['Elige un hueco', 'Elige tu bloque', 'Paga de forma segura con Stripe'],
+    priceLine: '1h gratis · 2h 30 EUR · 3h 60 EUR · 4h 90 EUR',
+    freeNote: 'Sesión gratuita: no se cobra nada ahora.',
     form: {
       dateLabel: 'Fecha',
       dateHelper: 'Elige un día para ver los huecos disponibles (hora de Madrid)',
@@ -74,6 +104,7 @@ export const es = {
       nameHelper: 'Así sabremos con quién es la sesión',
       nameTooLong: 'El nombre es demasiado largo',
       submit: 'Reservar y pagar',
+      submitFree: 'Reserva la hora gratis',
       submitting: 'Redirigiendo a Stripe...',
       submittingDirect: 'Enviando tu reserva...',
       required: 'Este campo es obligatorio',
@@ -87,10 +118,10 @@ export const es = {
     },
   },
   contact: {
-    title: '¿Hablamos?',
-    body: 'Cuéntanos tu idea y vemos cómo automatizarla.',
-    cta: 'Escríbenos por email',
-    email: 'danielbueno76@gmail.com',
+    title: 'Cuéntame qué está roto.',
+    body: 'Un email, tres líneas: el proceso, cada cuánto duele y qué te cuesta.',
+    cta: 'Escríbeme',
+    email: 'info@rexi-ai.com',
   },
   result: {
     successTitle: 'Reserva recibida',
@@ -101,24 +132,22 @@ export const es = {
     cancelBody: 'Has cancelado el proceso de pago. Puedes volver a intentarlo cuando quieras.',
     cancelAction: 'Volver a reservas',
   },
-  freeMode: {
-    badge: 'GRATIS',
-    bannerTitle: 'Todas las charlas y análisis, GRATIS',
-    bannerBody:
-      'Por tiempo limitado: las sesiones de consultoría y análisis no cuestan nada. Reserva tu hora y hablemos.',
-    bannerFineprint:
-      'Construirte algo a medida (SaaS, web o app) no es gratis: eso se presupuesta aparte.',
-    priceWas: '30 EUR/h',
-    submit: 'Reservar (gratis)',
-    pricingNote: 'Sesión gratuita: no se cobra nada ahora.',
-  },
   footer: {
     rights: 'Todos los derechos reservados',
     privacy: 'Política de privacidad',
   },
-} as const
+}
 
-export const en = {
+/**
+ * The shared shape: `es`'s keys and value kinds, with each locale keeping its
+ * own copy of the text. `en` is annotated with it, so a missing or misspelled
+ * key is a compile error; a caller may also hand a component a dictionary whose
+ * values differ from the committed copy (the review-time `about.bio`, and tests
+ * that swap one string to prove a value is read rather than duplicated).
+ */
+export type Dictionary = typeof es
+
+export const en: Dictionary = {
   nav: {
     services: 'Services',
     booking: 'Booking',
@@ -129,54 +158,76 @@ export const en = {
     en: 'EN',
   },
   hero: {
-    catchphrase: "Forget your Excel. Let's automate, with or without AI.",
-    subtext: 'SaaS products, websites and apps that solve real problems for real businesses.',
-    ctaBooking: 'Book your slot',
-    ctaContact: 'Contact us',
+    catchphrase: 'Your business runs on a spreadsheet only one person understands.',
+    subtext:
+      'I replace it with software that runs itself: internal tools, SaaS products and web apps. Scoped in one call, fixed price, shipped in weeks. You own the code.',
+    ctaBooking: 'Book a free hour',
+    ctaMicrocopy: 'You leave with a one-page plan and a fixed price.',
+    ctaContact: 'Email me',
   },
   services: {
-    title: 'Services',
-    carouselPrev: 'Previous',
-    carouselNext: 'Next',
-    carouselPosition: 'Go to position',
-    carouselRole: 'carousel',
+    title: 'What I build',
     items: [
       {
-        id: 'saas',
-        title: 'SaaS Products',
-        description: 'Custom software that automates your processes and scales with your business.',
-        meta: 'SaaS · Product',
+        id: 'internal-tools',
+        title: 'Internal tools',
+        description:
+          "The process living in three spreadsheets and one person's head, rebuilt as one tool your team actually opens.",
       },
       {
-        id: 'webs',
-        title: 'Websites',
-        description: 'Fast and clear websites that turn visits into customers.',
-        meta: 'Web · Frontend',
+        id: 'saas-products',
+        title: 'SaaS products',
+        description:
+          'If the thing you need does not exist, I build v1: auth, billing, deploys, the boring parts done properly.',
       },
       {
-        id: 'apps',
-        title: 'Apps',
-        description: 'Mobile and desktop apps built for daily use.',
-        meta: 'App · Mobile',
+        id: 'websites-and-apps',
+        title: 'Websites and apps',
+        description: 'Fast, clear, and it converts. No page builder, no template.',
+      },
+    ],
+  },
+  proof: {
+    title: 'Shipped, not slideshow',
+    intro: 'No client logos yet. Everything below is live, built and run by me.',
+    items: [
+      {
+        name: 'tax-advisor',
+        line: 'AI tax guidance for Spanish freelancers.',
+        href: 'https://github.com/RexiAI/tax-advisor',
       },
       {
-        id: 'consulting',
-        title: 'Consulting',
-        description: 'We help you decide what to build and how to build it right.',
-        meta: 'Consulting · Strategy',
+        name: 'pensions-system',
+        line: 'Pension calculation, end to end.',
+        href: 'https://github.com/RexiAI/pensions-system',
       },
-    ] as const,
+      {
+        name: 'my-engineering-standards',
+        line: 'The engineering standard everything above is built against: spec pipeline, CI gates, mutation-tested.',
+        href: 'https://github.com/RexiAI/my-engineering-standards',
+      },
+    ],
+  },
+  about: {
+    title: 'Who builds it',
+    name: 'Daniel Bueno',
+    role: 'Founder, RexiAI',
+    location: 'Based in Spain (Europe/Madrid). Working in English and Spanish.',
+    email: 'info@rexi-ai.com',
+    githubLabel: 'github.com/RexiAI',
+    githubUrl: 'https://github.com/RexiAI',
+    bio: '',
   },
   booking: {
     title: 'Book your session',
-    narrative: 'Pick a date and time. First hour free for new clients, then 30 EUR per hour.',
-    steps: [
-      'Pick a date and available slot',
-      'Enter duration and your email',
-      'Pay securely with Stripe',
-    ],
-    pricingRules: 'First hour free for new clients, then 30 EUR/hour',
-    pricingExample: '1h free · 2h 30 EUR · 3h 60 EUR · 4h 90 EUR',
+    narrativeFree:
+      'The first hour is free. You describe the process that is eating your week; you leave with a one-page plan and a fixed price for the build. No charge, no obligation, no slide deck.',
+    narrativePaid:
+      'First hour free. After that, 30 EUR per hour, prepaid — you pay for the block you book, nothing is metered afterwards.',
+    stepsFree: ['Pick a slot', 'Tell me what is broken', 'Get the plan and the price'],
+    stepsPaid: ['Pick a slot', 'Choose your block', 'Pay securely with Stripe'],
+    priceLine: '1h free · 2h 30 EUR · 3h 60 EUR · 4h 90 EUR',
+    freeNote: 'Free session: nothing is charged now.',
     form: {
       dateLabel: 'Date',
       dateHelper: 'Pick a day to see available slots (Madrid time)',
@@ -191,6 +242,7 @@ export const en = {
       nameHelper: 'So we know who the session is for',
       nameTooLong: 'The name is too long',
       submit: 'Book and pay',
+      submitFree: 'Book the free hour',
       submitting: 'Redirecting to Stripe...',
       submittingDirect: 'Sending your reservation...',
       required: 'This field is required',
@@ -204,10 +256,10 @@ export const en = {
     },
   },
   contact: {
-    title: "Let's talk",
-    body: 'Tell us your idea and we will explore how to automate it.',
-    cta: 'Email us',
-    email: 'danielbueno76@gmail.com',
+    title: 'Tell me what is broken.',
+    body: 'One email, three lines: the process, how often it hurts, what it costs you.',
+    cta: 'Email me',
+    email: 'info@rexi-ai.com',
   },
   result: {
     successTitle: 'Booking received',
@@ -218,27 +270,8 @@ export const en = {
     cancelBody: 'You cancelled the payment process. You can try again whenever you like.',
     cancelAction: 'Back to booking',
   },
-  freeMode: {
-    badge: 'FREE',
-    bannerTitle: 'All talks and analysis, FREE',
-    bannerBody:
-      "For a limited time: consulting and analysis sessions cost nothing. Book your hour and let's talk.",
-    bannerFineprint:
-      'Building something custom for you (SaaS, web or app) is not free: that is quoted separately.',
-    priceWas: '30 EUR/h',
-    submit: 'Book (free)',
-    pricingNote: 'Free session: nothing is charged now.',
-  },
   footer: {
     rights: 'All rights reserved',
     privacy: 'Privacy policy',
   },
-} as const
-
-export type Dictionary = typeof es
-
-// Type check: both locales must have same keys (compile error if missing)
-// The following line ensures `en` extends same shape as `es` - if a key is missing, TS errors on assignment above.
-// We additionally export a helper that would fail if shapes diverge: use a conditional check via dummy.
-const _check: Dictionary = en as unknown as Dictionary
-void _check
+}

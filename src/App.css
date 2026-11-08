@@ -57,17 +57,18 @@
   text-decoration: none;
 }
 
-/* hero */
+/* hero — mobile-first (spec 019 Task 2 / 15-design Task 2): the headline,
+   subtext, both CTAs and the microcopy must fit one 390px screen. */
 .hero {
   max-width: 800px;
   margin: 0 auto;
-  padding: 80px var(--space-6) 64px;
+  padding: var(--space-8) var(--space-6) var(--space-12);
   text-align: center;
 }
 
 .hero-title {
   margin-bottom: var(--space-4);
-  font-size: var(--text-hero);
+  font-size: var(--text-3xl);
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -77,13 +78,23 @@
   max-width: 60ch;
   margin: 0 auto var(--space-6);
   color: var(--color-zinc-600);
-  font-size: var(--text-lg);
+  font-size: var(--text-base);
 }
 
 .hero-ctas {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-3);
+  row-gap: var(--space-2);
+}
+
+/* A caption on the primary button, not a strip: no rule, no band, no chip. */
+.hero-cta-microcopy {
+  max-width: 42ch;
+  margin: var(--space-3) auto 0;
+  color: var(--color-zinc-500);
+  font-size: var(--text-sm);
 }
 
 .hero-cta--primary {
@@ -109,11 +120,161 @@
   text-decoration: none;
 }
 
-/* services */
-.services {
+@media (min-width: 641px) {
+  .hero {
+    padding: 80px var(--space-6) 64px;
+  }
+
+  .hero-title {
+    font-size: var(--text-hero);
+  }
+
+  .hero-subtext {
+    font-size: var(--text-lg);
+  }
+}
+
+/* services / proof / about share one container rule (15-design Task 12). */
+.services,
+.proof,
+.about {
   max-width: 1100px;
   margin: 0 auto;
   padding: var(--space-12) var(--space-6);
+}
+
+/* Three text cards in a plain grid: 1 column, then 2, then 3. No track, no
+   snap, no arrows — nothing is hidden at any width. */
+.services-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+}
+
+.service-card {
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--color-zinc-50);
+}
+
+.service-card__title {
+  margin-bottom: 6px;
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.service-card__desc {
+  max-width: 60ch;
+  color: var(--color-zinc-600);
+  font-size: var(--text-sm2);
+}
+
+@media (min-width: 641px) {
+  .services-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 900px) {
+  .services-grid {
+    grid-template-columns: repeat(3, 1fr);
+    align-items: stretch;
+  }
+}
+
+/* proof — a ruled list of live links, not a logo wall (15-design Task 5). */
+.proof > .section-title {
+  margin-bottom: var(--space-2);
+}
+
+.proof__intro {
+  max-width: 60ch;
+  margin-bottom: var(--space-6);
+  color: var(--color-zinc-600);
+  font-size: var(--text-base);
+}
+
+.proof__list {
+  margin: 0;
+}
+
+.proof__item {
+  display: grid;
+  gap: var(--space-1);
+  padding-block: var(--space-4);
+  border-top: 1px solid var(--color-zinc-200);
+}
+
+.proof__name {
+  color: var(--color-zinc-600);
+  font-family:
+    Geist Mono,
+    monospace;
+  font-size: var(--text-sm2);
+  text-decoration: underline;
+  text-decoration-color: var(--color-zinc-200);
+  text-underline-offset: 2px;
+}
+
+.proof__line {
+  color: var(--color-zinc-900);
+  font-size: var(--text-base);
+}
+
+.proof__item:hover .proof__name,
+.proof__item:focus-visible .proof__name {
+  text-decoration-color: var(--color-zinc-600);
+}
+
+/* The whole row is the link: no underline on the claim, only on the name. */
+.proof__item:hover {
+  text-decoration: none;
+}
+
+@media (min-width: 900px) {
+  .proof__item {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+    gap: var(--space-6);
+    align-items: baseline;
+  }
+}
+
+/* about — a left-aligned identity block, not a profile card (15-design Task 6). */
+.about__name {
+  margin-bottom: var(--space-1);
+  color: var(--color-zinc-900);
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.about__role,
+.about__location {
+  color: var(--color-zinc-600);
+  font-size: var(--text-sm2);
+}
+
+.about__location {
+  margin-bottom: var(--space-4);
+}
+
+.about__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.about__link {
+  color: var(--color-zinc-900);
+  font-size: var(--text-sm2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.about__bio {
+  max-width: 60ch;
+  margin-top: var(--space-4);
+  color: var(--color-zinc-600);
+  font-size: var(--text-base);
 }
 
 .section-title {
@@ -122,14 +283,28 @@
   font-weight: 600;
 }
 
+/* Anchors land below the sticky nav instead of under it. Every landing
+   section is a direct child, so the rule follows the markup without an id
+   list to keep in sync. */
+.landing > section {
+  scroll-margin-top: calc(var(--space-14) + var(--space-6));
+}
+
 /* booking */
 .booking {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-8);
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
   max-width: 1100px;
   margin: 0 auto;
   padding: var(--space-12) var(--space-6);
+}
+
+@media (min-width: 641px) {
+  .booking {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+  }
 }
 
 .booking__title {
@@ -168,7 +343,8 @@
 }
 
 .contact__body {
-  margin-bottom: 20px;
+  max-width: 52ch;
+  margin: 0 auto 20px;
   color: var(--color-zinc-600);
   font-size: var(--text-base);
 }
@@ -186,11 +362,13 @@
 /* footer */
 .footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   padding: var(--space-6);
   border-top: 1px solid var(--color-zinc-200);
   color: var(--color-zinc-600);
   font-size: var(--text-sm);
+  row-gap: var(--space-1);
 }
 
 .footer__link {
@@ -253,6 +431,14 @@
   text-decoration: none;
 }
 
+/* One shared focus ring (15-design §Accessibility): every interactive element
+   is keyboard-reachable and visibly focused. Tokens only. */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-zinc-900);
+  outline-offset: 2px;
+}
+
 /* language switcher */
 .lang-switcher {
   display: inline-flex;
@@ -276,55 +462,4 @@
 .lang-btn--active {
   background: var(--color-zinc-900);
   color: var(--color-white);
-}
-
-/* Free-mode promo banner — shown only when charging is disabled
-   (BILLING_ENABLED=false → GET /api/config). Struck price + FREE badge +
-   "limited time" copy, with honest fine print that custom builds are quoted. */
-.free-banner {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-6);
-  background: var(--color-zinc-900);
-  color: var(--color-white);
-}
-
-.free-banner__badge {
-  flex-shrink: 0;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-full);
-  background: var(--color-green-600);
-  color: var(--color-white);
-  font-weight: 700;
-  font-size: var(--text-sm2);
-  letter-spacing: 0.05em;
-}
-
-.free-banner__text {
-  min-width: 0;
-}
-
-.free-banner__title {
-  margin: 0;
-  font-size: var(--text-lg);
-  font-weight: 700;
-}
-
-.free-banner__was {
-  margin-right: var(--space-2);
-  color: var(--color-zinc-500);
-  font-weight: 400;
-}
-
-.free-banner__body {
-  margin: var(--space-1) 0 0;
-  font-size: var(--text-sm2);
-  color: var(--color-zinc-200);
-}
-
-.free-banner__fineprint {
-  margin: var(--space-1) 0 0;
-  font-size: var(--text-xs);
-  color: var(--color-zinc-500);
 }

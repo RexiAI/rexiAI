@@ -48,6 +48,9 @@ coverage/
 # Playwright MCP session scratch (screenshots, console logs)
 .playwright-mcp/
 
+# Vitest reporter output (.vitest/json/*.json) — regenerable run artifact
+.vitest/
+
 # Pipeline gate telemetry (loop/gate run log) — stays local, never committed
 runs.jsonl
 .vercel

@@ -1,9 +1,10 @@
 import type { MouseEvent } from 'react'
 
+import { About } from '../components/About'
 import { BookingWidget } from '../components/BookingWidget'
-import { FreeModeBanner } from '../components/FreeModeBanner'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
-import { ServicesCarousel } from '../components/ServicesCarousel'
+import { Proof } from '../components/Proof'
+import { Services } from '../components/Services'
 import { useSiteConfig } from '../hooks/useSiteConfig'
 import { useI18n } from '../i18n/I18nContext'
 
@@ -23,9 +24,14 @@ export function Landing() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // One money story per mode (spec 019 Task 7): the same `billingEnabled` the
+  // booking card consumes decides both the narrative and the step list, so the
+  // section can never describe one mode while the card books the other.
+  const narrative = billingEnabled ? dict.booking.narrativePaid : dict.booking.narrativeFree
+  const steps = billingEnabled ? dict.booking.stepsPaid : dict.booking.stepsFree
+
   return (
     <div className="landing">
-      {!billingEnabled && <FreeModeBanner dict={dict} />}
       <nav className="nav">
         <div className="nav-links">
           <a href="/" className="nav-brand" onClick={handleBrandClick}>
@@ -52,20 +58,25 @@ export function Landing() {
           <a href="#booking" className="hero-cta--primary">
             {dict.hero.ctaBooking} →
           </a>
-          <a href="mailto:danielbueno76@gmail.com" className="hero-cta--secondary">
+          <a href={`mailto:${dict.contact.email}`} className="hero-cta--secondary">
             {dict.hero.ctaContact}
           </a>
         </div>
+        <p className="hero-cta-microcopy">{dict.hero.ctaMicrocopy}</p>
       </section>
 
-      <ServicesCarousel />
+      <Services />
+
+      <Proof />
+
+      <About dict={dict} />
 
       <section id="booking" className="booking">
         <div>
           <h2 className="booking__title">{dict.booking.title}</h2>
-          <p className="booking__narrative">{dict.booking.narrative}</p>
+          <p className="booking__narrative">{narrative}</p>
           <ol className="booking-steps">
-            {dict.booking.steps.map((step, i) => (
+            {steps.map((step, i) => (
               <li key={i} className="booking-steps__item">
                 {step}
               </li>
@@ -80,7 +91,7 @@ export function Landing() {
       <section id="contact" className="contact">
         <h2 className="contact__title">{dict.contact.title}</h2>
         <p className="contact__body">{dict.contact.body}</p>
-        <a href="mailto:danielbueno76@gmail.com" className="contact__cta">
+        <a href={`mailto:${dict.contact.email}`} className="contact__cta">
           {dict.contact.cta}
         </a>
       </section>

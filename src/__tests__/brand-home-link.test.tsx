@@ -12,7 +12,9 @@ describe('nav brand home link', () => {
   it('renders the RexiAI brand as a link to the home page', () => {
     localStorage.clear()
     render(<App />)
-    const brand = screen.getByRole('link', { name: /RexiAI/ })
+    // Exact name: the #about block links to github.com/RexiAI, so a /RexiAI/
+    // regex now matches two links.
+    const brand = screen.getByRole('link', { name: 'RexiAI' })
     expect(brand).toHaveAttribute('href', '/')
     expect(brand.querySelector('img.nav-brand__logo')).toHaveAttribute('src', '/logo.png')
   })
@@ -21,7 +23,7 @@ describe('nav brand home link', () => {
     localStorage.clear()
     render(<App />)
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
-    fireEvent.click(screen.getByRole('link', { name: /RexiAI/ }))
+    fireEvent.click(screen.getByRole('link', { name: 'RexiAI' }))
     expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' })
   })
 })

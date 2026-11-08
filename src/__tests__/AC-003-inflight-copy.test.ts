@@ -94,7 +94,8 @@ describe('AC-003 billing-aware in-flight copy', () => {
   })
 
   it('AC-003-28: billing disabled (es): in-flight label is the neutral dictionary copy', async () => {
-    const flow = await startHeldSubmit(false, es.freeMode.submit)
+    localStorage.setItem('rexi-locale', 'es')
+    const flow = await startHeldSubmit(false, es.booking.form.submitFree)
     try {
       expect(flow.submitButton.textContent).toBe(es.booking.form.submittingDirect)
       expect(flow.submitButton.textContent).toBe('Enviando tu reserva...')
@@ -104,16 +105,23 @@ describe('AC-003 billing-aware in-flight copy', () => {
         expect(typeof dict.booking.form.submittingDirect).toBe('string')
         expect(dict.booking.form.submittingDirect.length).toBeGreaterThan(0)
       }
-      // AC-001-05 stays green: no em/en dashes anywhere in the dictionary JSON.
+      // AC-001-05 stays green: no en dashes anywhere, one em dash allowed and
+      // only inside booking.narrativePaid (final paid copy, spec 019 Task 7).
       const dictText = JSON.stringify({ es, en })
-      expect(dictText).not.toContain('—')
       expect(dictText).not.toContain('–')
+      expect(
+        JSON.stringify({
+          es: { ...es, booking: { ...es.booking, narrativePaid: '' } },
+          en: { ...en, booking: { ...en.booking, narrativePaid: '' } },
+        })
+      ).not.toContain('—')
     } finally {
       flow.resolveBookings()
     }
   })
 
   it('AC-003-29: billing enabled: in-flight label stays the Stripe copy (es + en)', async () => {
+    localStorage.setItem('rexi-locale', 'es')
     const flowEs = await startHeldSubmit(true, es.booking.form.submit)
     try {
       expect(flowEs.submitButton.textContent).toBe('Redirigiendo a Stripe...')
@@ -136,7 +144,7 @@ describe('AC-003 billing-aware in-flight copy', () => {
 
   it('AC-003-30: billing disabled (en): in-flight label is the en neutral copy', async () => {
     localStorage.setItem('rexi-locale', 'en')
-    const flow = await startHeldSubmit(false, en.freeMode.submit)
+    const flow = await startHeldSubmit(false, en.booking.form.submitFree)
     try {
       expect(flow.submitButton.textContent).toBe(en.booking.form.submittingDirect)
       expect(flow.submitButton.textContent).toBe('Sending your reservation...')
@@ -147,7 +155,8 @@ describe('AC-003 billing-aware in-flight copy', () => {
   })
 
   it('AC-003-31: the billing-aware copy adds no network request (single /api/config fetch)', async () => {
-    const flow = await startHeldSubmit(false, es.freeMode.submit)
+    localStorage.setItem('rexi-locale', 'es')
+    const flow = await startHeldSubmit(false, es.booking.form.submitFree)
     flow.resolveBookings()
     await waitFor(() => screen.getByText(es.booking.confirmation.title))
     expect(flow.configCallCount()).toBe(1)

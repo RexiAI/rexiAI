@@ -23,6 +23,9 @@ const LANDING = () => atPath('/')
 describe('privacy page', () => {
   beforeEach(() => {
     localStorage.clear()
+    // The Spanish policy is what these tests assert is served; English is the
+    // first-time default since spec 019, so state the locale they assume.
+    localStorage.setItem('rexi-locale', 'es')
     document.title = 'RexiAI'
   })
 

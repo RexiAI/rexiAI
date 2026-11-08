@@ -63,6 +63,9 @@ describe('AC-008 capture the customer name', () => {
 
   beforeEach(() => {
     localStorage.clear()
+    // These scenarios assert the Spanish form copy (submit label, error text):
+    // English is the first-time default since spec 019, so state the locale.
+    localStorage.setItem('rexi-locale', 'es')
     vi.restoreAllMocks()
     originalLocation = window.location
     // AC-011 pattern: a stub location proves "no navigation" and keeps jsdom

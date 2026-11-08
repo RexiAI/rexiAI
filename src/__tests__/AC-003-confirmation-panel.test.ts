@@ -49,7 +49,7 @@ async function bookThrough(dict: typeof es | typeof en): Promise<HTMLElement> {
   fireEvent.change(document.getElementById('booking-name') as HTMLInputElement, {
     target: { value: 'Ana López' },
   })
-  fireEvent.click(screen.getByRole('button', { name: dict.freeMode.submit }))
+  fireEvent.click(screen.getByRole('button', { name: dict.booking.form.submitFree }))
   await waitFor(() => screen.getByText(dict.booking.confirmation.title))
   const panel = document.querySelector('.booking-confirmation') as HTMLElement
   expect(panel).toBeTruthy()
@@ -73,6 +73,7 @@ describe('AC-003 confirmation panel (no join link)', () => {
   })
 
   it('AC-003-32: panel shows facts and note, never the join link (es)', async () => {
+    localStorage.setItem('rexi-locale', 'es')
     const panel = await bookThrough(es)
     expect(panel.getAttribute('role')).toBe('status')
     within(panel).getByText(es.booking.confirmation.title)
