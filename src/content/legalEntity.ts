@@ -29,7 +29,7 @@ const PLACEHOLDER = {
  * VITE_LEGAL_EMAIL is unset. A placeholder here would leave data-subject rights
  * requests with nowhere to go, which is worse than a non-ideal mailbox.
  */
-const DEFAULT_EMAIL = 'danielbueno76@gmail.com'
+const DEFAULT_EMAIL = 'info@rexi-ai.com'
 
 function env(value: string | undefined, fallback: string): string {
   const trimmed = value?.trim()
