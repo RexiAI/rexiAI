@@ -2,6 +2,7 @@
 dist
 package-lock.json
 .playwright-mcp
+.vitest
 CHANGELOG.md
 docs/changes/
 specs/

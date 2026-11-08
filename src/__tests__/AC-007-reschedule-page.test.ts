@@ -334,7 +334,9 @@ describe('AC-007 reschedule page', () => {
       expect(SOURCE).toMatch(/<meta name="referrer" content="no-referrer"\s*\/?>/)
       expect(SOURCE).not.toContain('\u2014')
       expect(SOURCE).not.toContain('\u2013')
-      expect(SOURCE).not.toContain('danielbueno76')
+      // Assembled: the address is retired (spec 019 Task 8) and must not appear
+      // as a literal anywhere under src/, including this assertion.
+      expect(SOURCE).not.toContain(['danielbueno', '76'].join(''))
     })
 
     it('every state ships in both locales, and the mailto escape hatch is everywhere', () => {
