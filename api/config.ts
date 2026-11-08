@@ -6,8 +6,8 @@
 // env), so it fetches this on load. Keep this endpoint secret-free.
 import { isBillingEnabled } from '../src/domain/billing.js'
 
-import type { ApiRequest, ApiResponse } from './httpTypes.js'
-import { requireMethod } from './routeGuards.js'
+import type { ApiRequest, ApiResponse } from './_lib/httpTypes.js'
+import { requireMethod } from './_lib/routeGuards.js'
 
 const GET_ONLY = ['GET']
 

@@ -1,9 +1,9 @@
 import { isFreeHourAvailable } from '../../src/domain/freeHour.js'
 import { priceCents, PRODUCT_TAX_CODE } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
-import { errorText } from '../errorText.js'
-import type { ApiRequest, ApiResponse } from '../httpTypes.js'
-import type { BookingRequestFields } from './types.js'
+import type { BookingRequestFields } from '../_lib/bookingsTypes.js'
+import { errorText } from '../_lib/errorText.js'
+import type { ApiRequest, ApiResponse } from '../_lib/httpTypes.js'
 async function getFreeAvailable(email: string, res: ApiResponse): Promise<boolean | null> {
   try {
     return await isFreeHourAvailable(email)

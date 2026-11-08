@@ -6,10 +6,10 @@ import {
 import { normalizeLocale, type Locale } from '../../src/domain/locale.js'
 import { priceCents } from '../../src/domain/pricing.js'
 import { isValidEmail, NAME_MAX_LENGTH } from '../../src/domain/validation.js'
-import type { ApiRequest, ApiResponse } from '../httpTypes.js'
+import { getWindowsForDate, isCovered } from '../bookings/calendar.js'
+import { loadConfigOrError } from '../bookings/config.js'
 
-import { getWindowsForDate, isCovered } from './calendar.js'
-import { loadConfigOrError } from './config.js'
+import type { ApiRequest, ApiResponse } from './httpTypes.js'
 
 function validateEmail(email: string, res: ApiResponse): boolean {
   if (!isValidEmail(email)) {

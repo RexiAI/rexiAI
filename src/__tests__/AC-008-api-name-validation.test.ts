@@ -9,7 +9,7 @@ import fs from 'fs'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { prepareBookingInput } from '../../api/bookings/validation'
+import { prepareBookingInput } from '../../api/_lib/bookingsValidation'
 
 const yamlContent = `
 timezone: Europe/Madrid

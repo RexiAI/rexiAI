@@ -5,7 +5,8 @@
 // module so one code can never come to mean two different things, and so the
 // envelope shape has one reason to change.
 import type { RescheduleErrorCode } from '../../src/domain/reschedule.js'
-import type { ApiResponse } from '../httpTypes.js'
+
+import type { ApiResponse } from './httpTypes.js'
 
 const STATUS: Record<RescheduleErrorCode, number> = {
   INVALID_RESCHEDULE_TOKEN: 404,

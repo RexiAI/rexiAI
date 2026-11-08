@@ -6,10 +6,10 @@
 // Billing-agnostic by construction: the booking is read from the calendar event
 // (see src/domain/calendar.ts), never from Stripe, which is what makes the
 // billing-disabled path behave identically (AC-007-28).
-import type { ApiRequest, ApiResponse } from './httpTypes.js'
-import { resolveReschedule } from './reschedule/resolve.js'
-import { submitReschedule } from './reschedule/submit.js'
-import { enforceRateLimit, requireMethod } from './routeGuards.js'
+import type { ApiRequest, ApiResponse } from './_lib/httpTypes.js'
+import { resolveReschedule } from './_lib/rescheduleResolve.js'
+import { submitReschedule } from './_lib/rescheduleSubmit.js'
+import { enforceRateLimit, requireMethod } from './_lib/routeGuards.js'
 
 const ALLOWED_METHODS = ['GET', 'POST']
 
