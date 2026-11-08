@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/RexiAI/rexiAI/compare/v1.11.1...v1.12.0) (2026-11-08)
+
+
+### Features
+
+* **landing:** English-first relaunch with a single offer and shipped-work proof ([#95](https://github.com/RexiAI/rexiAI/issues/95)) ([0050459](https://github.com/RexiAI/rexiAI/commit/0050459c759bc2fb5e3467c1cec7c368cf0444d7))
+
 ## [1.11.1](https://github.com/RexiAI/rexiAI/compare/v1.11.0...v1.11.1) (2026-11-08)
 
 
