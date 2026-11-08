@@ -8,7 +8,7 @@ const importPlugin = require('eslint-plugin-import')
 const prettier = require('eslint-config-prettier')
 
 module.exports = [
-  { ignores: ['node_modules/**', 'dist/**', '.standards/**'] },
+  { ignores: ['node_modules/**', 'dist/**', '.standards/**', '.vercel/**'] },
   js.configs.recommended,
   {
     files: ['**/*.{js,jsx,ts,tsx}'],

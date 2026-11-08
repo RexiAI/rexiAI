@@ -1,6 +1,6 @@
 import { loadAvailabilityConfig } from '../../src/domain/availability.js'
-import { errorText } from '../errorText.js'
-import type { ApiResponse } from '../httpTypes.js'
+import { errorText } from '../_lib/errorText.js'
+import type { ApiResponse } from '../_lib/httpTypes.js'
 
 export function loadConfig() {
   return loadAvailabilityConfig()

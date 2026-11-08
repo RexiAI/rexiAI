@@ -12,9 +12,9 @@ import {
 } from '../../src/domain/pricing.js'
 import { getStripe } from '../../src/domain/stripeClient.js'
 import { isValidEmail } from '../../src/domain/validation.js'
-import { errorText } from '../errorText.js'
-import type { ApiRequest, ApiResponse } from '../httpTypes.js'
-import { requireMethod } from '../routeGuards.js'
+import { errorText } from '../_lib/errorText.js'
+import type { ApiRequest, ApiResponse } from '../_lib/httpTypes.js'
+import { requireMethod } from '../_lib/routeGuards.js'
 
 const POST_ONLY = ['POST']
 

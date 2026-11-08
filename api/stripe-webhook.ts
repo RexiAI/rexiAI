@@ -13,9 +13,9 @@ import { generateRescheduleToken } from '../src/domain/rescheduleToken.js'
 import { getStripe } from '../src/domain/stripeClient.js'
 import { markProcessed, wasProcessed } from '../src/domain/webhookDedup.js'
 
-import { errorText } from './errorText.js'
-import type { ApiRequest, ApiResponse } from './httpTypes.js'
-import { requireMethod } from './routeGuards.js'
+import { errorText } from './_lib/errorText.js'
+import type { ApiRequest, ApiResponse } from './_lib/httpTypes.js'
+import { requireMethod } from './_lib/routeGuards.js'
 
 const POST_ONLY = ['POST']
 

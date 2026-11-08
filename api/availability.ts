@@ -6,9 +6,9 @@ import {
 import { getBusyIntervals as getCalendarBusyIntervals } from '../src/domain/calendar.js'
 import { zonedToUtc } from '../src/domain/time.js'
 
-import { errorText } from './errorText.js'
-import type { ApiRequest, ApiResponse } from './httpTypes.js'
-import { requireMethod } from './routeGuards.js'
+import { errorText } from './_lib/errorText.js'
+import type { ApiRequest, ApiResponse } from './_lib/httpTypes.js'
+import { requireMethod } from './_lib/routeGuards.js'
 
 /** Availability is a read: anything else gets the API's one 405. */
 const GET_ONLY = ['GET']
