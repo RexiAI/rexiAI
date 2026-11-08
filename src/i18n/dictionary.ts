@@ -43,12 +43,12 @@ export const es = {
       {
         id: 'websites-and-apps',
         title: 'Webs y aplicaciones',
-        description: 'Rápidas, claras y convierten. Sin page builders, sin plantillas.',
+        description: 'Rápidas, claras y convierten. Sin constructores de páginas, sin plantillas.',
       },
     ],
   },
   proof: {
-    title: 'Publicado, no presentación',
+    title: 'Productos en producción, no presentaciones',
     intro:
       'Todavía no hay logos de clientes. Todo lo de abajo está en producción, construido y mantenido por mí.',
     items: [
@@ -73,7 +73,7 @@ export const es = {
     title: 'Quién lo construye',
     name: 'Daniel Bueno',
     role: 'Fundador, RexiAI',
-    location: 'Con base en España (Europe/Madrid). Trabajo en inglés y en español.',
+    location: 'En España (Europe/Madrid). Trabajo en español e inglés.',
     email: 'info@rexi-ai.com',
     githubLabel: 'github.com/RexiAI',
     githubUrl: 'https://github.com/RexiAI',

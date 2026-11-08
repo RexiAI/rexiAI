@@ -113,7 +113,9 @@ describe('AC-019 locale parity', () => {
       'Tu negocio funciona con una hoja de cálculo que solo una persona entiende.'
     )
     expect(container.querySelector('#services h2')?.textContent).toBe('Lo que construyo')
-    expect(container.querySelector('#proof h2')?.textContent).toBe('Publicado, no presentación')
+    expect(container.querySelector('#proof h2')?.textContent).toBe(
+      'Productos en producción, no presentaciones'
+    )
     expect(container.querySelector('#about h2')?.textContent).toBe('Quién lo construye')
     expect(container.querySelector('#booking .booking__narrative')?.textContent).toBe(
       'La primera hora es gratis. Describes el proceso que te está comiendo la semana; te vas con un plan de una página y un precio fijo para la construcción. Sin cargo, sin compromiso, sin presentación.'

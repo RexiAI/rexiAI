@@ -13,9 +13,12 @@ function getInitialLocale(): Locale {
   } catch {
     // ignore
   }
-  // English is the default for a first-time visitor (spec 019 Task 1). No
-  // navigator.language detection: "no stored preference" means `en`, full stop.
-  return 'en'
+  // Spanish is the default for a first-time visitor (spec 020 Task 1): the
+  // buyer is a Spanish SMB, and the copy is authored in Spanish first. No
+  // navigator.language detection: "no stored preference" means `es`, full stop.
+  // English stays available through the switcher and is what the head metadata's
+  // `og:locale:alternate` advertises.
+  return 'es'
 }
 
 // Apply synchronously at module init to avoid flash
@@ -35,8 +38,10 @@ interface I18nCtx {
 }
 
 const Ctx = createContext<I18nCtx>({
-  locale: 'en',
-  dict: en,
+  // Mirrors getInitialLocale(): anything rendered outside the provider must get
+  // the same language as the page around it, not the minority locale.
+  locale: 'es',
+  dict: es,
   setLocale: () => {},
 })
 

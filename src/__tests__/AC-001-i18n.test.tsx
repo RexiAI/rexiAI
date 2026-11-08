@@ -10,14 +10,14 @@ describe('AC-001', () => {
     document.documentElement.lang = ''
   })
 
-  it('AC-001-01: Default language is English for a first-time visitor', () => {
+  it('AC-001-01: Default language is Spanish for a first-time visitor', () => {
     localStorage.clear()
     render(<App />)
-    // English headline on first render (spec 019 Task 1 inverted this rule),
-    // Spanish once the switcher is asked for it.
-    expect(screen.getByText(en.hero.catchphrase)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /ES/i }))
+    // Spanish headline on first render (spec 020 Task 1 inverted this rule),
+    // English once the switcher is asked for it.
     expect(screen.getByText(es.hero.catchphrase)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /EN/i }))
+    expect(screen.getByText(en.hero.catchphrase)).toBeInTheDocument()
   })
 
   it('AC-001-02: Switching to English', () => {

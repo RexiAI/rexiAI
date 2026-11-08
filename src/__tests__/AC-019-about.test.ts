@@ -66,9 +66,7 @@ describe('AC-019 about', () => {
 
     expect(section.querySelector('h2')?.textContent).toBe('Quién lo construye')
     expect(section.textContent).toContain('Fundador, RexiAI')
-    expect(section.textContent).toContain(
-      'Con base en España (Europe/Madrid). Trabajo en inglés y en español.'
-    )
+    expect(section.textContent).toContain('En España (Europe/Madrid). Trabajo en español e inglés.')
     expect(section.querySelector('a[href="mailto:info@rexi-ai.com"]')?.textContent).toBe(
       'info@rexi-ai.com'
     )
@@ -106,7 +104,7 @@ describe('AC-019 about', () => {
   })
 
   it('AC-019-13: the landing page mounts the about block with its own dictionary', async () => {
-    const { container } = await renderLanding({ billingEnabled: true })
+    const { container } = await renderLanding({ billingEnabled: true, locale: 'en' })
     const section = container.querySelector('#about') as HTMLElement
     expect(section.querySelector('h2')?.textContent).toBe('Who builds it')
     expect(section.querySelector('.about__bio')).toBeNull()

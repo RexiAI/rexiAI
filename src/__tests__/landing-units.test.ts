@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { renderLanding } from './landing-harness'
 
-const EN_HEADLINE = 'Your business runs on a spreadsheet only one person understands.'
+const ES_HEADLINE = 'Tu negocio funciona con una hoja de cálculo que solo una persona entiende.'
 const CONTACT_SELECTORS = ['#contact h2', '#contact .contact__body', '#contact .contact__cta']
 
 /** The three rendered pieces of the contact section, in DOM order. */
@@ -50,13 +50,13 @@ describe('landing units', () => {
     vi.unstubAllGlobals()
   })
 
-  it('falls back to English when localStorage cannot be read at all', async () => {
+  it('falls back to Spanish when localStorage cannot be read at all', async () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('storage blocked')
     })
     await renderLanding()
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(EN_HEADLINE)
-    expect(document.documentElement.lang).toBe('en')
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(ES_HEADLINE)
+    expect(document.documentElement.lang).toBe('es')
   })
 
   it('free mode renders no duration selector and still posts hours: 1', async () => {
@@ -97,7 +97,7 @@ describe('landing units', () => {
   })
 
   it('the contact section carries the first-person rewrite in both locales', async () => {
-    const enPage = await renderLanding({ billingEnabled: true })
+    const enPage = await renderLanding({ billingEnabled: true, locale: 'en' })
     expect(contactParts(enPage.container)).toEqual([
       'Tell me what is broken.',
       'One email, three lines: the process, how often it hurts, what it costs you.',

@@ -51,7 +51,7 @@ describe('AC-019 proof', () => {
   })
 
   it('AC-019-11: the honesty line is stated, in English', async () => {
-    const { container } = await renderLanding({ billingEnabled: true })
+    const { container } = await renderLanding({ billingEnabled: true, locale: 'en' })
     const section = proof(container)
 
     expect(section.querySelector('h2')?.textContent).toBe('Shipped, not slideshow')
@@ -68,12 +68,14 @@ describe('AC-019 proof', () => {
     const { container } = await renderLanding({ billingEnabled: true })
     const section = proof(container)
 
-    expect(section.querySelector('h2')?.textContent).toBe('Publicado, no presentación')
+    expect(section.querySelector('h2')?.textContent).toBe(
+      'Productos en producción, no presentaciones'
+    )
     expect(section.querySelector('h2')?.nextElementSibling?.textContent).toBe(ES_INTRO)
   })
 
   it('AC-019-12: three real links in order, with their exact targets', async () => {
-    const { container } = await renderLanding({ billingEnabled: true })
+    const { container } = await renderLanding({ billingEnabled: true, locale: 'en' })
     const links = anchors(proof(container))
 
     expect(links).toHaveLength(3)

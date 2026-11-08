@@ -17,7 +17,7 @@ const ES_TITLES = ['Herramientas internas', 'Productos SaaS', 'Webs y aplicacion
 const ES_LINES = [
   'El proceso que vive en tres hojas de cálculo y en la cabeza de una persona, reconstruido como una sola herramienta que tu equipo abre de verdad.',
   'Si lo que necesitas no existe, construyo la v1: autenticación, facturación, despliegues, las partes aburridas bien hechas.',
-  'Rápidas, claras y convierten. Sin page builders, sin plantillas.',
+  'Rápidas, claras y convierten. Sin constructores de páginas, sin plantillas.',
 ]
 const OLD_TAGS = ['SaaS · Product', 'Web · Frontend', 'App · Mobile', 'Consulting · Strategy']
 // Assembled at runtime: the design checklist greps src/ for this string.
@@ -56,7 +56,7 @@ describe('AC-019 services', () => {
   })
 
   it('AC-019-09: the section is retitled and carries the three English cards', async () => {
-    const { container } = await renderLanding({ billingEnabled: true })
+    const { container } = await renderLanding({ billingEnabled: true, locale: 'en' })
     const section = services(container)
 
     expect(section.querySelector('h2')?.textContent).toBe('What I build')
@@ -88,7 +88,7 @@ describe('AC-019 services', () => {
     for (const width of [375, 768, 1440]) {
       cleanup()
       setViewportWidth(width)
-      const { container } = await renderLanding({ billingEnabled: false })
+      const { container } = await renderLanding({ billingEnabled: false, locale: 'en' })
       const section = services(container)
 
       expect(section.querySelectorAll('article.service-card')).toHaveLength(3)

@@ -29,7 +29,7 @@ describe('AC-019 hero', () => {
   })
 
   it('AC-019-04: the hero states the new offer in both locales', async () => {
-    const { container } = await renderLanding()
+    const { container } = await renderLanding({ locale: 'en' })
     const section = hero(container)
     expect(section.querySelector('h1')?.textContent).toBe(EN_HEADLINE)
     expect(section.querySelector('.hero-subtext')?.textContent).toBe(EN_SUBTEXT)
@@ -39,7 +39,7 @@ describe('AC-019 hero', () => {
   })
 
   it('AC-019-05: both CTAs carry their labels and targets', async () => {
-    const { container } = await renderLanding()
+    const { container } = await renderLanding({ locale: 'en' })
     const section = hero(container)
 
     const primary = section.querySelector('a.hero-cta--primary') as HTMLAnchorElement
@@ -68,7 +68,7 @@ describe('AC-019 hero', () => {
   })
 
   it('AC-019-06: the microcopy follows the button row and closes the hero', async () => {
-    const { container } = await renderLanding()
+    const { container } = await renderLanding({ locale: 'en' })
     const section = hero(container)
 
     const microcopy = section.querySelector('.hero-cta-microcopy') as HTMLElement

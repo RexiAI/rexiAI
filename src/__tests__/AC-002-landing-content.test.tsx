@@ -4,18 +4,21 @@ import { describe, it, expect } from 'vitest'
 import App from '../App'
 import { en, es } from '../i18n/dictionary'
 
+import { renderLanding } from './landing-harness'
+
 describe('AC-002', () => {
-  it('AC-002-01: Hero displays localized catchphrase', () => {
+  it('AC-002-01: Hero displays localized catchphrase', async () => {
     localStorage.clear()
-    render(<App />)
-    // English is the first-time default (spec 019 Task 1); Spanish follows the switcher.
+    // The landing opens in Spanish (spec 020); this scenario asserts the English
+    // copy end of the switcher, so it pins English instead of leaning on the default.
+    await renderLanding({ locale: 'en' })
     expect(screen.getByText(en.hero.catchphrase)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /ES/i }))
     expect(screen.getByText(es.hero.catchphrase)).toBeInTheDocument()
   })
-  it('AC-002-02: Services section lists exactly three services', () => {
+  it('AC-002-02: Services section lists exactly three services', async () => {
     localStorage.clear()
-    const { container } = render(<App />)
+    const { container } = await renderLanding({ locale: 'en' })
     expect(en.services.items).toHaveLength(3)
     expect(en.services.items.map((item) => item.id)).toEqual([
       'internal-tools',
