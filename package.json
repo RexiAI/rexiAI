@@ -16,7 +16,7 @@
     "@vercel/analytics": "^2.0.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "stripe": "^23.0.1",
+    "stripe": "^23.1.0",
     "yaml": "^2.9.1"
   },
   "devDependencies": {
