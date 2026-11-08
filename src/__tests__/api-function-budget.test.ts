@@ -37,7 +37,7 @@ describe('api function budget', () => {
     const helpers = routes.filter((f) => {
       const base = f.split('/').pop() ?? ''
       return /^(types|validation|errors|errorText|httpTypes|routeGuards|resolve|submit|booking)\.ts$/.test(
-        base,
+        base
       )
     })
     expect(helpers, `helpers must live under api/_lib/, found: ${helpers.join(', ')}`).toEqual([])
