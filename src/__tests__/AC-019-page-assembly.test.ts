@@ -46,6 +46,11 @@ describe('AC-019 page assembly', () => {
     expect(brand.getAttribute('href')).toBe('/')
     expect(brand.textContent).toContain('RexiAI')
 
+    // A visible route to the policy from the main page, not only the footer.
+    const privacy = nav.querySelector('a[href="/privacy"]') as HTMLAnchorElement
+    expect(privacy).not.toBeNull()
+    expect(privacy.textContent).toBe('Privacidad')
+
     const switcher = nav.querySelector('.lang-switcher') as HTMLElement
     expect(switcher).not.toBeNull()
     expect(switcher.getAttribute('role')).toBe('group')

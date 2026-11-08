@@ -12,6 +12,7 @@ export const es = {
     services: 'Servicios',
     booking: 'Reservas',
     contact: 'Contacto',
+    privacy: 'Privacidad',
   },
   switcher: {
     es: 'ES',
@@ -152,6 +153,7 @@ export const en: Dictionary = {
     services: 'Services',
     booking: 'Booking',
     contact: 'Contact',
+    privacy: 'Privacy',
   },
   switcher: {
     es: 'ES',

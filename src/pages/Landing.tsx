@@ -48,7 +48,12 @@ export function Landing() {
             {dict.nav.contact}
           </a>
         </div>
-        <LanguageSwitcher />
+        <div className="nav-meta">
+          <a href="/privacy" className="nav-link">
+            {dict.nav.privacy}
+          </a>
+          <LanguageSwitcher />
+        </div>
       </nav>
 
       <section id="hero" className="hero">
