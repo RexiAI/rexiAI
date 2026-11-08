@@ -2,8 +2,9 @@
 // (20-acceptance/AC-019-09-document-head.md).
 //
 // The head is static markup in index.html, so the assertions read the file and
-// parse it the same way a browser would. No runtime head manipulation is
-// introduced, so there is nothing else to test.
+// parse it the same way a browser would. Landing also updates the title and
+// meta tags at runtime when the locale changes; AC-019-locale-default covers
+// that path.
 //
 // Spec 020 made the head Spanish-first: the title/description/OG/Twitter copy is
 // the Spanish set, `og:locale` is `es_ES`, and English is the advertised

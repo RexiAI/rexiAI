@@ -35,7 +35,9 @@ describe('AC-019 hero', () => {
     expect(section.querySelector('.hero-subtext')?.textContent).toBe(EN_SUBTEXT)
     expect(container.textContent).not.toContain(OLD_EN)
     expect(container.textContent).not.toContain(OLD_ES)
-    expect(JSON.stringify({ es, en })).not.toContain('Excel')
+    // The retired hero copy is gone. The static document head still names Excel
+    // (it is the buyer's pain in the metadata), so scope this to the hero.
+    expect(JSON.stringify({ es: es.hero, en: en.hero })).not.toContain('Excel')
   })
 
   it('AC-019-05: both CTAs carry their labels and targets', async () => {

@@ -8,6 +8,8 @@
 import { fireEvent, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { en, es } from '../i18n/dictionary'
+
 import { renderLanding } from './landing-harness'
 
 const EN_HEADLINE = 'Your business runs on a spreadsheet only one person understands.'
@@ -24,6 +26,7 @@ function headline(): string {
 describe('AC-019 default locale', () => {
   beforeEach(() => {
     localStorage.clear()
+    window.history.replaceState(null, '', '/')
     document.documentElement.lang = ''
   })
 
@@ -53,7 +56,15 @@ describe('AC-019 default locale', () => {
     expect(container.textContent).not.toContain(ES_HEADLINE)
   })
 
-  it('AC-019-03: toggling updates lang and persists the choice', async () => {
+  it('AC-019-01: a shareable ?lang=en wins over a stored Spanish preference', async () => {
+    window.history.replaceState(null, '', '/?lang=en')
+    localStorage.setItem('rexi-locale', 'es')
+    await renderLanding()
+    expect(headline()).toBe(EN_HEADLINE)
+    expect(document.documentElement.lang).toBe('en')
+  })
+
+  it('AC-019-03: toggling updates lang, the URL, the title and persists the choice', async () => {
     await renderLanding()
     expect(document.documentElement.lang).toBe('es')
 
@@ -62,11 +73,15 @@ describe('AC-019 default locale', () => {
     expect(document.documentElement.lang).toBe('en')
     expect(headline()).toBe(EN_HEADLINE)
     expect(screen.getByText(EN_SUBTEXT)).toBeTruthy()
+    expect(window.location.search).toBe('?lang=en')
+    expect(document.title).toBe(en.head.title)
 
     fireEvent.click(screen.getByRole('button', { name: 'Español' }))
     expect(localStorage.getItem('rexi-locale')).toBe('es')
     expect(document.documentElement.lang).toBe('es')
     expect(headline()).toBe(ES_HEADLINE)
     expect(screen.getByText(ES_SUBTEXT)).toBeTruthy()
+    expect(window.location.search).toBe('')
+    expect(document.title).toBe(es.head.title)
   })
 })

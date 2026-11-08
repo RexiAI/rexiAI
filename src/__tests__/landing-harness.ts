@@ -70,9 +70,9 @@ export async function renderLanding(options: LandingOptions = {}): Promise<Rende
   vi.resetModules()
   const { default: App } = await import('../App')
   const mounted = render(createElement(App))
-  // useSiteConfig seeds from its fail-safe default (billing ON) and only adopts
-  // the /api/config answer once that promise settles. Flush it here so every
-  // assertion runs against the mode it asked for rather than the seeded one.
+  // useSiteConfig seeds from its fail-safe, not-ready default (billing ON) and
+  // only adopts the /api/config answer once that promise settles. Flush it here
+  // so every assertion runs against the resolved mode, not the pending one.
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
   })

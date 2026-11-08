@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
+import { SkipLink } from '../components/SkipLink'
 import { privacy, type PrivacySection } from '../content/privacy'
 import { useI18n } from '../i18n/I18nContext'
 
@@ -63,6 +64,7 @@ export function Privacy() {
 
   return (
     <div className="privacy">
+      <SkipLink />
       <nav className="nav">
         <div className="nav-links">
           <a href="/" className="nav-brand">
@@ -73,7 +75,7 @@ export function Privacy() {
         <LanguageSwitcher />
       </nav>
 
-      <main className="privacy__main">
+      <main id="main" className="privacy__main">
         <h1 className="privacy__title">{doc.title}</h1>
         <p className="privacy__updated">{doc.updated}</p>
         {doc.intro.map((text, i) => (
