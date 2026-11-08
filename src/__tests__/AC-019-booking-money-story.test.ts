@@ -53,7 +53,7 @@ describe('AC-019 booking money story', () => {
   })
 
   it('AC-019-15: free mode tells the free-hour story and shows no price machinery', async () => {
-    const { container } = await renderLanding({ billingEnabled: false })
+    const { container } = await renderLanding({ billingEnabled: false, locale: 'en' })
     const section = booking(container)
 
     expect(narrative(section)).toBe(EN_FREE_NARRATIVE)
@@ -81,7 +81,7 @@ describe('AC-019 booking money story', () => {
   })
 
   it('AC-019-16: paid mode tells the prepaid story and shows one unstruck price line', async () => {
-    const { container } = await renderLanding({ billingEnabled: true })
+    const { container } = await renderLanding({ billingEnabled: true, locale: 'en' })
     const section = booking(container)
     const panel = card(container)
 

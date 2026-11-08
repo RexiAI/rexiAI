@@ -56,7 +56,7 @@ describe('AC-019 page assembly', () => {
   })
 
   it('AC-019-24: the footer keeps the brand, the year, the rights line and /privacy', async () => {
-    const { container } = await renderLanding({ billingEnabled: true })
+    const { container } = await renderLanding({ billingEnabled: true, locale: 'en' })
     const footer = container.querySelector('footer.footer') as HTMLElement
 
     expect(footer.textContent).toContain('RexiAI')

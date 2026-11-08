@@ -29,6 +29,12 @@ export interface LandingOptions {
   billingEnabled?: boolean
   /** Answer /api/availability with one slot, so the form can reach submit. */
   availability?: boolean
+  /**
+   * Pin the active locale before mount. Spanish is the first-time default
+   * (spec 020), so a test that asserts English copy must ask for English
+   * explicitly rather than leaning on the default.
+   */
+  locale?: 'es' | 'en'
 }
 
 export interface RenderedLanding {
@@ -60,6 +66,7 @@ export async function renderLanding(options: LandingOptions = {}): Promise<Rende
     return Promise.resolve(jsonResponse({}))
   })
   vi.stubGlobal('fetch', fetchMock)
+  if (options.locale) localStorage.setItem('rexi-locale', options.locale)
   vi.resetModules()
   const { default: App } = await import('../App')
   const mounted = render(createElement(App))
