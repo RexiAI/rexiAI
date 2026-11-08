@@ -9,9 +9,9 @@ import {
   findBookingByRescheduleToken,
   type BookingRescheduleState,
 } from '../../src/domain/calendar.js'
-import type { ApiResponse } from '../httpTypes.js'
 
-import { failCalendar } from './errors.js'
+import type { ApiResponse } from './httpTypes.js'
+import { failCalendar } from './rescheduleErrors.js'
 
 /** `{ booking: null }` when the token is dead; null when the calendar itself failed. */
 export async function loadBooking(

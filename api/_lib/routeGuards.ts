@@ -5,7 +5,7 @@
 // reschedule page branch on `error.code`, not on the status alone. Six handlers
 // used to spell both envelopes out themselves, so one code could have come to
 // mean two different things in two files; here it has one reason to change.
-import { checkRateLimit, getClientIp } from '../src/domain/rateLimit.js'
+import { checkRateLimit, getClientIp } from '../../src/domain/rateLimit.js'
 
 import type { ApiRequest, ApiResponse } from './httpTypes.js'
 

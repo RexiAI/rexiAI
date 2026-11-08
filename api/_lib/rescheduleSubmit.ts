@@ -31,11 +31,11 @@ import {
   isValidRescheduleToken,
 } from '../../src/domain/rescheduleToken.js'
 import { getConfiguredTimezone } from '../../src/domain/time.js'
-import { errorText } from '../errorText.js'
-import type { ApiRequest, ApiResponse } from '../httpTypes.js'
 
-import { loadBooking } from './booking.js'
-import { failCalendar, reject, rejectInvalidToken } from './errors.js'
+import { errorText } from './errorText.js'
+import type { ApiRequest, ApiResponse } from './httpTypes.js'
+import { loadBooking } from './rescheduleBooking.js'
+import { failCalendar, reject, rejectInvalidToken } from './rescheduleErrors.js'
 
 interface SubmitTarget {
   token: string

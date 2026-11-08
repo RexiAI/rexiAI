@@ -15,10 +15,10 @@ import { createCalendarEvent, findOverlappingBookingId } from '../../src/domain/
 import { sendClientEmail, sendOperatorEmail } from '../../src/domain/email.js'
 import { getCalendarProvider } from '../../src/domain/providers.js'
 import { generateRescheduleToken } from '../../src/domain/rescheduleToken.js'
-import { errorText } from '../errorText.js'
-import type { ApiResponse } from '../httpTypes.js'
+import type { BookingRequestFields } from '../_lib/bookingsTypes.js'
+import { errorText } from '../_lib/errorText.js'
+import type { ApiResponse } from '../_lib/httpTypes.js'
 
-import type { BookingRequestFields } from './types.js'
 
 /** This path has no Stripe session: the booking facts are exactly what it needs. */
 export type DirectBookingInput = BookingRequestFields

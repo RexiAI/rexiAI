@@ -2,13 +2,13 @@ import { isBillingEnabled } from '../src/domain/billing.js'
 import type { Locale } from '../src/domain/locale.js'
 import { createMeetingLink, type MeetingResult } from '../src/domain/meeting.js'
 
+import type { BookingRequestFields } from './_lib/bookingsTypes.js'
+import { prepareBookingInput } from './_lib/bookingsValidation.js'
+import type { ApiRequest, ApiResponse } from './_lib/httpTypes.js'
+import { enforceRateLimit, requireMethod } from './_lib/routeGuards.js'
 import { hasConflict } from './bookings/calendar.js'
 import { createCheckout } from './bookings/checkout.js'
 import { finishDirectBooking } from './bookings/direct.js'
-import type { BookingRequestFields } from './bookings/types.js'
-import { prepareBookingInput } from './bookings/validation.js'
-import type { ApiRequest, ApiResponse } from './httpTypes.js'
-import { enforceRateLimit, requireMethod } from './routeGuards.js'
 
 // This endpoint's own rate-limit bucket: a spam burst costs nothing downstream
 // because the guard runs before validation and before any Stripe or Graph call.

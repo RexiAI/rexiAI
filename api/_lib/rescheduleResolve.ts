@@ -8,10 +8,10 @@
 import { canReschedule } from '../../src/domain/reschedule.js'
 import { isValidRescheduleToken } from '../../src/domain/rescheduleToken.js'
 import { getConfiguredTimezone } from '../../src/domain/time.js'
-import type { ApiRequest, ApiResponse } from '../httpTypes.js'
 
-import { loadBooking } from './booking.js'
-import { rejectInvalidToken } from './errors.js'
+import type { ApiRequest, ApiResponse } from './httpTypes.js'
+import { loadBooking } from './rescheduleBooking.js'
+import { rejectInvalidToken } from './rescheduleErrors.js'
 
 /** The token parameter, or null when absent or malformed (no calendar call). */
 export function readToken(req: ApiRequest): string | null {
