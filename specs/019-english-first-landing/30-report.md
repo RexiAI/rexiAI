@@ -318,3 +318,11 @@ stage can run is green: lint (0 errors), format, build (incl. `tsc -b`),
 design-principles (0 FAIL / 210 pre-existing WARN), scenario traceability
 (24/24), audit trail. The Verifier's PASS (attempt 2, phase 1) carries forward
 and was not contradicted. Stage 5b (PR Opener) may proceed on this report.
+
+## PR record (stage 5b)
+
+PR: https://github.com/RexiAI/rexiAI/pull/95
+Commits: 6
+
+Draft PR opened against `main` from `spec/019-english-first-landing`; the spec
+folder stays in place for stage 5c to write `40-deploy.md` into.
