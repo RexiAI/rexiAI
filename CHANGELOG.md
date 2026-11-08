@@ -1,3 +1,11 @@
+# [1.13.0](https://github.com/RexiAI/rexiAI/compare/v1.12.0...v1.13.0) (2026-11-08)
+
+
+### Features
+
+* **analytics:** install Vercel Web Analytics ([#99](https://github.com/RexiAI/rexiAI/issues/99)) ([61b5cf5](https://github.com/RexiAI/rexiAI/commit/61b5cf581417a3006dfbedb68cd1d325e243355a))
+* **i18n:** Spanish-first — default language and authored copy ([#100](https://github.com/RexiAI/rexiAI/issues/100)) ([7779d83](https://github.com/RexiAI/rexiAI/commit/7779d83223baef00058501a9bbb24842f67348b3))
+
 # [1.12.0](https://github.com/RexiAI/rexiAI/compare/v1.11.1...v1.12.0) (2026-11-08)
 
 
