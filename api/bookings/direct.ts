@@ -19,7 +19,6 @@ import type { BookingRequestFields } from '../_lib/bookingsTypes.js'
 import { errorText } from '../_lib/errorText.js'
 import type { ApiResponse } from '../_lib/httpTypes.js'
 
-
 /** This path has no Stripe session: the booking facts are exactly what it needs. */
 export type DirectBookingInput = BookingRequestFields
 
