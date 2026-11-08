@@ -10,10 +10,13 @@ describe('AC-001', () => {
     document.documentElement.lang = ''
   })
 
-  it('AC-001-01: Default language is Spanish', () => {
+  it('AC-001-01: Default language is English for a first-time visitor', () => {
     localStorage.clear()
     render(<App />)
-    // hero catchphrase in Spanish
+    // English headline on first render (spec 019 Task 1 inverted this rule),
+    // Spanish once the switcher is asked for it.
+    expect(screen.getByText(en.hero.catchphrase)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /ES/i }))
     expect(screen.getByText(es.hero.catchphrase)).toBeInTheDocument()
   })
 
@@ -60,9 +63,20 @@ describe('AC-001', () => {
       // This just ensures dict keys exist and are used
       expect(typeof s).toBe('string')
     }
-    // No em-dashes in dictionaries
+    // No en-dashes anywhere in the dictionaries. The single em-dash lives in the
+    // paid booking narrative (final copy, spec 019 Task 7); nothing else gains one.
     const dictText = JSON.stringify({ es, en })
-    expect(dictText).not.toContain('—')
     expect(dictText).not.toContain('–')
+    const withoutPaidNarrative = JSON.stringify({
+      es: { ...es, booking: { ...es.booking, narrativePaid: '' } },
+      en: { ...en, booking: { ...en.booking, narrativePaid: '' } },
+    })
+    expect(withoutPaidNarrative).not.toContain('—')
+    // …and it is exactly one string per locale that carries it.
+    const carriers = [
+      ...(JSON.stringify(es.booking.narrativePaid).includes('—') ? ['es'] : []),
+      ...(JSON.stringify(en.booking.narrativePaid).includes('—') ? ['en'] : []),
+    ]
+    expect(carriers).toEqual(['es', 'en'])
   })
 })

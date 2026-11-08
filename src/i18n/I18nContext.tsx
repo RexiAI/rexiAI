@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 
 import { es, en, type Locale, type Dictionary } from './dictionary'
 
-const dictionaries: Record<Locale, Dictionary> = { es, en: en as unknown as Dictionary }
+const dictionaries: Record<Locale, Dictionary> = { es, en }
 
 const STORAGE_KEY = 'rexi-locale'
 
@@ -13,7 +13,9 @@ function getInitialLocale(): Locale {
   } catch {
     // ignore
   }
-  return 'es'
+  // English is the default for a first-time visitor (spec 019 Task 1). No
+  // navigator.language detection: "no stored preference" means `en`, full stop.
+  return 'en'
 }
 
 // Apply synchronously at module init to avoid flash
@@ -33,8 +35,8 @@ interface I18nCtx {
 }
 
 const Ctx = createContext<I18nCtx>({
-  locale: 'es',
-  dict: es,
+  locale: 'en',
+  dict: en,
   setLocale: () => {},
 })
 

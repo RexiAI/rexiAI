@@ -6,6 +6,9 @@ import App from '../App'
 describe('AC-011', () => {
   beforeEach(() => {
     localStorage.clear()
+    // These scenarios assert the Spanish UI copy; English is the first-time
+    // default since spec 019, so state the locale they assume.
+    localStorage.setItem('rexi-locale', 'es')
     vi.restoreAllMocks()
   })
 
