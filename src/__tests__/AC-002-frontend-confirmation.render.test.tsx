@@ -41,12 +41,12 @@ async function bookSession(dict: typeof es | typeof en) {
   fireEvent.change(document.getElementById('booking-name') as HTMLInputElement, {
     target: { value: 'Ana López' },
   })
-  fireEvent.click(screen.getByRole('button', { name: dict.freeMode.submit }))
+  fireEvent.click(screen.getByRole('button', { name: dict.booking.form.submitFree }))
   await waitFor(() => screen.getByText(dict.booking.confirmation.title))
 }
 
 describe.each([
-  ['es', es, undefined],
+  ['es', es, 'es'],
   ['en', en, 'en'],
 ] as const)('AC-002-17: confirmation panel replaces the form (%s)', (_locale, dict, stored) => {
   beforeEach(() => {

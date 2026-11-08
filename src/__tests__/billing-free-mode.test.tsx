@@ -1,4 +1,3 @@
-import { render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const billingMocks = vi.hoisted(() => ({
@@ -21,9 +20,7 @@ vi.mock('../domain/stripeClient', () => ({
 
 import recordedBillingHandler from '../../api/bookings/recorded-billing'
 import configHandler from '../../api/config'
-import { FreeModeBanner } from '../components/FreeModeBanner'
 import { isBillingEnabled } from '../domain/billing'
-import { es } from '../i18n/dictionary'
 
 const TOKEN = 'test-billing-token'
 
@@ -101,15 +98,5 @@ describe('billing kill-switch (BILLING_ENABLED)', () => {
     )
     expect(billingMocks.mockSessionCreate).not.toHaveBeenCalled()
     expect(billingMocks.mockSessionRetrieve).not.toHaveBeenCalled()
-  })
-})
-
-describe('FreeModeBanner', () => {
-  it('shows the FREE badge, the struck original price, and the "not free to build" fine print', () => {
-    render(<FreeModeBanner dict={es} />)
-    expect(screen.getByText(es.freeMode.badge)).toBeTruthy()
-    expect(screen.getByText(es.freeMode.priceWas)).toBeTruthy()
-    expect(screen.getByText(es.freeMode.bannerTitle, { exact: false })).toBeTruthy()
-    expect(screen.getByText(es.freeMode.bannerFineprint)).toBeTruthy()
   })
 })

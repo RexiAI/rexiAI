@@ -12,14 +12,15 @@ import type { BookingFields } from './hooks/useBookingFields'
  * flight a billing-enabled booking really is being redirected to Stripe, but
  * with billing disabled no redirect ever happens — the direct POST *is* the
  * booking — so the in-flight copy confirms the send and never names a payment
- * provider (15-design Task 4). The enabled keys/values are unchanged; the
- * neutral copy is a dictionary addition, never a hardcoded string here.
+ * provider (15-design Task 4). Since spec 019 the idle free label is its own key
+ * (`form.submitFree`: "Book the free hour"), not a "free" variant of the paid
+ * one. The enabled keys/values are unchanged.
  */
 function submitButtonLabel(dict: Dictionary, billingEnabled: boolean, submitting: boolean): string {
   if (submitting) {
     return billingEnabled ? dict.booking.form.submitting : dict.booking.form.submittingDirect
   }
-  return billingEnabled ? dict.booking.form.submit : dict.freeMode.submit
+  return billingEnabled ? dict.booking.form.submit : dict.booking.form.submitFree
 }
 
 export function BookingLayout({
@@ -49,20 +50,12 @@ export function BookingLayout({
 
   return (
     <div className="booking-card">
-      {billingEnabled ? (
-        <>
-          <p className="booking-pricing">{dict.booking.pricingRules}</p>
-          <p className="booking-pricing-example">{dict.booking.pricingExample}</p>
-        </>
-      ) : (
-        <>
-          <p className="booking-pricing booking-pricing--free">
-            <s className="booking-pricing__was">{dict.booking.pricingExample}</s>
-            <span className="booking-pricing__free">{dict.freeMode.badge}</span>
-          </p>
-          <p className="booking-pricing-note">{dict.freeMode.pricingNote}</p>
-        </>
-      )}
+      {/* One money statement per mode (spec 019 Task 7): the free card states
+          that nothing is charged, the paid card states the ladder — never both,
+          and nothing is struck through. */}
+      <p className="booking-pricing">
+        {billingEnabled ? dict.booking.priceLine : dict.booking.freeNote}
+      </p>
       <form onSubmit={handleSubmit} noValidate>
         <DateField date={fields.date} setDate={fields.setDate} error={fields.errors['date']} />
         <SlotField
@@ -74,7 +67,12 @@ export function BookingLayout({
           error={fields.errors['slot']}
           conflictError={fields.conflictError}
         />
-        <DurationField hours={fields.hours} setHours={fields.setHours} />
+        {/* Free mode books the first hour only, so the 1h/2h/3h/4h selector is
+            not rendered at all — an empty fieldset or a display:none control
+            would still reach the accessibility tree. `hours` stays 1 in the
+            request (useBookingFields' default), so the API contract is
+            unchanged. */}
+        {billingEnabled && <DurationField hours={fields.hours} setHours={fields.setHours} />}
         <TextField
           fieldId="email"
           value={fields.email}
