@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/RexiAI/rexiAI/compare/v1.11.0...v1.11.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **api:** unblock Vercel deploys (19 functions > Hobby cap of 12) ([#96](https://github.com/RexiAI/rexiAI/issues/96)) ([5bb0c6c](https://github.com/RexiAI/rexiAI/commit/5bb0c6cff4a6211582c3aca01f228c35c82699c9))
+
 # [1.11.0](https://github.com/RexiAI/rexiAI/compare/v1.10.0...v1.11.0) (2026-11-05)
 
 
