@@ -89,7 +89,9 @@
 }
 
 .privacy__back {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   margin-top: var(--space-4);
   color: var(--color-zinc-600);
   font-size: var(--text-sm);

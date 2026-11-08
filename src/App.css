@@ -8,6 +8,26 @@
   font-family: Geist, system-ui, sans-serif;
 }
 
+/* keyboard skip link — hidden until focused, then sits over the sticky nav */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: var(--space-4);
+  z-index: 30;
+  padding: var(--space-2) var(--space-4);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: var(--color-zinc-900);
+  color: var(--color-white);
+  font-size: var(--text-sm2);
+  text-decoration: none;
+  transform: translateY(-120%);
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 /* nav */
 .nav {
   display: flex;
@@ -23,10 +43,18 @@
   background: var(--color-white);
 }
 
-.nav-links {
+.nav-links,
+.nav-meta {
   display: flex;
   align-items: center;
   gap: var(--space-4);
+}
+
+/* Privacy sits with the language switcher, not with the section anchors: on a
+   390px screen the four anchors plus the brand already fill one row, and this
+   group wraps to the second row without pushing the anchors into overflow. */
+.nav-meta {
+  row-gap: var(--space-2);
 }
 
 .nav-brand {
@@ -52,6 +80,9 @@
 }
 
 .nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   color: var(--color-zinc-600);
   font-size: var(--text-sm2);
   text-decoration: none;
@@ -221,6 +252,14 @@
   font-size: var(--text-base);
 }
 
+.proof__cta {
+  color: var(--color-zinc-600);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
 .proof__item:hover .proof__name,
 .proof__item:focus-visible .proof__name {
   text-decoration-color: var(--color-zinc-600);
@@ -233,7 +272,7 @@
 
 @media (min-width: 900px) {
   .proof__item {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 3fr) auto;
     gap: var(--space-6);
     align-items: baseline;
   }
@@ -264,6 +303,9 @@
 }
 
 .about__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   color: var(--color-zinc-900);
   font-size: var(--text-sm2);
   text-decoration: underline;
@@ -284,10 +326,18 @@
 }
 
 /* Anchors land below the sticky nav instead of under it. Every landing
-   section is a direct child, so the rule follows the markup without an id
-   list to keep in sync. */
-.landing > section {
+   section is a direct child of <main>, so the rule follows the markup without
+   an id list to keep in sync. */
+.landing main > section {
   scroll-margin-top: calc(var(--space-14) + var(--space-6));
+}
+
+/* The mobile nav wraps to two rows (anchors + privacy/switcher), so the
+   desktop offset is too short there. */
+@media (max-width: 640px) {
+  .landing main > section {
+    scroll-margin-top: 110px;
+  }
 }
 
 /* booking */
@@ -313,7 +363,8 @@
   font-weight: 600;
 }
 
-.booking__narrative {
+.booking__narrative,
+.booking__pending {
   margin-bottom: var(--space-4);
   color: var(--color-zinc-600);
   font-size: var(--text-base);
@@ -372,6 +423,9 @@
 }
 
 .footer__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   color: var(--color-zinc-600);
   text-decoration: underline;
 }
@@ -449,6 +503,7 @@ button:focus-visible {
 }
 
 .lang-btn {
+  min-height: 24px;
   padding: 4px var(--space-3);
   border: none;
   border-radius: var(--radius-full);

@@ -46,6 +46,13 @@
   font-size: var(--text-sm);
 }
 
+/* Confirms the chosen date in the page's locale, independent of the native
+   date control's browser-defined format. */
+.field-helper--selected {
+  color: var(--color-zinc-900);
+  font-weight: 500;
+}
+
 /* inputs */
 .booking-input {
   width: 100%;

@@ -1,11 +1,13 @@
-import type { MouseEvent } from 'react'
+import { useEffect, type MouseEvent } from 'react'
 
 import { About } from '../components/About'
 import { BookingWidget } from '../components/BookingWidget'
 import { LanguageSwitcher } from '../components/LanguageSwitcher'
 import { Proof } from '../components/Proof'
 import { Services } from '../components/Services'
+import { SkipLink } from '../components/SkipLink'
 import { useSiteConfig } from '../hooks/useSiteConfig'
+import { applyDocumentHead } from '../i18n/documentHead'
 import { useI18n } from '../i18n/I18nContext'
 
 import { ResultViews } from './ResultViews'
@@ -13,7 +15,14 @@ import { isCancelPath, isSuccessPath } from './routing'
 
 export function Landing() {
   const { dict } = useI18n()
-  const { billingEnabled } = useSiteConfig()
+  const { billingEnabled, ready } = useSiteConfig()
+
+  // A client-side language switch changes visible copy, so it must change the
+  // tab title and share metadata too.
+  useEffect(() => {
+    applyDocumentHead(dict.head)
+  }, [dict])
+
   const result = isSuccessPath() || isCancelPath()
   if (result) return <ResultViews />
 
@@ -32,6 +41,7 @@ export function Landing() {
 
   return (
     <div className="landing">
+      <SkipLink />
       <nav className="nav">
         <div className="nav-links">
           <a href="/" className="nav-brand" onClick={handleBrandClick}>
@@ -48,53 +58,68 @@ export function Landing() {
             {dict.nav.contact}
           </a>
         </div>
-        <LanguageSwitcher />
+        <div className="nav-meta">
+          <a href="/privacy" className="nav-link">
+            {dict.nav.privacy}
+          </a>
+          <LanguageSwitcher />
+        </div>
       </nav>
 
-      <section id="hero" className="hero">
-        <h1 className="hero-title">{dict.hero.catchphrase}</h1>
-        <p className="hero-subtext">{dict.hero.subtext}</p>
-        <div className="hero-ctas">
-          <a href="#booking" className="hero-cta--primary">
-            {dict.hero.ctaBooking} →
+      <main id="main">
+        <section id="hero" className="hero">
+          <h1 className="hero-title">{dict.hero.catchphrase}</h1>
+          <p className="hero-subtext">{dict.hero.subtext}</p>
+          <div className="hero-ctas">
+            <a href="#booking" className="hero-cta--primary">
+              {dict.hero.ctaBooking} →
+            </a>
+            <a href={`mailto:${dict.contact.email}`} className="hero-cta--secondary">
+              {dict.hero.ctaContact}
+            </a>
+          </div>
+          <p className="hero-cta-microcopy">{dict.hero.ctaMicrocopy}</p>
+        </section>
+
+        <Services />
+
+        <Proof />
+
+        <About dict={dict} />
+
+        <section id="booking" className="booking">
+          <div>
+            <h2 className="booking__title">{dict.booking.title}</h2>
+            {ready ? (
+              <>
+                <p className="booking__narrative">{narrative}</p>
+                <ol className="booking-steps">
+                  {steps.map((step, i) => (
+                    <li key={i} className="booking-steps__item">
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              </>
+            ) : (
+              <p className="booking__pending" role="status">
+                {dict.booking.pending}
+              </p>
+            )}
+          </div>
+          <div>
+            <BookingWidget />
+          </div>
+        </section>
+
+        <section id="contact" className="contact">
+          <h2 className="contact__title">{dict.contact.title}</h2>
+          <p className="contact__body">{dict.contact.body}</p>
+          <a href={`mailto:${dict.contact.email}`} className="contact__cta">
+            {dict.contact.cta}
           </a>
-          <a href={`mailto:${dict.contact.email}`} className="hero-cta--secondary">
-            {dict.hero.ctaContact}
-          </a>
-        </div>
-        <p className="hero-cta-microcopy">{dict.hero.ctaMicrocopy}</p>
-      </section>
-
-      <Services />
-
-      <Proof />
-
-      <About dict={dict} />
-
-      <section id="booking" className="booking">
-        <div>
-          <h2 className="booking__title">{dict.booking.title}</h2>
-          <p className="booking__narrative">{narrative}</p>
-          <ol className="booking-steps">
-            {steps.map((step, i) => (
-              <li key={i} className="booking-steps__item">
-                {step}
-              </li>
-            ))}
-          </ol>
-        </div>
-        <div>
-          <BookingWidget />
-        </div>
-      </section>
-
-      <section id="contact" className="contact">
-        <h2 className="contact__title">{dict.contact.title}</h2>
-        <p className="contact__body">{dict.contact.body}</p>
-        <a href={`mailto:${dict.contact.email}`} className="contact__cta">
-          {dict.contact.cta}
-        </a>
-      </section>
+        </section>
+      </main>
 
       <footer className="footer">
         <span>RexiAI</span>

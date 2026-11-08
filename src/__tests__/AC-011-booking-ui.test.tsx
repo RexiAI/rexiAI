@@ -36,19 +36,23 @@ describe('AC-011', () => {
     expect(screen.getByText('10:00')).toBeInTheDocument()
   })
 
-  it('AC-011-02: Duration control offers whole hours 1 to 4 only', () => {
+  it('AC-011-02: Duration control offers whole hours 1 to 4 only', async () => {
     render(<App />)
-    // duration buttons 1h..4h should exist, 5h should not
+    // The duration selector waits for /api/config so a free-mode visitor never
+    // sees paid duration choices flash before the mode is known.
+    await waitFor(() => expect(screen.getByRole('button', { name: '1h' })).toBeInTheDocument())
     for (const h of [1, 2, 3, 4]) {
       expect(screen.getByRole('button', { name: `${h}h` })).toBeInTheDocument()
     }
     expect(screen.queryByRole('button', { name: '5h' })).not.toBeInTheDocument()
   })
 
-  it('AC-011-03: Localized pricing rules are displayed', () => {
+  it('AC-011-03: Localized pricing rules are displayed', async () => {
     render(<App />)
     // spanish pricing rules appears at least once (widget + narrative may duplicate)
-    expect(screen.getAllByText(/Primera hora gratis/i).length).toBeGreaterThan(0)
+    await waitFor(() =>
+      expect(screen.getAllByText(/Primera hora gratis/i).length).toBeGreaterThan(0)
+    )
   })
 
   it('AC-011-04: Valid submit posts to the API and redirects to Stripe', async () => {

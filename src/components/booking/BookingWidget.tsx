@@ -10,7 +10,7 @@ import { useResetOnDate } from './hooks/useResetOnDate'
 
 export function BookingWidget() {
   const { dict } = useI18n()
-  const { billingEnabled } = useSiteConfig()
+  const { billingEnabled, ready } = useSiteConfig()
   const fields = useBookingFields()
   const { slots, loading } = useAvailability(fields.date)
   useResetOnDate(fields)
@@ -19,6 +19,7 @@ export function BookingWidget() {
     <BookingLayout
       dict={dict}
       billingEnabled={billingEnabled}
+      ready={ready}
       fields={fields}
       slots={slots}
       loading={loading}

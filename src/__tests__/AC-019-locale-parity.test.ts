@@ -96,11 +96,11 @@ describe('AC-019 locale parity', () => {
     expect(en.contact.email).toBe('info@rexi-ai.com')
   })
 
-  it('AC-019-21: one em dash, in the paid narrative only, and no en dash anywhere', () => {
-    const esDashes = [...new Set(strings(es).filter((text) => text.includes('—')))]
-    const enDashes = [...new Set(strings(en).filter((text) => text.includes('—')))]
-    expect(esDashes).toEqual([es.booking.narrativePaid])
-    expect(enDashes).toEqual([en.booking.narrativePaid])
+  it('AC-019-21: em dashes are limited to the head title and paid narrative', () => {
+    const esDashes = [...new Set(strings(es).filter((text) => text.includes('—')))].sort()
+    const enDashes = [...new Set(strings(en).filter((text) => text.includes('—')))].sort()
+    expect(esDashes).toEqual([es.booking.narrativePaid, es.head.title].sort())
+    expect(enDashes).toEqual([en.booking.narrativePaid, en.head.title].sort())
     expect(JSON.stringify({ es, en })).not.toContain('–')
   })
 
@@ -114,7 +114,7 @@ describe('AC-019 locale parity', () => {
     )
     expect(container.querySelector('#services h2')?.textContent).toBe('Lo que construyo')
     expect(container.querySelector('#proof h2')?.textContent).toBe(
-      'Productos en producción, no presentaciones'
+      'Código publicado, no presentaciones'
     )
     expect(container.querySelector('#about h2')?.textContent).toBe('Quién lo construye')
     expect(container.querySelector('#booking .booking__narrative')?.textContent).toBe(

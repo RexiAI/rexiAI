@@ -1,12 +1,13 @@
-// AC-019 Task 5 — proof section: `Shipped, not slideshow`
+// AC-019 Task 5 — proof section: `Shipped code, not slideshow`
 // (20-acceptance/AC-019-05-proof.md).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { renderLanding } from './landing-harness'
 
-const EN_INTRO = 'No client logos yet. Everything below is live, built and run by me.'
+const EN_INTRO =
+  'No client logos yet. Everything below is open source, built and run by me; each link goes to the repository.'
 const ES_INTRO =
-  'Todavía no hay logos de clientes. Todo lo de abajo está en producción, construido y mantenido por mí.'
+  'Todavía no hay logos de clientes. Todo lo de abajo es código abierto, construido y mantenido por mí; cada enlace lleva al repositorio.'
 const EN_ROWS = [
   {
     name: 'tax-advisor',
@@ -54,7 +55,7 @@ describe('AC-019 proof', () => {
     const { container } = await renderLanding({ billingEnabled: true, locale: 'en' })
     const section = proof(container)
 
-    expect(section.querySelector('h2')?.textContent).toBe('Shipped, not slideshow')
+    expect(section.querySelector('h2')?.textContent).toBe('Shipped code, not slideshow')
     expect(section.querySelector('h2')?.nextElementSibling?.textContent).toBe(EN_INTRO)
     expect(section.querySelector('img')).toBeNull()
     expect(section.querySelector('svg')).toBeNull()
@@ -68,9 +69,7 @@ describe('AC-019 proof', () => {
     const { container } = await renderLanding({ billingEnabled: true })
     const section = proof(container)
 
-    expect(section.querySelector('h2')?.textContent).toBe(
-      'Productos en producción, no presentaciones'
-    )
+    expect(section.querySelector('h2')?.textContent).toBe('Código publicado, no presentaciones')
     expect(section.querySelector('h2')?.nextElementSibling?.textContent).toBe(ES_INTRO)
   })
 
@@ -84,6 +83,7 @@ describe('AC-019 proof', () => {
       expect(link.getAttribute('href')).toBe(row.href)
       expect(link.textContent).toContain(row.name)
       expect(link.textContent).toContain(row.line)
+      expect(link.textContent).toContain('View source')
       expect(link.getAttribute('target')).toBeNull()
     })
   })

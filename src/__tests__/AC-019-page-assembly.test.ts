@@ -5,12 +5,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { renderLanding } from './landing-harness'
 
-const ORDER = ['NAV', 'hero', 'services', 'proof', 'about', 'booking', 'contact', 'FOOTER']
+const TOP_LEVEL = ['A', 'NAV', 'MAIN', 'FOOTER']
+const SECTIONS = ['hero', 'services', 'proof', 'about', 'booking', 'contact']
 
-/** The eight top-level blocks of `.landing`, as tag names or section ids. */
+/** The top-level blocks of `.landing`, as tag names. */
 function blocks(container: HTMLElement): string[] {
   const landing = container.querySelector('.landing') as HTMLElement
-  return Array.from(landing.children).map((child) => child.id || child.tagName || child.className)
+  return Array.from(landing.children).map((child) => child.tagName)
+}
+
+/** The landing sections, in order, inside <main>. */
+function sections(container: HTMLElement): string[] {
+  const main = container.querySelector('main#main') as HTMLElement
+  return Array.from(main.children).map((child) => child.id)
 }
 
 describe('AC-019 page assembly', () => {
@@ -24,11 +31,15 @@ describe('AC-019 page assembly', () => {
 
   it('AC-019-24: the blocks render in the specified order', async () => {
     const { container } = await renderLanding({ billingEnabled: true })
-    expect(blocks(container)).toEqual(ORDER)
+    expect(blocks(container)).toEqual(TOP_LEVEL)
+    expect(sections(container)).toEqual(SECTIONS)
 
-    for (const id of ['hero', 'services', 'proof', 'about', 'booking', 'contact']) {
+    for (const id of SECTIONS) {
       expect(container.querySelectorAll(`#${id}`)).toHaveLength(1)
     }
+
+    const skip = container.querySelector('a.skip-link') as HTMLAnchorElement
+    expect(skip.getAttribute('href')).toBe('#main')
   })
 
   it('AC-019-24: the nav keeps three anchors, the brand and the switcher', async () => {
@@ -45,6 +56,11 @@ describe('AC-019 page assembly', () => {
     const brand = nav.querySelector('a.nav-brand') as HTMLAnchorElement
     expect(brand.getAttribute('href')).toBe('/')
     expect(brand.textContent).toContain('RexiAI')
+
+    // A visible route to the policy from the main page, not only the footer.
+    const privacy = nav.querySelector('a[href="/privacy"]') as HTMLAnchorElement
+    expect(privacy).not.toBeNull()
+    expect(privacy.textContent).toBe('Privacidad')
 
     const switcher = nav.querySelector('.lang-switcher') as HTMLElement
     expect(switcher).not.toBeNull()
@@ -65,11 +81,11 @@ describe('AC-019 page assembly', () => {
     expect(footer.querySelector('a[href="/privacy"]')).not.toBeNull()
   })
 
-  it('AC-019-24: nothing renders above the hero except the nav, in either mode', async () => {
+  it('AC-019-24: nothing renders above the hero except the skip link and nav', async () => {
     for (const billingEnabled of [false, true]) {
       cleanup()
       const { container } = await renderLanding({ billingEnabled })
-      expect(blocks(container)).toEqual(ORDER)
+      expect(blocks(container)).toEqual(TOP_LEVEL)
       expect(container.querySelectorAll('#hero')).toHaveLength(1)
     }
   })

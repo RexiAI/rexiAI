@@ -63,15 +63,24 @@ describe('AC-001', () => {
       // This just ensures dict keys exist and are used
       expect(typeof s).toBe('string')
     }
-    // No en-dashes anywhere in the dictionaries. The single em-dash lives in the
-    // paid booking narrative (final copy, spec 019 Task 7); nothing else gains one.
+    // No en-dashes anywhere in the dictionaries. The em-dash is limited to the
+    // paid booking narrative (final copy, spec 019 Task 7) and the document
+    // head title, which mirrors the static index.html title.
     const dictText = JSON.stringify({ es, en })
     expect(dictText).not.toContain('–')
-    const withoutPaidNarrative = JSON.stringify({
-      es: { ...es, booking: { ...es.booking, narrativePaid: '' } },
-      en: { ...en, booking: { ...en.booking, narrativePaid: '' } },
+    const withoutKnownDashes = JSON.stringify({
+      es: {
+        ...es,
+        head: { ...es.head, title: '' },
+        booking: { ...es.booking, narrativePaid: '' },
+      },
+      en: {
+        ...en,
+        head: { ...en.head, title: '' },
+        booking: { ...en.booking, narrativePaid: '' },
+      },
     })
-    expect(withoutPaidNarrative).not.toContain('—')
+    expect(withoutKnownDashes).not.toContain('—')
     // …and it is exactly one string per locale that carries it.
     const carriers = [
       ...(JSON.stringify(es.booking.narrativePaid).includes('—') ? ['es'] : []),

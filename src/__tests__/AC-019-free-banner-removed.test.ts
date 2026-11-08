@@ -31,7 +31,9 @@ describe('AC-019 free banner removal', () => {
     expect(container.querySelectorAll(`[class*="${BANNER_CLASS}"]`)).toHaveLength(0)
     expect(elementTexts(container)).not.toContain('FREE')
     expect(elementTexts(container)).not.toContain('GRATIS')
-    expect(container.querySelector('.landing')?.firstElementChild?.tagName).toBe('NAV')
+    const landing = container.querySelector('.landing') as HTMLElement
+    expect(landing.querySelector('a.skip-link')).toBe(landing.firstElementChild)
+    expect(landing.querySelector('nav.nav')).not.toBeNull()
   })
 
   it('AC-019-07: paid mode renders no banner and nothing saying FREE either', async () => {
@@ -39,7 +41,9 @@ describe('AC-019 free banner removal', () => {
     expect(container.querySelectorAll(`[class*="${BANNER_CLASS}"]`)).toHaveLength(0)
     expect(elementTexts(container)).not.toContain('FREE')
     expect(elementTexts(container)).not.toContain('GRATIS')
-    expect(container.querySelector('.landing')?.firstElementChild?.tagName).toBe('NAV')
+    const landing = container.querySelector('.landing') as HTMLElement
+    expect(landing.querySelector('a.skip-link')).toBe(landing.firstElementChild)
+    expect(landing.querySelector('nav.nav')).not.toBeNull()
   })
 
   it('AC-019-07: the component file, its importers and its dictionary section are gone', () => {

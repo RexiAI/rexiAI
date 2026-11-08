@@ -1,8 +1,10 @@
 import { useI18n } from '../i18n/I18nContext'
 
 /**
- * `Shipped, not slideshow` (spec 019 Task 5): a left-aligned list of live
- * links — the honesty line first, then three rows, each row one anchor.
+ * `Shipped code, not slideshow` (spec 019 Task 5): a left-aligned list of
+ * source links — the honesty line first, then three rows, each row one anchor.
+ * The row says `View source` because the href is a repository, not a live
+ * product; claiming otherwise would overstate the proof.
  * Deliberately not a logo wall: no image, no metric, no testimonial.
  */
 export function Proof() {
@@ -16,6 +18,7 @@ export function Proof() {
           <a key={item.name} className="proof__item" href={item.href}>
             <span className="proof__name">{item.name}</span>
             <span className="proof__line">{item.line}</span>
+            <span className="proof__cta">{dict.proof.linkLabel} ↗</span>
           </a>
         ))}
       </div>

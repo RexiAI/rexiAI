@@ -8,10 +8,21 @@ export type Locale = 'es' | 'en'
  * misspelled in it, is a compile error.
  */
 export const es = {
+  head: {
+    title: 'RexiAI — software a precio fijo para negocios atrapados en Excel',
+    description:
+      'Sustituyo el Excel del que depende tu negocio por software que funciona solo. Precio fijo, alcance cerrado en una llamada, entregado en semanas. Primera hora gratis.',
+    locale: 'es_ES',
+    alternate: 'en_GB',
+  },
+  a11y: {
+    skipToContent: 'Saltar al contenido',
+  },
   nav: {
     services: 'Servicios',
     booking: 'Reservas',
     contact: 'Contacto',
+    privacy: 'Privacidad',
   },
   switcher: {
     es: 'ES',
@@ -48,9 +59,10 @@ export const es = {
     ],
   },
   proof: {
-    title: 'Productos en producción, no presentaciones',
+    title: 'Código publicado, no presentaciones',
     intro:
-      'Todavía no hay logos de clientes. Todo lo de abajo está en producción, construido y mantenido por mí.',
+      'Todavía no hay logos de clientes. Todo lo de abajo es código abierto, construido y mantenido por mí; cada enlace lleva al repositorio.',
+    linkLabel: 'Ver código',
     items: [
       {
         name: 'tax-advisor',
@@ -90,9 +102,11 @@ export const es = {
     stepsPaid: ['Elige un hueco', 'Elige tu bloque', 'Paga de forma segura con Stripe'],
     priceLine: '1h gratis · 2h 30 EUR · 3h 60 EUR · 4h 90 EUR',
     freeNote: 'Sesión gratuita: no se cobra nada ahora.',
+    pending: 'Cargando la reserva…',
     form: {
       dateLabel: 'Fecha',
       dateHelper: 'Elige un día para ver los huecos disponibles (hora de Madrid)',
+      dateSelected: 'Fecha elegida',
       slotLabel: 'Huecos disponibles',
       slotEmpty: 'Sin huecos ese día. Prueba otra fecha.',
       slotLoading: 'Cargando huecos...',
@@ -105,6 +119,7 @@ export const es = {
       nameTooLong: 'El nombre es demasiado largo',
       submit: 'Reservar y pagar',
       submitFree: 'Reserva la hora gratis',
+      pending: 'Cargando…',
       submitting: 'Redirigiendo a Stripe...',
       submittingDirect: 'Enviando tu reserva...',
       required: 'Este campo es obligatorio',
@@ -148,10 +163,21 @@ export const es = {
 export type Dictionary = typeof es
 
 export const en: Dictionary = {
+  head: {
+    title: 'RexiAI — fixed-price software for teams stuck on spreadsheets',
+    description:
+      'I replace the spreadsheet your business depends on with software that runs itself. Fixed price, scoped in one call, shipped in weeks. First hour free.',
+    locale: 'en_GB',
+    alternate: 'es_ES',
+  },
+  a11y: {
+    skipToContent: 'Skip to content',
+  },
   nav: {
     services: 'Services',
     booking: 'Booking',
     contact: 'Contact',
+    privacy: 'Privacy',
   },
   switcher: {
     es: 'ES',
@@ -188,8 +214,10 @@ export const en: Dictionary = {
     ],
   },
   proof: {
-    title: 'Shipped, not slideshow',
-    intro: 'No client logos yet. Everything below is live, built and run by me.',
+    title: 'Shipped code, not slideshow',
+    intro:
+      'No client logos yet. Everything below is open source, built and run by me; each link goes to the repository.',
+    linkLabel: 'View source',
     items: [
       {
         name: 'tax-advisor',
@@ -228,9 +256,11 @@ export const en: Dictionary = {
     stepsPaid: ['Pick a slot', 'Choose your block', 'Pay securely with Stripe'],
     priceLine: '1h free · 2h 30 EUR · 3h 60 EUR · 4h 90 EUR',
     freeNote: 'Free session: nothing is charged now.',
+    pending: 'Loading booking…',
     form: {
       dateLabel: 'Date',
       dateHelper: 'Pick a day to see available slots (Madrid time)',
+      dateSelected: 'Selected date',
       slotLabel: 'Available slots',
       slotEmpty: 'No slots that day. Try another date.',
       slotLoading: 'Loading slots...',
@@ -243,6 +273,7 @@ export const en: Dictionary = {
       nameTooLong: 'The name is too long',
       submit: 'Book and pay',
       submitFree: 'Book the free hour',
+      pending: 'Loading…',
       submitting: 'Redirecting to Stripe...',
       submittingDirect: 'Sending your reservation...',
       required: 'This field is required',

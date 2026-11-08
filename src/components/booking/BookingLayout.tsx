@@ -16,16 +16,36 @@ import type { BookingFields } from './hooks/useBookingFields'
  * (`form.submitFree`: "Book the free hour"), not a "free" variant of the paid
  * one. The enabled keys/values are unchanged.
  */
-function submitButtonLabel(dict: Dictionary, billingEnabled: boolean, submitting: boolean): string {
+function submitButtonLabel(
+  dict: Dictionary,
+  billingEnabled: boolean,
+  submitting: boolean,
+  ready: boolean
+): string {
+  if (!ready) return dict.booking.form.pending
   if (submitting) {
     return billingEnabled ? dict.booking.form.submitting : dict.booking.form.submittingDirect
   }
   return billingEnabled ? dict.booking.form.submit : dict.booking.form.submitFree
 }
 
+function moneyLine(dict: Dictionary, ready: boolean, billingEnabled: boolean): string {
+  if (!ready) return dict.booking.pending
+  return billingEnabled ? dict.booking.priceLine : dict.booking.freeNote
+}
+
+function showsDuration(ready: boolean, billingEnabled: boolean): boolean {
+  return ready && billingEnabled
+}
+
+function submitDisabled(submitting: boolean, ready: boolean): boolean {
+  return submitting || !ready
+}
+
 export function BookingLayout({
   dict,
   billingEnabled,
+  ready,
   fields,
   slots,
   loading,
@@ -33,6 +53,7 @@ export function BookingLayout({
 }: {
   dict: Dictionary
   billingEnabled: boolean
+  ready: boolean
   fields: BookingFields
   slots: string[]
   loading: boolean
@@ -49,13 +70,13 @@ export function BookingLayout({
   }
 
   return (
-    <div className="booking-card">
+    <div className="booking-card" aria-busy={!ready}>
       {/* One money statement per mode (spec 019 Task 7): the free card states
           that nothing is charged, the paid card states the ladder — never both,
-          and nothing is struck through. */}
-      <p className="booking-pricing">
-        {billingEnabled ? dict.booking.priceLine : dict.booking.freeNote}
-      </p>
+          and nothing is struck through. Until /api/config settles, neither is
+          shown: the fail-safe paid default must not flash a paid offer on a
+          free-mode page. */}
+      <p className="booking-pricing">{moneyLine(dict, ready, billingEnabled)}</p>
       <form onSubmit={handleSubmit} noValidate>
         <DateField date={fields.date} setDate={fields.setDate} error={fields.errors['date']} />
         <SlotField
@@ -72,7 +93,9 @@ export function BookingLayout({
             would still reach the accessibility tree. `hours` stays 1 in the
             request (useBookingFields' default), so the API contract is
             unchanged. */}
-        {billingEnabled && <DurationField hours={fields.hours} setHours={fields.setHours} />}
+        {showsDuration(ready, billingEnabled) && (
+          <DurationField hours={fields.hours} setHours={fields.setHours} />
+        )}
         <TextField
           fieldId="email"
           value={fields.email}
@@ -89,8 +112,12 @@ export function BookingLayout({
           input={{ type: 'text', autoComplete: 'name', last: true }}
           copy={{ label: dict.booking.form.nameLabel, helper: dict.booking.form.nameHelper }}
         />
-        <button type="submit" disabled={fields.submitting} className="booking-submit">
-          {submitButtonLabel(dict, billingEnabled, fields.submitting)}
+        <button
+          type="submit"
+          disabled={submitDisabled(fields.submitting, ready)}
+          className="booking-submit"
+        >
+          {submitButtonLabel(dict, billingEnabled, fields.submitting, ready)}
         </button>
       </form>
     </div>

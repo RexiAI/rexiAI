@@ -105,14 +105,22 @@ describe('AC-003 billing-aware in-flight copy', () => {
         expect(typeof dict.booking.form.submittingDirect).toBe('string')
         expect(dict.booking.form.submittingDirect.length).toBeGreaterThan(0)
       }
-      // AC-001-05 stays green: no en dashes anywhere, one em dash allowed and
-      // only inside booking.narrativePaid (final paid copy, spec 019 Task 7).
+      // AC-001-05 stays green: no en dashes anywhere; em dashes are limited to
+      // the head title and booking.narrativePaid (final paid copy, spec 019).
       const dictText = JSON.stringify({ es, en })
       expect(dictText).not.toContain('–')
       expect(
         JSON.stringify({
-          es: { ...es, booking: { ...es.booking, narrativePaid: '' } },
-          en: { ...en, booking: { ...en.booking, narrativePaid: '' } },
+          es: {
+            ...es,
+            head: { ...es.head, title: '' },
+            booking: { ...es.booking, narrativePaid: '' },
+          },
+          en: {
+            ...en,
+            head: { ...en.head, title: '' },
+            booking: { ...en.booking, narrativePaid: '' },
+          },
         })
       ).not.toContain('—')
     } finally {
