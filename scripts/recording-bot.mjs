@@ -86,6 +86,18 @@ function collectOptions(argv) {
   return values
 }
 
+function parseFlagMode(mode, options) {
+  if (mode === 'run' && !options.room) return { mode: 'usage' }
+  return { mode, ...options }
+}
+
+function parsePositionalMode({ mode, positional, tail, options }) {
+  if (tail.length === 0 || String(tail[0]).startsWith('--')) return { mode: 'usage' }
+  const parsed = { mode, [positional]: tail[0], ...options }
+  if (mode === 'finalize' && !parsed.room) return { mode: 'usage' }
+  return parsed
+}
+
 export function parseArgs(argv) {
   const mode = MODE_FLAGS[argv[0]]
   if (!mode) return { mode: 'usage' }
@@ -93,15 +105,8 @@ export function parseArgs(argv) {
   const positional = VALUE_MODES[mode]
   const options = collectOptions(positional ? tail.slice(1) : tail)
   if (!options) return { mode: 'usage' }
-  if (!positional) {
-    if (mode === 'run' && !options.room) return { mode: 'usage' }
-    return { mode, ...options }
-  }
-  if (tail.length === 0 || String(tail[0]).startsWith('--')) return { mode: 'usage' }
-  const parsed = { mode, [positional]: tail[0], ...options }
-  if (mode === 'finalize' && !parsed.room) return { mode: 'usage' }
-  if (mode === 'run' && !parsed.room) return { mode: 'usage' }
-  return parsed
+  if (!positional) return parseFlagMode(mode, options)
+  return parsePositionalMode({ mode, positional, tail, options })
 }
 
 function readJson(filePath) {
@@ -196,21 +201,25 @@ function currentWindows({ file, room }) {
  * the duration cap) the same room is not retried, so a meeting that never started
  * cannot make the bot re-join in a loop.
  */
-async function runWatch({ schedule, room, base }) {
+export async function runWatch({ schedule, room, base }) {
   const file = schedule || scheduleFileFrom(process.env)
   const stop = createStopSignal()
   const handled = new Set()
   const running = new Map()
   const intervalMs = Number(process.env['BOT_WATCH_INTERVAL_MS'] || 60_000)
   while (!stop.stopped()) {
-    for (const window of currentWindows({ file, room })) {
-      if (handled.has(window.room) || running.has(window.room)) continue
-      running.set(window.room, watchOne({ window, base, handled, running }))
-    }
+    startNewWindows({ windows: currentWindows({ file, room }), base, handled, running })
     await stop.sleep(intervalMs)
   }
   await Promise.allSettled([...running.values()])
   return 0
+}
+
+function startNewWindows({ windows, base, handled, running }) {
+  for (const window of windows) {
+    if (handled.has(window.room) || running.has(window.room)) continue
+    running.set(window.room, watchOne({ window, base, handled, running }))
+  }
 }
 
 /** Run a single window's session and retire it when it ends. */

@@ -47,23 +47,27 @@ function recordingsDir() {
     path.join(homedir(), '.jitsi-meet-cfg', 'storage', 'jibri', 'recordings')
   )
 }
+/** The .mp4 in one session dir when its metadata names the room; null otherwise. */
+function recordingInSession(sdir, roomName) {
+  const metaPath = path.join(sdir, 'metadata.json')
+  if (!existsSync(metaPath)) return null
+  try {
+    const meta = JSON.parse(readFileSync(metaPath, 'utf8'))
+    if (!(meta['meeting_url'] || '').includes(`/${roomName}`)) return null
+    const mp4 = readdirSync(sdir).find((f) => f.endsWith('.mp4'))
+    return mp4 ? path.join(sdir, mp4) : null
+  } catch {
+    return null
+  }
+}
+
 function findRecordingForRoom(dir, roomName) {
   if (!existsSync(dir)) return null
   for (const sess of readdirSync(dir)) {
     const sdir = path.join(dir, sess)
     if (!statSync(sdir).isDirectory()) continue
-    const metaPath = path.join(sdir, 'metadata.json')
-    if (existsSync(metaPath)) {
-      try {
-        const meta = JSON.parse(readFileSync(metaPath, 'utf8'))
-        if ((meta['meeting_url'] || '').includes(`/${roomName}`)) {
-          const mp4 = readdirSync(sdir).find((f) => f.endsWith('.mp4'))
-          if (mp4) return path.join(sdir, mp4)
-        }
-      } catch {
-        /* skip */
-      }
-    }
+    const found = recordingInSession(sdir, roomName)
+    if (found) return found
   }
   return null
 }
@@ -88,20 +92,28 @@ function makeRes(nodeRes) {
     },
   }
 }
+function isBillingRequest(req) {
+  return req.method === 'POST' && (req.url || '').split('?')[0] === '/api/bookings/recorded-billing'
+}
+
+/** The JSON body, or {} when absent or malformed. */
+async function readJsonBody(req) {
+  let raw = ''
+  for await (const c of req) raw += c
+  try {
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
 const server = http.createServer(async (req, res) => {
-  if (req.method !== 'POST' || (req.url || '').split('?')[0] !== '/api/bookings/recorded-billing') {
+  if (!isBillingRequest(req)) {
     res.writeHead(404, { 'content-type': 'application/json' })
     res.end(JSON.stringify({ error: { code: 'NOT_FOUND' } }))
     return
   }
-  let raw = ''
-  for await (const c of req) raw += c
-  let body
-  try {
-    body = raw ? JSON.parse(raw) : {}
-  } catch {
-    body = {}
-  }
+  const body = await readJsonBody(req)
   try {
     await recordedBilling(
       { method: req.method, headers: req.headers, body, query: {} },

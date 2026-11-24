@@ -122,6 +122,9 @@ module.exports = [
     },
     rules: {
       'no-console': 'off',
+      // Same <=6 gate as src/: the .js/.ts block above does not match .mjs, so
+      // without this the recording/billing scripts were silently unchecked.
+      complexity: ['error', 6],
     },
   },
   prettier,

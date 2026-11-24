@@ -71,6 +71,21 @@ async function exchange(code) {
   return j
 }
 
+async function exchangeAndReport(code) {
+  try {
+    const j = await exchange(code)
+    console.log('Exchange OK. Paste this into MICROSOFT_REFRESH_TOKEN in .env:')
+    console.log()
+    console.log(j.refresh_token)
+    console.log()
+    console.log(`(access token valid for ${j.expires_in}s; refresh token ~90 days of inactivity)`)
+    process.exit(0)
+  } catch (e) {
+    console.error(e.message)
+    process.exit(1)
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://localhost:${PORT}`)
   if (url.pathname !== REDIRECT_PATH) {
@@ -93,18 +108,7 @@ const server = http.createServer(async (req, res) => {
     .writeHead(200, { 'Content-Type': 'text/html' })
     .end('<p>Consent captured. You can close this tab and return to the terminal.</p>')
   server.close()
-  try {
-    const j = await exchange(code)
-    console.log('Exchange OK. Paste this into MICROSOFT_REFRESH_TOKEN in .env:')
-    console.log()
-    console.log(j.refresh_token)
-    console.log()
-    console.log(`(access token valid for ${j.expires_in}s; refresh token ~90 days of inactivity)`)
-    process.exit(0)
-  } catch (e) {
-    console.error(e.message)
-    process.exit(1)
-  }
+  await exchangeAndReport(code)
 })
 
 server.listen(PORT, () => {})

@@ -85,6 +85,18 @@ function makeRes(nodeRes) {
   }
 }
 
+function respondUnrouted({ req, res, url }) {
+  const urlPath = url.pathname
+  if (!urlPath.startsWith('/api')) {
+    const spa = `http://localhost:${process.env.SPA_PORT || 5173}${urlPath}${url.search}`
+    res.writeHead(302, { location: spa })
+    res.end()
+    return
+  }
+  res.writeHead(404, { 'content-type': 'application/json' })
+  res.end(JSON.stringify({ error: { code: 'NOT_FOUND', message: `${req.method} ${urlPath}` } }))
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', 'http://localhost')
   const urlPath = url.pathname
@@ -93,14 +105,7 @@ const server = http.createServer(async (req, res) => {
     // Non-/api paths (e.g. the post-payment /booking/success redirect) belong to
     // the SPA on the Vite port — bounce the browser there so the success/cancel
     // view renders instead of 404ing on the API server.
-    if (!urlPath.startsWith('/api')) {
-      const spa = `http://localhost:${process.env.SPA_PORT || 5173}${urlPath}${url.search}`
-      res.writeHead(302, { location: spa })
-      res.end()
-      return
-    }
-    res.writeHead(404, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ error: { code: 'NOT_FOUND', message: `${req.method} ${urlPath}` } }))
+    respondUnrouted({ req, res, url })
     return
   }
   const query = Object.fromEntries(url.searchParams)

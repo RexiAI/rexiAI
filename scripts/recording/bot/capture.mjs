@@ -189,6 +189,15 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/** The pulse/sink collaborators, each overridable through `deps`. */
+function resolveSinkFns(deps) {
+  return {
+    ensurePulseServer: deps.ensurePulseServer || ensurePulseServer,
+    loadSink: deps.loadSink || loadSink,
+    unloadSink: deps.unloadSink || unloadSink,
+  }
+}
+
 /**
  * Record one room end to end: join, wait for two non-bot humans, capture, stop,
  * finalize into RECORDINGS_DIR.
@@ -210,8 +219,9 @@ export async function recordRoom({
 }) {
   const sinkName = sinkNameFor(process.pid)
   const workDir = mkdtempSync(path.join(os.tmpdir(), 'rexi-bot-capture-'))
-  const pulse = await (deps.ensurePulseServer || ensurePulseServer)({ env, log })
-  const sink = await (deps.loadSink || loadSink)({ server: pulse.server, sinkName, log })
+  const sinkFns = resolveSinkFns(deps)
+  const pulse = await sinkFns.ensurePulseServer({ env, log })
+  const sink = await sinkFns.loadSink({ server: pulse.server, sinkName, log })
   try {
     return await captureWithRoom({
       room,
@@ -225,7 +235,7 @@ export async function recordRoom({
       deps,
     })
   } finally {
-    await (deps.unloadSink || unloadSink)({ server: pulse.server, moduleId: sink.moduleId, log })
+    await sinkFns.unloadSink({ server: pulse.server, moduleId: sink.moduleId, log })
     pulse.stop()
     rmSync(workDir, { recursive: true, force: true })
   }

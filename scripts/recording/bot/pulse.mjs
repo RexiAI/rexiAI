@@ -239,6 +239,15 @@ export async function ensurePulseServer({
   return startPrivateDaemon({ env, log, runner, spawnFn })
 }
 
+/** The module id pactl printed last; anything but digits is a failed load. */
+function parseModuleId(stdout, sinkName) {
+  const moduleId = String(stdout).trim().split('\n').pop()
+  if (!moduleId || !/^\d+$/.test(moduleId)) {
+    throw new Error(`pactl did not report a module id for sink ${sinkName}: ${stdout}`)
+  }
+  return moduleId
+}
+
 /**
  * Load the session's dedicated null sink. Returns `{ sinkName, moduleId }`; the
  * caller must unload it (see `unloadSink`) on every path.
@@ -249,10 +258,7 @@ export async function loadSink({ server, sinkName, runner = execFileAsync, log =
   const { stdout } = await runner('pactl', buildLoadSinkArgs({ server, sinkName }), {
     timeout: PACTL_MODULE_TIMEOUT_MS,
   })
-  const moduleId = String(stdout).trim().split('\n').pop()
-  if (!moduleId || !/^\d+$/.test(moduleId)) {
-    throw new Error(`pactl did not report a module id for sink ${sinkName}: ${stdout}`)
-  }
+  const moduleId = parseModuleId(stdout, sinkName)
   const listed = await runner('pactl', ['--server', server, 'list', 'sinks'], {
     timeout: PACTL_MODULE_TIMEOUT_MS,
   })
