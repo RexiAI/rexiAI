@@ -4,20 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { en, es } from '../i18n/dictionary'
 
-import { fold, renderLanding, section } from './landing-harness'
-
-/** Public figures only: any other `$` amount in the FAQ is an invented price. */
-const ALLOWED_AMOUNTS = new Set(['$1,200', '$600'])
+import { ALLOWED_AMOUNTS, amounts, fold, renderLanding, section } from './landing-harness'
 
 function pairs(container: ParentNode): { question: string; answer: string }[] {
   return Array.from(container.querySelectorAll('.faq__item')).map((item) => ({
     question: item.querySelector('.faq__question')?.textContent ?? '',
     answer: item.querySelector('.faq__answer')?.textContent ?? '',
   }))
-}
-
-function amounts(text: string): string[] {
-  return text.match(/\$\d[\d,]*/g) ?? []
 }
 
 describe('AC-020 FAQ', () => {
@@ -68,7 +61,7 @@ describe('AC-020 FAQ', () => {
       expect(text).not.toContain('%')
       expect(text).not.toContain('99.9')
       for (const amount of amounts(text)) {
-        expect(ALLOWED_AMOUNTS.has(amount), `${amount} is not a public figure`).toBe(true)
+        expect(ALLOWED_AMOUNTS[locale].has(amount), `${amount} is not a public figure`).toBe(true)
       }
       // No invented metric: no multiplier or count-out claims.
       expect(fold(text)).not.toMatch(/\b\d+x\b/)

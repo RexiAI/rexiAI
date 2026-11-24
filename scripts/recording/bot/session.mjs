@@ -42,7 +42,12 @@ export function nextStep({
     return { command: recording ? 'continue' : 'start', recording: true, belowSinceMs: null }
   }
   if (!recording) return { command: 'idle', recording: false, belowSinceMs: null }
-  const since = belowSinceMs === null || belowSinceMs === undefined ? nowMs : belowSinceMs
+  return graceStep({ belowSinceMs, nowMs, graceMs })
+}
+
+/** Recording but below the threshold: keep going until the grace period elapses. */
+function graceStep({ belowSinceMs, nowMs, graceMs }) {
+  const since = belowSinceMs ?? nowMs
   if (nowMs - since < graceMs) {
     return { command: 'continue', recording: true, belowSinceMs: since }
   }
@@ -77,6 +82,24 @@ export async function applyStep({ command, capture }) {
 
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+/** Each setting falls back to its default only when it is `undefined`. */
+function sessionSettings(options) {
+  const defaults = {
+    now: () => Date.now(),
+    sleep: defaultSleep,
+    graceMs: DEFAULT_GRACE_MS,
+    intervalMs: DEFAULT_POLL_INTERVAL_MS,
+    idleTimeoutMs: DEFAULT_IDLE_TIMEOUT_MS,
+    maxDurationMs: DEFAULT_MAX_DURATION_MS,
+    botIdentity: BOT_IDENTITY,
+  }
+  const resolved = {}
+  for (const [key, fallback] of Object.entries(defaults)) {
+    resolved[key] = options[key] === undefined ? fallback : options[key]
+  }
+  return resolved
+}
+
 /**
  * Drive a session to completion.
  *
@@ -91,17 +114,9 @@ const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
  *   intervalMs?: number, idleTimeoutMs?: number, maxDurationMs?: number,
  *   botIdentity?: { id: string } }} input
  */
-export async function runSession({
-  poll,
-  capture,
-  now = () => Date.now(),
-  sleep = defaultSleep,
-  graceMs = DEFAULT_GRACE_MS,
-  intervalMs = DEFAULT_POLL_INTERVAL_MS,
-  idleTimeoutMs = DEFAULT_IDLE_TIMEOUT_MS,
-  maxDurationMs = DEFAULT_MAX_DURATION_MS,
-  botIdentity = BOT_IDENTITY,
-}) {
+export async function runSession({ poll, capture, ...options }) {
+  const { now, sleep, graceMs, intervalMs, idleTimeoutMs, maxDurationMs, botIdentity } =
+    sessionSettings(options)
   const startedAtMs = now()
   let lastHumanSeenMs = startedAtMs
   let state = { recording: false, belowSinceMs: null }

@@ -18,16 +18,8 @@ const EN_ROWS = [
     line: 'AI tax guidance for Spanish freelancers.',
     href: 'https://github.com/RexiAI/tax-advisor',
   },
-  {
-    name: 'pensions-system',
-    line: 'Pension calculation, end to end.',
-    href: 'https://github.com/RexiAI/pensions-system',
-  },
 ]
-const ES_LINES = [
-  'Asesoría fiscal con IA para autónomos en España.',
-  'Cálculo de pensiones, de principio a fin.',
-]
+const ES_LINES = ['Asesoría fiscal con IA para autónomos en España.']
 const BANNED_WORDS = ['trusted', 'clients love', 'testimonial', '100%', '500+']
 
 function proof(container: HTMLElement): HTMLElement {
@@ -71,11 +63,11 @@ describe('AC-019 proof', () => {
     expect(section.querySelector('h2')?.nextElementSibling?.textContent).toBe(ES_INTRO)
   })
 
-  it('AC-019-12: the two real links render in order, with their exact targets', async () => {
+  it('AC-019-12: the one real link renders in order, with their exact targets', async () => {
     const { container } = await renderLanding({ billingEnabled: true, locale: 'en' })
     const links = anchors(proof(container))
 
-    expect(links).toHaveLength(2)
+    expect(links).toHaveLength(1)
     links.forEach((link, index) => {
       const row = EN_ROWS[index]
       expect(link.getAttribute('href')).toBe(row.href)
@@ -95,7 +87,7 @@ describe('AC-019 proof', () => {
     const { container } = await renderLanding({ billingEnabled: true })
     const links = anchors(proof(container))
 
-    expect(links).toHaveLength(2)
+    expect(links).toHaveLength(1)
     links.forEach((link, index) => {
       expect(link.textContent).toContain(ES_LINES[index])
       expect(link.getAttribute('href')).toBe(EN_ROWS[index].href)

@@ -49,13 +49,13 @@ describe('AC-011', () => {
 
   it('AC-011-03: Localized pricing rules are displayed', async () => {
     render(<App />)
-    // Spec 020 Task 5 replaced the hourly rules with the public USD figures:
+    // Spec 020 Task 5 replaced the hourly rules with the public figures (euros in Spanish):
     // the paid narrative still opens with the free first call and states the
     // setup and monthly prices, and the widget repeats the money story.
     await waitFor(() =>
       expect(screen.getAllByText(/Primera llamada gratis/i).length).toBeGreaterThan(0)
     )
-    expect(screen.getAllByText(/desde \$1,200/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/desde 1\.200\s€/i).length).toBeGreaterThan(0)
     expect(document.body.textContent).not.toMatch(/30 EUR|por hora/i)
   })
 

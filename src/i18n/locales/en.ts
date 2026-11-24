@@ -58,6 +58,12 @@ export const en: Dictionary = {
         before: 'Appointments booked over WhatsApp.',
         after: 'A calendar with automatic reminders.',
       },
+      {
+        id: 'receptionist',
+        trade: 'Law firms and medical practices',
+        before: 'Calls that go unanswered.',
+        after: 'AI receptionist that answers in Spanish and English and books the appointment.',
+      },
     ],
   },
   pricing: {
@@ -84,11 +90,6 @@ export const en: Dictionary = {
         name: 'tax-advisor',
         line: 'AI tax guidance for Spanish freelancers.',
         href: 'https://github.com/RexiAI/tax-advisor',
-      },
-      {
-        name: 'pensions-system',
-        line: 'Pension calculation, end to end.',
-        href: 'https://github.com/RexiAI/pensions-system',
       },
     ],
   },

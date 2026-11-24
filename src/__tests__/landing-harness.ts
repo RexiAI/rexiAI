@@ -127,3 +127,14 @@ export function srcFiles(dir: string = path.join(process.cwd(), 'src')): SourceF
   }
   return files
 }
+
+/** Public figures only: any other `$` amount in the FAQ is an invented price. */
+export const ALLOWED_AMOUNTS: Record<'en' | 'es', Set<string>> = {
+  en: new Set(['$1,200', '$600']),
+  es: new Set(['1.200\u00A0€', '600\u00A0€']),
+}
+
+/** Every price-shaped figure (`$1,200`, `1.200 €`) in a text, for the FAQ no-invented-price rule. */
+export function amounts(text: string): string[] {
+  return text.match(/\$\s?\d[\d.,]*|\d[\d.,]*[\s\u00A0]?€/g) ?? []
+}

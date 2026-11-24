@@ -12,7 +12,7 @@ const EN_PAID_NARRATIVE =
 const ES_FREE_NARRATIVE =
   'La primera hora es gratis. Describes el proceso que te está comiendo la semana; te vas con un plan de una página y un precio fijo para la construcción. Sin cargo, sin compromiso, sin presentación.'
 const ES_PAID_NARRATIVE =
-  'Primera llamada gratis. Después acordamos el proyecto: puesta en marcha desde $1,200 y mantenimiento desde $600/mes.'
+  'Primera llamada gratis. Después acordamos el proyecto: puesta en marcha desde 1.200\u00A0€ y mantenimiento desde 600\u00A0€/mes.'
 const EN_FREE_STEPS = ['Pick a slot', 'Tell me what is broken', 'Get the plan and the price']
 const EN_PAID_STEPS = ['Pick a slot', 'Choose your block', 'Pay securely with Stripe']
 const ES_FREE_STEPS = ['Elige un hueco', 'Cuéntame qué está roto', 'Recibe el plan y el precio']

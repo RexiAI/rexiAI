@@ -25,14 +25,14 @@ function ExampleRow({
       <p className="example-row__pair">
         <span className="example-row__cell example-row__cell--before">
           <span className="example-row__label">{beforeLabel}</span>
-          {example.before}
+          <span className="example-row__text">{example.before}</span>
         </span>
         <span className="example-row__arrow" aria-hidden="true">
           →
         </span>
         <span className="example-row__cell example-row__cell--after">
           <span className="example-row__label">{afterLabel}</span>
-          {example.after}
+          <span className="example-row__text">{example.after}</span>
         </span>
       </p>
     </li>
@@ -40,7 +40,7 @@ function ExampleRow({
 }
 
 /**
- * `What I build` (spec 020 Task 2): one offer card, then three stacked
+ * `What I build` (spec 020 Task 2): one offer card, then four stacked
  * before-to-after example rows in the buyer's own trades.
  *
  * The rows are examples, not client cases: no name, logo, metric or

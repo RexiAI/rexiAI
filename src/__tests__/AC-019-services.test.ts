@@ -11,8 +11,8 @@ import { en, es } from '../i18n/dictionary'
 
 import { renderLanding, srcFiles } from './landing-harness'
 
-const EN_TRADES = ['Plumbers', 'Shops', 'Salons and clinics']
-const ES_TRADES = ['Plomeros', 'Tiendas', 'Salones y clínicas']
+const EN_TRADES = ['Plumbers', 'Shops', 'Salons and clinics', 'Law firms and medical practices']
+const ES_TRADES = ['Plomeros', 'Tiendas', 'Salones y clínicas', 'Despachos y consultas']
 // Assembled at runtime: the design checklist greps src/ for this string.
 const CAROUSEL_CLASS = ['carou', 'sel'].join('')
 
@@ -42,7 +42,7 @@ describe('AC-019 services', () => {
     setViewportWidth(1024)
   })
 
-  it('AC-019-09: the section is retitled and carries one offer plus three examples', async () => {
+  it('AC-019-09: the section is retitled and carries one offer plus four examples', async () => {
     const { container } = await renderLanding({ billingEnabled: true, locale: 'en' })
     const section = services(container)
 
@@ -50,7 +50,7 @@ describe('AC-019 services', () => {
     expect(section.querySelectorAll('.offer-card')).toHaveLength(1)
     expect(section.querySelector('.offer-card__title')?.textContent).toBe(en.services.offer.title)
     expect(tradeNames(section)).toEqual(EN_TRADES)
-    expect(section.querySelectorAll('.example-row')).toHaveLength(3)
+    expect(section.querySelectorAll('.example-row')).toHaveLength(4)
     // Three equal service cards are gone; the examples are rows, not cards.
     expect(section.querySelectorAll('article')).toHaveLength(1)
     expect(section.querySelectorAll('.service-card')).toHaveLength(0)
@@ -67,7 +67,7 @@ describe('AC-019 services', () => {
     expect(tradeNames(section)).toEqual(ES_TRADES)
   })
 
-  it('AC-019-10: the offer and all three examples render at 375, 768 and 1440', async () => {
+  it('AC-019-10: the offer and all four examples render at 375, 768 and 1440', async () => {
     for (const width of [375, 768, 1440]) {
       cleanup()
       setViewportWidth(width)
@@ -75,7 +75,7 @@ describe('AC-019 services', () => {
       const section = services(container)
 
       expect(section.querySelectorAll('.offer-card')).toHaveLength(1)
-      expect(section.querySelectorAll('.example-row')).toHaveLength(3)
+      expect(section.querySelectorAll('.example-row')).toHaveLength(4)
       expect(tradeNames(section)).toEqual(EN_TRADES)
 
       const horizontal = Array.from(section.querySelectorAll<HTMLElement>('[style]')).filter(

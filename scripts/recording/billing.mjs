@@ -91,16 +91,19 @@ function isReservationForRoom(meta, room) {
   return joinUrl.includes(room) && (Boolean(meta['quoted_hours']) || meta['reservation'] === '1')
 }
 
+/** Absent metadata keys degrade to ''. */
+const text = (value) => value || ''
+
 function reservationFields(session, meta) {
-  const email = meta['email'] || session.customer_email || ''
+  const email = text(meta['email'] || session.customer_email)
   const quotedHours = Number.parseInt(meta['quoted_hours'] || '0', 10)
-  const joinUrl = meta['join_url'] || ''
+  const joinUrl = text(meta['join_url'])
   // Spec 008 Task 7: the name and the MEETING date, resolved the same way email
   // already is. Both ride the reservation object, so every path that already
   // propagates `email` propagates these too. Absent keys degrade to '' — a legacy
   // reservation must not throw here.
-  const name = meta['name'] || ''
-  const date = meta['date'] || ''
+  const name = text(meta['name'])
+  const date = text(meta['date'])
   return { bookingId: session.id, email, name, date, quotedHours, joinUrl }
 }
 

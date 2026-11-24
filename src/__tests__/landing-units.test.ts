@@ -92,11 +92,11 @@ describe('landing units', () => {
   it('keeps one h1 and a continuous heading hierarchy', async () => {
     const { container } = await renderLanding({ billingEnabled: true })
     // One h1; one h2 per section (services, pricing, proof, about, booking,
-    // faq, contact); h3 only for the offer card, the three example trades and
+    // faq, contact); h3 only for the offer card, the four example trades and
     // the four FAQ questions.
     expect(container.querySelectorAll('h1')).toHaveLength(1)
     expect(container.querySelectorAll('h2')).toHaveLength(7)
-    expect(container.querySelectorAll('h3')).toHaveLength(8)
+    expect(container.querySelectorAll('h3')).toHaveLength(9)
     expect(container.querySelectorAll('h4, h5, h6')).toHaveLength(0)
   })
 
