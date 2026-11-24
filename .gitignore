@@ -54,3 +54,7 @@ coverage/
 .vercel
 .env*
 !.env.example
+
+# Stryker mutation artifacts (spec 021)
+reports/mutation/
+.stryker-tmp/

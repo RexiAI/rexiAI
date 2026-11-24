@@ -1,0 +1,31 @@
+name: Mutation (manual, advisory)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: Git ref to diff against (scopes the mutated files)
+        default: origin/main
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    # Advisory: a score below threshold must not fail the workflow.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          submodules: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Run bounded mutation
+        env:
+          BASE: ${{ inputs.base }}
+        run: npm run mutation -- --base "$BASE"

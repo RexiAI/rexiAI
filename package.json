@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run --exclude '.standards/**'"
+    "test": "vitest run --exclude '.standards/**'",
+    "mutation": "bash .standards/scripts/run-mutation.sh"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
@@ -21,6 +22,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@stryker-mutator/core": "^10.1.1",
+    "@stryker-mutator/vitest-runner": "^10.1.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
