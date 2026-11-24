@@ -26,7 +26,8 @@
     ".standards/docs/SPEC_PIPELINE.md",
     ".standards/language-specific/java/",
     ".standards/language-specific/go/",
-    ".standards/language-specific/javascript/"
+    ".standards/language-specific/javascript/",
+    "AGENTS_REXIAI.md"
   ],
   "skills": {
     "paths": [".agents/skills"]
