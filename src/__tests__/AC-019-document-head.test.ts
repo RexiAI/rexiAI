@@ -6,17 +6,17 @@
 // meta tags at runtime when the locale changes; AC-019-locale-default covers
 // that path.
 //
-// Spec 020 made the head Spanish-first: the title/description/OG/Twitter copy is
-// the Spanish set, `og:locale` is `es_ES`, and English is the advertised
-// alternate. The scenario IDs are unchanged — the same tags are asserted byte
-// for byte, in the language the site now opens with.
+// Spec 020 made the head Spanish-first and US-market: the title/description/
+// OG/Twitter copy is the Spanish set, `og:locale` is `es_US`, and English is the
+// advertised `en_US` alternate. The scenario IDs are unchanged — the same tags
+// are asserted byte for byte, in the language and market the site opens with.
 import { describe, expect, it } from 'vitest'
 
 import { repoFile } from './landing-harness'
 
-const TITLE = 'RexiAI — software a precio fijo para negocios atrapados en Excel'
+const TITLE = 'RexiAI: apps a medida para plomeros y tiendas de Miami'
 const DESCRIPTION =
-  'Sustituyo el Excel del que depende tu negocio por software que funciona solo. Precio fijo, alcance cerrado en una llamada, entregado en semanas. Primera hora gratis.'
+  'Apps a medida para plomeros, tiendas y clínicas en Miami: presupuestos, citas y pedidos en una herramienta que tu equipo abre desde el móvil. En persona en Miami o por videollamada.'
 
 function head(): Document {
   return new DOMParser().parseFromString(repoFile('index.html'), 'text/html')
@@ -54,8 +54,8 @@ describe('AC-019 document head', () => {
     expect(meta(doc, 'property', 'og:description')).toBe(DESCRIPTION)
     expect(meta(doc, 'property', 'og:url')).toBe('https://www.rexi-ai.com/')
     expect(meta(doc, 'property', 'og:site_name')).toBe('RexiAI')
-    expect(meta(doc, 'property', 'og:locale')).toBe('es_ES')
-    expect(meta(doc, 'property', 'og:locale:alternate')).toBe('en_GB')
+    expect(meta(doc, 'property', 'og:locale')).toBe('es_US')
+    expect(meta(doc, 'property', 'og:locale:alternate')).toBe('en_US')
     expect(meta(doc, 'property', 'og:image')).toBe('/logo.png')
 
     expect(meta(doc, 'name', 'twitter:card')).toBe('summary_large_image')

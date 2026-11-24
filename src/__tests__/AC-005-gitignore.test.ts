@@ -1,29 +1,30 @@
-// Task 8 (Ask G sanctioned chore): .gitignore gains runs.jsonl.
-// Acceptance tests per specs/005-home-hosted-recording/20-acceptance/AC-005-gitignore.md
-// (the separate `chore:` commit itself is a PR-Opener-stage action; this spec's
-// Coder stage does not commit — see docs/SPEC_PIPELINE §Commit and push carve-out)
-import { execFileSync } from 'node:child_process'
+// Task 8 (Ask G sanctioned chore), superseded: spec 005 originally made
+// runs.jsonl gitignored. The engineering standards (docs/SPEC_PIPELINE.md
+// §Commit and push carve-out, standards 1.55.2) now require the append-only
+// ledger runs.jsonl to be TRACKED and committed by the PR Opener, never
+// gitignored. Owner-authorized assertion inversion; scenario ID kept.
+// Acceptance tests per docs/changes/005-home-hosted-recording.md (AC-005-48).
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
 describe('AC-005 gitignore chore', () => {
-  it('AC-005-48: runs.jsonl is ignored', () => {
+  it('AC-005-48: runs.jsonl is tracked, not ignored', () => {
     const gi = fs.readFileSync(path.join(process.cwd(), '.gitignore'), 'utf8')
     const entries = gi
       .split('\n')
       .map((l) => l.trim())
       .filter((l) => l && !l.startsWith('#'))
-    expect(entries).toContain('runs.jsonl')
+    expect(entries).not.toContain('runs.jsonl')
 
-    // live confirmation is the e2e stage; in-suite we may ask git itself,
-    // read-only and network-free:
-    const r = execFileSync('git', ['check-ignore', 'runs.jsonl'], {
+    // git itself, read-only and network-free: check-ignore exits 1 when the
+    // path is not ignored.
+    const actual = spawnSync('git', ['check-ignore', 'runs.jsonl'], {
       cwd: process.cwd(),
-      stdio: 'pipe',
       encoding: 'utf8',
-    })
-    expect(String(r).trim()).toBe('runs.jsonl')
+    }).status
+    expect(actual).toBe(1)
   })
 })

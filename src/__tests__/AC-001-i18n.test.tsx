@@ -15,9 +15,9 @@ describe('AC-001', () => {
     render(<App />)
     // Spanish headline on first render (spec 020 Task 1 inverted this rule),
     // English once the switcher is asked for it.
-    expect(screen.getByText(es.hero.catchphrase)).toBeInTheDocument()
+    expect(screen.getByText(es.hero.headline)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /EN/i }))
-    expect(screen.getByText(en.hero.catchphrase)).toBeInTheDocument()
+    expect(screen.getByText(en.hero.headline)).toBeInTheDocument()
   })
 
   it('AC-001-02: Switching to English', () => {
@@ -25,9 +25,9 @@ describe('AC-001', () => {
     // find EN button and click
     const enBtn = screen.getByRole('button', { name: /EN/i })
     fireEvent.click(enBtn)
-    expect(screen.getByText(en.hero.catchphrase)).toBeInTheDocument()
+    expect(screen.getByText(en.hero.headline)).toBeInTheDocument()
     // Spanish should be gone
-    expect(screen.queryByText(es.hero.catchphrase)).not.toBeInTheDocument()
+    expect(screen.queryByText(es.hero.headline)).not.toBeInTheDocument()
   })
 
   it('AC-001-03: Switching back to Spanish', () => {
@@ -36,7 +36,7 @@ describe('AC-001', () => {
     fireEvent.click(enBtn)
     const esBtn = screen.getByRole('button', { name: /ES/i })
     fireEvent.click(esBtn)
-    expect(screen.getByText(es.hero.catchphrase)).toBeInTheDocument()
+    expect(screen.getByText(es.hero.headline)).toBeInTheDocument()
   })
 
   it('AC-001-04: Language choice persists across reload', () => {
@@ -47,15 +47,16 @@ describe('AC-001', () => {
     unmount()
     // simulate reload by re-rendering fresh App which reads localStorage
     render(<App />)
-    expect(screen.getByText(en.hero.catchphrase)).toBeInTheDocument()
+    expect(screen.getByText(en.hero.headline)).toBeInTheDocument()
   })
 
   it('AC-001-05: No hardcoded user-facing strings in components', () => {
     // Verify dictionaries cover hero and services strings rendered
     const allEsStrings = [
-      es.hero.catchphrase,
+      es.hero.headline,
       es.hero.subtext,
-      ...es.services.items.map((i) => i.title),
+      es.services.offer.title,
+      ...es.services.examples.map((example) => example.trade),
     ]
     render(<App />)
     for (const s of allEsStrings) {
@@ -63,29 +64,11 @@ describe('AC-001', () => {
       // This just ensures dict keys exist and are used
       expect(typeof s).toBe('string')
     }
-    // No en-dashes anywhere in the dictionaries. The em-dash is limited to the
-    // paid booking narrative (final copy, spec 019 Task 7) and the document
-    // head title, which mirrors the static index.html title.
+    // No en-dashes and no em-dashes anywhere in the dictionaries. The em-dash is
+    // banned outright in this copy (spec 020 15-design §Global Tokens), including
+    // Spanish, so no value carries one and no value hides one behind a key.
     const dictText = JSON.stringify({ es, en })
     expect(dictText).not.toContain('–')
-    const withoutKnownDashes = JSON.stringify({
-      es: {
-        ...es,
-        head: { ...es.head, title: '' },
-        booking: { ...es.booking, narrativePaid: '' },
-      },
-      en: {
-        ...en,
-        head: { ...en.head, title: '' },
-        booking: { ...en.booking, narrativePaid: '' },
-      },
-    })
-    expect(withoutKnownDashes).not.toContain('—')
-    // …and it is exactly one string per locale that carries it.
-    const carriers = [
-      ...(JSON.stringify(es.booking.narrativePaid).includes('—') ? ['es'] : []),
-      ...(JSON.stringify(en.booking.narrativePaid).includes('—') ? ['en'] : []),
-    ]
-    expect(carriers).toEqual(['es', 'en'])
+    expect(dictText).not.toContain('—')
   })
 })

@@ -51,8 +51,6 @@ coverage/
 # Vitest reporter output (.vitest/json/*.json) — regenerable run artifact
 .vitest/
 
-# Pipeline gate telemetry (loop/gate run log) — stays local, never committed
-runs.jsonl
 .vercel
 .env*
 !.env.example

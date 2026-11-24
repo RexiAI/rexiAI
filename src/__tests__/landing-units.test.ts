@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { renderLanding } from './landing-harness'
 
-const ES_HEADLINE = 'Tu negocio funciona con una hoja de cálculo que solo una persona entiende.'
+const ES_HEADLINE = 'Tú me lo cuentas. Yo lo construyo.'
 const CONTACT_SELECTORS = ['#contact h2', '#contact .contact__body', '#contact .contact__cta']
 
 /** The three rendered pieces of the contact section, in DOM order. */
@@ -89,11 +89,15 @@ describe('landing units', () => {
     expect(screen.queryByRole('button', { name: '5h' })).toBeNull()
   })
 
-  it('keeps one h1, five h2 and three h3 with no skipped level', async () => {
+  it('keeps one h1 and a continuous heading hierarchy', async () => {
     const { container } = await renderLanding({ billingEnabled: true })
+    // One h1; one h2 per section (services, pricing, proof, about, booking,
+    // faq, contact); h3 only for the offer card, the three example trades and
+    // the four FAQ questions.
     expect(container.querySelectorAll('h1')).toHaveLength(1)
-    expect(container.querySelectorAll('h2')).toHaveLength(5)
-    expect(container.querySelectorAll('h3')).toHaveLength(3)
+    expect(container.querySelectorAll('h2')).toHaveLength(7)
+    expect(container.querySelectorAll('h3')).toHaveLength(8)
+    expect(container.querySelectorAll('h4, h5, h6')).toHaveLength(0)
   })
 
   it('the contact section carries the first-person rewrite in both locales', async () => {

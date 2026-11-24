@@ -84,6 +84,25 @@ export function elementTexts(root: ParentNode): string[] {
   return Array.from(root.querySelectorAll('*')).map((el) => el.textContent ?? '')
 }
 
+/**
+ * Lowercase with diacritics stripped. The spec-020 trade terms are stated as
+ * accent-tolerant stems (`salon` matches `Salones`, `clinic` matches `clínicas`),
+ * so every term match runs through this instead of a literal comparison.
+ */
+export function fold(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
+/** The landing section with this id, or a named failure when it did not render. */
+export function section(container: ParentNode, id: string): HTMLElement {
+  const element = container.querySelector(`#${id}`)
+  if (!element) throw new Error(`#${id} did not render`)
+  return element as HTMLElement
+}
+
 export interface SourceFile {
   /** Repo-relative path, e.g. src/pages/Landing.tsx. */
   rel: string

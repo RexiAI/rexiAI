@@ -63,28 +63,34 @@ describe('AC-019 contact email', () => {
 
   it('AC-019-18: every rendered mailto points at the new address', async () => {
     const { container } = await renderLanding({ billingEnabled: true })
-    const heroMail = container.querySelector('#hero a.hero-cta--secondary') as HTMLAnchorElement
+    // Spec 020 Task 1 moved the hero's secondary action to WhatsApp: email
+    // stays in the contact section and the About block only.
+    expect(container.querySelector('#hero a[href^="mailto:"]')).toBeNull()
     const contactMail = container.querySelector('#contact a.contact__cta') as HTMLAnchorElement
-    expect(heroMail.getAttribute('href')).toBe(`mailto:${NEW_ADDRESS}`)
     expect(contactMail.getAttribute('href')).toBe(`mailto:${NEW_ADDRESS}`)
     expect(container.querySelector('#about a[href^="mailto:"]')?.getAttribute('href')).toBe(
       `mailto:${NEW_ADDRESS}`
     )
   })
 
-  it('AC-019-18: the Spanish page carries the same two targets', async () => {
+  it('AC-019-18: the Spanish page carries the same targets', async () => {
     localStorage.setItem('rexi-locale', 'es')
     const { container } = await renderLanding({ billingEnabled: true })
-    const heroMail = container.querySelector('#hero a.hero-cta--secondary') as HTMLAnchorElement
+    expect(container.querySelector('#hero a[href^="mailto:"]')).toBeNull()
     const contactMail = container.querySelector('#contact a.contact__cta') as HTMLAnchorElement
-    expect(heroMail.getAttribute('href')).toBe(`mailto:${NEW_ADDRESS}`)
     expect(contactMail.getAttribute('href')).toBe(`mailto:${NEW_ADDRESS}`)
+    expect(container.querySelector('#about a[href^="mailto:"]')?.getAttribute('href')).toBe(
+      `mailto:${NEW_ADDRESS}`
+    )
   })
 
   it('AC-019-18: the address comes from the dictionary, never a JSX literal', () => {
     const landing = repoFile('src/pages/Landing.tsx')
     expect(landing).not.toMatch(/[\w.+-]+@[\w-]+\.[\w.]+/)
-    expect(landing).toContain('dict.contact.email')
+    // The contact block was extracted from Landing into ContactSection (spec 020).
+    const contact = repoFile('src/components/ContactSection.tsx')
+    expect(contact).not.toMatch(/[\w.+-]+@[\w-]+\.[\w.]+/)
+    expect(contact).toContain('dict.contact.email')
 
     // Same mechanism on the component that takes the dictionary as a prop.
     const other: Dictionary = { ...en, about: { ...en.about, email: 'other@example.com' } }

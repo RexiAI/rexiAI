@@ -6,7 +6,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderLanding } from './landing-harness'
 
 const TOP_LEVEL = ['A', 'NAV', 'MAIN', 'FOOTER']
-const SECTIONS = ['hero', 'services', 'proof', 'about', 'booking', 'contact']
+// Spec 020 Task 5 added #pricing and Task 7 added #faq; the About block still
+// precedes the ask and the FAQ closes the page before the contact section.
+const SECTIONS = ['hero', 'services', 'pricing', 'proof', 'about', 'booking', 'faq', 'contact']
 
 /** The top-level blocks of `.landing`, as tag names. */
 function blocks(container: HTMLElement): string[] {

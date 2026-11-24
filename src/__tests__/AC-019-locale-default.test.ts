@@ -12,12 +12,12 @@ import { en, es } from '../i18n/dictionary'
 
 import { renderLanding } from './landing-harness'
 
-const EN_HEADLINE = 'Your business runs on a spreadsheet only one person understands.'
-const ES_HEADLINE = 'Tu negocio funciona con una hoja de cálculo que solo una persona entiende.'
+const EN_HEADLINE = 'You tell me. I build it.'
+const ES_HEADLINE = 'Tú me lo cuentas. Yo lo construyo.'
 const EN_SUBTEXT =
-  'I replace it with software that runs itself: internal tools, SaaS products and web apps. Scoped in one call, fixed price, shipped in weeks. You own the code.'
+  'I listen, then build exactly what you described: quotes for plumbers and contractors, appointments for clinics and salons, orders for shops. In person in Miami, or by video call wherever you are. First call free, and you own the code.'
 const ES_SUBTEXT =
-  'La sustituyo por software que funciona solo: herramientas internas, productos SaaS y aplicaciones web. Alcance en una llamada, precio fijo, entregado en semanas. El código es tuyo.'
+  'Lo escucho de ti y lo construyo a tu medida: presupuestos para plomeros y contratistas, citas para clínicas y salones, pedidos para tiendas. En persona en Miami o por videollamada desde donde estés. Tienes la primera llamada gratis y el código es tuyo.'
 
 function headline(): string {
   return screen.getByRole('heading', { level: 1 }).textContent ?? ''
