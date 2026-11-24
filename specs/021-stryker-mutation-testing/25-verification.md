@@ -164,3 +164,28 @@ Diagnosis: both failures are in the spec's own acceptance tests and pass locally
 ## Post-PR CI verdict — round 1: FAIL
 
 Failing: `Unit Tests` (138515168249). Phase-2 budget used: 1 of 3. Pipeline stops this round; orchestrator routes fix to Coder, PR Opener re-pushes, Verifier re-checks only `Unit Tests`.
+
+## Post-PR CI check — round 2 (phase 2)
+
+Verifier: scoped post-PR CI re-check, **round 2, phase 2** (SPEC_LOOP_COUNT=1, SPEC_PHASE1_RETRIES=0, SPEC_PHASE2_RETRIES=1). PR https://github.com/RexiAI/rexiAI/pull/118, head `d6cabc69c85acd7c667ab0458ff6dd4872f5393e` (confirmed via `gh pr view 118 --json headRefOid`). Scoped to previously failing `Unit Tests`; full status of all checks recorded. Waited to terminal with `gh pr checks 118 --watch`.
+
+## Evidence: post-PR CI checks round 2
+
+command: gh pr checks 118 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-11-24T14:30:43Z
+
+| Check | Workflow | bucket | Result |
+|---|---|---|---|
+| Unit Tests (138517457829, run 45414644039) | CI | pass | PASS (previously FAIL — re-check scope) |
+| Lint & Format | CI | pass | PASS |
+| Build | CI | pass | PASS |
+| Docker Build & Push | CI | skipping | SKIPPED (push-to-main only) |
+| Vercel | — | pass | PASS |
+| Vercel Preview Comments | — | pass | PASS |
+
+Failing check IDs: none.
+
+## Post-PR CI verdict — round 2: PASS
+
+All checks terminal; no failures. Phase-2 budget used: 2 of 3. Phase 3 (deploy verification) may proceed.
