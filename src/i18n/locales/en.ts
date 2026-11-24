@@ -85,11 +85,6 @@ export const en: Dictionary = {
         line: 'AI tax guidance for Spanish freelancers.',
         href: 'https://github.com/RexiAI/tax-advisor',
       },
-      {
-        name: 'pensions-system',
-        line: 'Pension calculation, end to end.',
-        href: 'https://github.com/RexiAI/pensions-system',
-      },
     ],
   },
   about: {
