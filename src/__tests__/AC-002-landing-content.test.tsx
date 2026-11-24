@@ -16,14 +16,19 @@ describe('AC-002', () => {
     fireEvent.click(screen.getByRole('button', { name: /ES/i }))
     expect(screen.getByText(es.hero.headline)).toBeInTheDocument()
   })
-  it('AC-002-02: Services section lists the single offer and its three examples', async () => {
+  it('AC-002-02: Services section lists the single offer and its four examples', async () => {
     localStorage.clear()
     const { container } = await renderLanding({ locale: 'en' })
     // Spec 020 retired the three-offer list (Task 9): one offer card, and the
-    // three rows are illustrative examples, not services on sale.
+    // four rows are illustrative examples, not services on sale.
     expect(container.querySelectorAll('.offer-card')).toHaveLength(1)
-    expect(container.querySelectorAll('.example-row')).toHaveLength(3)
-    expect(en.services.examples.map((example) => example.id)).toEqual(['plumber', 'shop', 'salon'])
+    expect(container.querySelectorAll('.example-row')).toHaveLength(4)
+    expect(en.services.examples.map((example) => example.id)).toEqual([
+      'plumber',
+      'shop',
+      'salon',
+      'receptionist',
+    ])
     expect(screen.getByText(en.services.offer.title)).toBeInTheDocument()
     for (const example of en.services.examples) {
       expect(screen.getByText(example.trade)).toBeInTheDocument()

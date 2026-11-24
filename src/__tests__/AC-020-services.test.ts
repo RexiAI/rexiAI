@@ -65,20 +65,21 @@ describe('AC-020 services', () => {
     }
   })
 
-  it('AC-020-08: three illustrative Miami before→after examples, not client cases', async () => {
+  it('AC-020-08: four illustrative Miami before→after examples, not client cases', async () => {
     localStorage.setItem('rexi-locale', 'es')
     const { container } = await renderLanding()
     const services = section(container, 'services')
     const pairs = examplePairs(services)
     const rowTrades = trades(services)
 
-    expect(pairs).toHaveLength(3)
-    expect(rowTrades).toHaveLength(3)
+    expect(pairs).toHaveLength(4)
+    expect(rowTrades).toHaveLength(4)
     // plomero · tienda · salón/clínica, in the US-Spanish vocabulary.
     expect(rowTrades[0]).toContain('plomer')
     expect(rowTrades[1]).toContain('tienda')
     expect(rowTrades[2]).toMatch(/salon/)
     expect(rowTrades[2]).toMatch(/clinic/)
+    expect(rowTrades[3]).toContain('despachos')
 
     const folded = pairs.map((pair) => fold(`${pair.before} ${pair.after}`))
     expect(folded[0]).toContain('presupuesto')

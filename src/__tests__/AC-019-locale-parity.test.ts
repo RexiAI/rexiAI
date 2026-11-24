@@ -103,11 +103,16 @@ describe('AC-019 locale parity', () => {
   })
 
   it('AC-019-21: the example ids and the proof links agree across locales', () => {
-    expect(es.services.examples.map((i) => i.id)).toEqual(['plumber', 'shop', 'salon'])
+    expect(es.services.examples.map((i) => i.id)).toEqual([
+      'plumber',
+      'shop',
+      'salon',
+      'receptionist',
+    ])
     expect(en.services.examples.map((i) => i.id)).toEqual(es.services.examples.map((i) => i.id))
 
-    expect(es.proof.items).toHaveLength(2)
-    expect(en.proof.items).toHaveLength(2)
+    expect(es.proof.items).toHaveLength(1)
+    expect(en.proof.items).toHaveLength(1)
     es.proof.items.forEach((item, index) => {
       expect(en.proof.items[index].name).toBe(item.name)
       expect(en.proof.items[index].href).toBe(item.href)

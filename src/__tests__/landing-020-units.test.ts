@@ -37,7 +37,7 @@ describe('landing 020 units', () => {
     const services = section(container, 'services')
     const rows = Array.from(services.querySelectorAll('.example-row'))
 
-    expect(rows).toHaveLength(3)
+    expect(rows).toHaveLength(4)
     for (const row of rows) {
       expect(row.querySelectorAll('.example-row__label')).toHaveLength(2)
       const labels = Array.from(row.querySelectorAll('.example-row__label')).map(

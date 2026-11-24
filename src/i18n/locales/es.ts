@@ -56,6 +56,12 @@ export const es = {
         before: 'Citas por WhatsApp.',
         after: 'Agenda con recordatorios automáticos.',
       },
+      {
+        id: 'receptionist',
+        trade: 'Despachos y consultas',
+        before: 'Llamadas que se quedan sin contestar.',
+        after: 'Recepcionista de IA que contesta en español e inglés y agenda la cita.',
+      },
     ],
   },
   pricing: {
@@ -82,11 +88,6 @@ export const es = {
         name: 'tax-advisor',
         line: 'Asesoría fiscal con IA para autónomos en España.',
         href: 'https://github.com/RexiAI/tax-advisor',
-      },
-      {
-        name: 'pensions-system',
-        line: 'Cálculo de pensiones, de principio a fin.',
-        href: 'https://github.com/RexiAI/pensions-system',
       },
     ],
   },

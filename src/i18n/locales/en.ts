@@ -58,6 +58,12 @@ export const en: Dictionary = {
         before: 'Appointments booked over WhatsApp.',
         after: 'A calendar with automatic reminders.',
       },
+      {
+        id: 'receptionist',
+        trade: 'Law firms and medical practices',
+        before: 'Calls that go unanswered.',
+        after: 'AI receptionist that answers in Spanish and English and books the appointment.',
+      },
     ],
   },
   pricing: {
