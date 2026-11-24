@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/RexiAI/rexiAI/compare/v1.13.1...v1.14.0) (2026-11-24)
+
+
+### Features
+
+* **landing:** neighborhood-business landing message (spec 020) ([#117](https://github.com/RexiAI/rexiAI/issues/117)) ([3b254b3](https://github.com/RexiAI/rexiAI/commit/3b254b3eefa00d105b1df50111704c24490934c6))
+
 ## [1.13.1](https://github.com/RexiAI/rexiAI/compare/v1.13.0...v1.13.1) (2026-11-08)
 
 
