@@ -264,3 +264,32 @@ change is a complexity reduction outside spec 020 scope, requested by owner.
 
 All gates exit 0 with no findings. Routing: proceed to stage 5a (Mutation
 Runner). No remediation needed; phase-1 budget unconsumed.
+
+## Post-PR CI check (phase 2)
+
+### Round 1 (attempt 1, phase 2) — PR #117, head cbbc18c
+
+## Evidence: Post-PR CI check round 1
+command: gh pr checks 117 --json name,state,bucket,workflow,link (polled until no `pending` bucket)
+```
+[{"bucket":"pass","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},
+ {"bucket":"skipping","name":"Docker Build & Push","state":"SKIPPED","workflow":"CI","link":"https://github.com/RexiAI/rexiAI/actions/runs/45361632222/job/138333116175"},
+ {"bucket":"pass","name":"Unit Tests","state":"SUCCESS","workflow":"CI","link":"https://github.com/RexiAI/rexiAI/actions/runs/45361632222/job/138332902633"},
+ {"bucket":"pass","name":"Lint & Format","state":"SUCCESS","workflow":"CI","link":"https://github.com/RexiAI/rexiAI/actions/runs/45361632222/job/138332902565"},
+ {"bucket":"pass","name":"Build","state":"SUCCESS","workflow":"CI","link":"https://github.com/RexiAI/rexiAI/actions/runs/45361632222/job/138332902119"},
+ {"bucket":"pass","name":"Vercel","state":"SUCCESS","workflow":""}]
+```
+exit: 0
+at: 2026-11-24T09:09:01Z
+
+| Check | Result |
+|---|---|
+| Unit Tests | PASS |
+| Lint & Format | PASS |
+| Build | PASS |
+| Vercel | PASS |
+| Vercel Preview Comments | PASS |
+| Docker Build & Push | SKIPPED (not a pass/fail; job gated to push events, not PR) |
+
+Failing check IDs: none. Routing: none required.
+Round 1 verdict: **PASS**
