@@ -1,9 +1,9 @@
-// AC-019 Task 6 — about block: `Who builds it`
-// (20-acceptance/AC-019-06-about.md).
+// AC-019 Task 6 — about block (20-acceptance/AC-019-06-about.md).
 //
-// The component takes the dictionary as its only prop (Task 6), so these
-// scenarios render it directly: that is the only way to supply a non-empty
-// `about.bio` without inventing page content.
+// Spec 020 (Task 6) filled the bio from the owner's fixed fact set and made the
+// location line name Salamanca and Miami. The scenario IDs are kept: they still
+// assert the identity fields and that a supplied bio is the only thing that
+// renders a bio.
 import { render } from '@testing-library/react'
 import { createElement } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,7 +13,7 @@ import { en, es, type Dictionary } from '../i18n/dictionary'
 
 import { renderLanding } from './landing-harness'
 
-const BIO = 'Shipped three SaaS products before this one.'
+const BIO = 'Shipped three products before this one.'
 
 function withBio(bio: string): Dictionary {
   return { ...en, about: { ...en.about, bio } }
@@ -41,8 +41,9 @@ describe('AC-019 about', () => {
     expect(section.textContent).toContain('Daniel Bueno')
     expect(section.textContent).toContain('Founder, RexiAI')
     expect(section.textContent).toContain(
-      'Based in Spain (Europe/Madrid). Working in English and Spanish.'
+      'I live in Salamanca, Spain; my clients are in Miami and I work with them remotely.'
     )
+    expect(section.querySelector('.about__bio')?.textContent).toBe(en.about.bio)
 
     const mail = section.querySelector('a[href^="mailto:"]') as HTMLAnchorElement
     expect(mail.getAttribute('href')).toBe('mailto:info@rexi-ai.com')
@@ -53,12 +54,6 @@ describe('AC-019 about', () => {
     expect(github.textContent).toBe('github.com/RexiAI')
 
     expect(section.querySelector('img')).toBeNull()
-    // No employer, credential, experience or client-count claim: the section
-    // carries no digits at all and names no employer beyond the owner's role.
-    expect(section.textContent).not.toMatch(/\d/)
-    expect(section.textContent?.toLowerCase()).not.toMatch(
-      /employer|previous company|years of experience|clients served|client count/
-    )
   })
 
   it('AC-019-13: the Spanish identity block keeps the same targets', () => {
@@ -66,7 +61,9 @@ describe('AC-019 about', () => {
 
     expect(section.querySelector('h2')?.textContent).toBe('Quién lo construye')
     expect(section.textContent).toContain('Fundador, RexiAI')
-    expect(section.textContent).toContain('En España (Europe/Madrid). Trabajo en español e inglés.')
+    expect(section.textContent).toContain(
+      'Vivo en Salamanca (España); mis clientes están en Miami y trabajo con ellos en remoto.'
+    )
     expect(section.querySelector('a[href="mailto:info@rexi-ai.com"]')?.textContent).toBe(
       'info@rexi-ai.com'
     )
@@ -107,6 +104,7 @@ describe('AC-019 about', () => {
     const { container } = await renderLanding({ billingEnabled: true, locale: 'en' })
     const section = container.querySelector('#about') as HTMLElement
     expect(section.querySelector('h2')?.textContent).toBe('Who builds it')
-    expect(section.querySelector('.about__bio')).toBeNull()
+    // Spec 020 fills the committed bio, so it renders on the landing.
+    expect(section.querySelector('.about__bio')?.textContent).toBe(en.about.bio)
   })
 })

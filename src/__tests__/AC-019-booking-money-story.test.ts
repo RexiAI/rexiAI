@@ -8,17 +8,18 @@ import { elementTexts, renderLanding } from './landing-harness'
 const EN_FREE_NARRATIVE =
   'The first hour is free. You describe the process that is eating your week; you leave with a one-page plan and a fixed price for the build. No charge, no obligation, no slide deck.'
 const EN_PAID_NARRATIVE =
-  'First hour free. After that, 30 EUR per hour, prepaid — you pay for the block you book, nothing is metered afterwards.'
+  'First call free. After that we agree the project: setup from $1,200 and maintenance from $600/month.'
 const ES_FREE_NARRATIVE =
   'La primera hora es gratis. Describes el proceso que te está comiendo la semana; te vas con un plan de una página y un precio fijo para la construcción. Sin cargo, sin compromiso, sin presentación.'
 const ES_PAID_NARRATIVE =
-  'Primera hora gratis. Después, 30 EUR por hora, prepagado — pagas el bloque que reservas, nada se factura después.'
+  'Primera llamada gratis. Después acordamos el proyecto: puesta en marcha desde $1,200 y mantenimiento desde $600/mes.'
 const EN_FREE_STEPS = ['Pick a slot', 'Tell me what is broken', 'Get the plan and the price']
 const EN_PAID_STEPS = ['Pick a slot', 'Choose your block', 'Pay securely with Stripe']
 const ES_FREE_STEPS = ['Elige un hueco', 'Cuéntame qué está roto', 'Recibe el plan y el precio']
 const ES_PAID_STEPS = ['Elige un hueco', 'Elige tu bloque', 'Paga de forma segura con Stripe']
-const EN_PRICE_LINE = '1h free · 2h 30 EUR · 3h 60 EUR · 4h 90 EUR'
-const ES_PRICE_LINE = '1h gratis · 2h 30 EUR · 3h 60 EUR · 4h 90 EUR'
+// Spec 020 Task 5 removed the hourly ladder from the landing-rendered copy.
+const EN_PRICE_LINE = 'You choose how long the session runs.'
+const ES_PRICE_LINE = 'Tú eliges cuánto dura la sesión.'
 const FREE_NOTE = 'Free session: nothing is charged now.'
 // Assembled at runtime: the design checklist greps src/ for this CSS value.
 const STRIKE_CLASS = ['line', 'through'].join('-')

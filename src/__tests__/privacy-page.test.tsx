@@ -37,14 +37,14 @@ describe('privacy page', () => {
     atPath('/privacy')
     render(<App />)
     expect(screen.getByRole('heading', { level: 1, name: privacy.es.title })).toBeInTheDocument()
-    expect(screen.queryByText(es.hero.catchphrase)).not.toBeInTheDocument()
+    expect(screen.queryByText(es.hero.headline)).not.toBeInTheDocument()
   })
 
   it('accepts the Spanish /privacidad path too', () => {
     atPath('/privacidad')
     render(<App />)
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
-    expect(screen.queryByText(es.hero.catchphrase)).not.toBeInTheDocument()
+    expect(screen.queryByText(es.hero.headline)).not.toBeInTheDocument()
   })
 
   it('serves Spanish by default and switches to English', () => {

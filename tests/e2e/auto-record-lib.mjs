@@ -323,6 +323,11 @@ const JOIN_CLICK = `(() => {
  * conference page; name-dialog builds get name + join. Confirmation is always
  * the real page state (#videoconference_page), never a selector guess.
  */
+async function tryJoin(page, displayName) {
+  if (!(await page.evaluate(NAME_INPUT_FILL(displayName)))) return null
+  return page.evaluate(JOIN_CLICK)
+}
+
 export async function joinMeeting(page, displayName, timeoutMs = 120000) {
   const deadline = Date.now() + timeoutMs
   let attemptedJoin = false
@@ -331,12 +336,10 @@ export async function joinMeeting(page, displayName, timeoutMs = 120000) {
       log(page.tag, 'IN_MEETING confirmed')
       return
     }
-    if (await page.evaluate(NAME_INPUT_FILL(displayName))) {
-      const clicked = await page.evaluate(JOIN_CLICK)
-      if (clicked && !attemptedJoin) {
-        log(page.tag, `display name filled; join clicked via "${clicked}"`)
-        attemptedJoin = true
-      }
+    const clicked = await tryJoin(page, displayName)
+    if (clicked && !attemptedJoin) {
+      log(page.tag, `display name filled; join clicked via "${clicked}"`)
+      attemptedJoin = true
     }
     await sleep(1000)
   }

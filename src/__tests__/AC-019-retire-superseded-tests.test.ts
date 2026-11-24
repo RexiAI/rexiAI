@@ -80,12 +80,12 @@ describe('AC-019 retired assertions', () => {
     const files = new Map(srcFiles().map((file) => [file.rel, file.text]))
 
     const i18n = files.get('src/__tests__/AC-001-i18n.test.tsx') ?? ''
-    expect(i18n).toContain('en.hero.catchphrase')
-    expect(i18n).toContain('booking.narrativePaid')
+    expect(i18n).toContain('en.hero.headline')
+    expect(i18n).not.toContain(['hero', 'catchphrase'].join('.'))
 
     const landing = files.get('src/__tests__/AC-002-landing-content.test.tsx') ?? ''
-    expect(landing).toContain('en.hero.catchphrase')
-    expect(landing).toContain('internal-tools')
+    expect(landing).toContain('en.hero.headline')
+    expect(landing).toContain('offer-card')
     expect(landing).toContain('mailto:info@rexi-ai.com')
     expect(landing).toContain("'#proof'")
     expect(landing).toContain("'#about'")

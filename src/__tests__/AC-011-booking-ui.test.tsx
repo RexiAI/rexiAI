@@ -49,10 +49,14 @@ describe('AC-011', () => {
 
   it('AC-011-03: Localized pricing rules are displayed', async () => {
     render(<App />)
-    // spanish pricing rules appears at least once (widget + narrative may duplicate)
+    // Spec 020 Task 5 replaced the hourly rules with the public USD figures:
+    // the paid narrative still opens with the free first call and states the
+    // setup and monthly prices, and the widget repeats the money story.
     await waitFor(() =>
-      expect(screen.getAllByText(/Primera hora gratis/i).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/Primera llamada gratis/i).length).toBeGreaterThan(0)
     )
+    expect(screen.getAllByText(/desde \$1,200/i).length).toBeGreaterThan(0)
+    expect(document.body.textContent).not.toMatch(/30 EUR|por hora/i)
   })
 
   it('AC-011-04: Valid submit posts to the API and redirects to Stripe', async () => {

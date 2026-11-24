@@ -88,13 +88,23 @@
   text-decoration: none;
 }
 
-/* hero — mobile-first (spec 019 Task 2 / 15-design Task 2): the headline,
-   subtext, both CTAs and the microcopy must fit one 390px screen. */
+/* hero — mobile-first (spec 020 Task 1 / 15-design Task 1): eyebrow, headline,
+   subtext and the two CTAs must fit one 390px screen. */
 .hero {
   max-width: 800px;
   margin: 0 auto;
   padding: var(--space-8) var(--space-6) var(--space-12);
   text-align: center;
+}
+
+/* A text eyebrow, not a heading: the page keeps a single h1. */
+.hero-eyebrow {
+  margin-bottom: var(--space-3);
+  color: var(--color-zinc-600);
+  font-size: var(--text-sm2);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .hero-title {
@@ -116,22 +126,17 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
   gap: var(--space-3);
   row-gap: var(--space-2);
 }
 
-/* A caption on the primary button, not a strip: no rule, no band, no chip. */
-.hero-cta-microcopy {
-  max-width: 42ch;
-  margin: var(--space-3) auto 0;
-  color: var(--color-zinc-500);
-  font-size: var(--text-sm);
-}
-
+/* Fitts: both actions meet the 44px minimum; only the primary is filled. */
 .hero-cta--primary {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: center;
+  min-height: 44px;
   padding: var(--space-3) var(--space-6);
   border-radius: var(--radius-full);
   background: var(--color-zinc-900);
@@ -140,13 +145,17 @@
   text-decoration: none;
 }
 
+/* Von Restorff: a quiet outline, zinc-600 on white, never a second filled CTA. */
 .hero-cta--secondary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-height: 44px;
   padding: var(--space-3) var(--space-6);
   border: 1px solid var(--color-zinc-200);
   border-radius: var(--radius-full);
-  color: var(--color-zinc-900);
+  background: var(--color-white);
+  color: var(--color-zinc-600);
   font-weight: 500;
   text-decoration: none;
 }
@@ -165,51 +174,137 @@
   }
 }
 
-/* services / proof / about share one container rule (15-design Task 12). */
+/* services / pricing / proof / about / faq share one container rule
+   (15-design §Foundation: one container, no card grid). */
 .services,
+.pricing,
 .proof,
-.about {
+.about,
+.faq {
   max-width: 1100px;
   margin: 0 auto;
   padding: var(--space-12) var(--space-6);
 }
 
-/* Three text cards in a plain grid: 1 column, then 2, then 3. No track, no
-   snap, no arrows — nothing is hidden at any width. */
-.services-grid {
-  display: grid;
-  gap: var(--space-4);
-  grid-template-columns: 1fr;
-}
-
-.service-card {
+/* services — one offer card, then three stacked before-to-after rows.
+   Not three equal cards: that pattern is retired and it hid the buyer's trade. */
+.offer-card {
   padding: var(--space-6);
-  border-radius: var(--radius-lg);
-  background: var(--color-zinc-50);
+  border: 1px solid var(--color-zinc-200);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
 }
 
-.service-card__title {
-  margin-bottom: 6px;
+.offer-card__title {
+  margin-bottom: var(--space-2);
   font-size: var(--text-xl);
   font-weight: 600;
 }
 
-.service-card__desc {
-  max-width: 60ch;
+.offer-card__desc {
+  max-width: 65ch;
+  color: var(--color-zinc-600);
+  font-size: var(--text-base);
+}
+
+.examples {
+  margin-top: var(--space-6);
+  list-style: none;
+}
+
+/* Bottom borders only between rows, never a box around every row. */
+.example-row {
+  padding-block: var(--space-4);
+  border-bottom: 1px solid var(--color-zinc-200);
+}
+
+.example-row:first-child {
+  border-top: 1px solid var(--color-zinc-200);
+}
+
+.example-row__trade {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+/* Proximity: the pair reads as one unit, tighter inside than between rows. */
+.example-row__pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-1);
+  color: var(--color-zinc-600);
+  font-size: var(--text-base);
+}
+
+.example-row__cell {
+  display: block;
+}
+
+.example-row__label {
+  display: inline-block;
+  min-width: 8ch;
+  color: var(--color-zinc-500);
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.example-row__arrow {
+  color: var(--color-zinc-500);
+}
+
+@media (min-width: 641px) {
+  .example-row__pair {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: start;
+  }
+}
+
+/* pricing — two anchored figures and one plain sentence (Task 5). */
+.pricing-block {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+.pricing-cell {
+  padding: var(--space-6);
+  border: 1px solid var(--color-zinc-200);
+  border-radius: var(--radius-md);
+}
+
+.pricing__label {
   color: var(--color-zinc-600);
   font-size: var(--text-sm2);
 }
 
-@media (min-width: 641px) {
-  .services-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.pricing__figure {
+  margin-block: var(--space-1);
+  color: var(--color-zinc-900);
+  font-size: var(--text-3xl);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
-@media (min-width: 900px) {
-  .services-grid {
-    grid-template-columns: repeat(3, 1fr);
-    align-items: stretch;
+.pricing__note {
+  color: var(--color-zinc-600);
+  font-size: var(--text-sm2);
+}
+
+.pricing__fineprint {
+  max-width: 65ch;
+  margin-top: var(--space-4);
+  color: var(--color-zinc-500);
+  font-size: var(--text-sm2);
+}
+
+@media (min-width: 641px) {
+  .pricing-block {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
   }
 }
 
@@ -313,8 +408,30 @@
 }
 
 .about__bio {
-  max-width: 60ch;
-  margin-top: var(--space-4);
+  max-width: 65ch;
+  margin-block: var(--space-3);
+  color: var(--color-zinc-600);
+  font-size: var(--text-base);
+}
+
+/* faq — four stacked pairs, all expanded. No accordion, no toggle (Task 7). */
+.faq__item {
+  max-width: 70ch;
+  padding-block: var(--space-4);
+  border-bottom: 1px solid var(--color-zinc-200);
+}
+
+.faq__item:first-child {
+  border-top: 1px solid var(--color-zinc-200);
+}
+
+.faq__question {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.faq__answer {
   color: var(--color-zinc-600);
   font-size: var(--text-base);
 }
