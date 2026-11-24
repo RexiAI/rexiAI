@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run --exclude '.standards/**'"
+    "test": "vitest run --exclude '.standards/**'",
+    "mutation": "bash .standards/scripts/run-mutation.sh"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
