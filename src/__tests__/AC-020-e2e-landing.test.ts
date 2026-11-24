@@ -46,9 +46,11 @@ describe('AC-020 e2e landing registration', () => {
     expect(src).toMatch(/Salamanca is absent from the title/)
   })
 
-  it('AC-020-25: $1,200 + $600 present, no 30 EUR, no SaaS', () => {
+  it('AC-020-25: ES 1.200 € + 600 € (EN $1,200 + $600) present, no 30 EUR, no SaaS', () => {
     const src = journey()
     expect(src).toContain('AC-020-25')
+    expect(src).toContain('1.200\\u00A0€')
+    expect(src).toContain('600\\u00A0€')
     expect(src).toContain('$1,200')
     expect(src).toContain('$600')
     expect(src).toContain('30 EUR')

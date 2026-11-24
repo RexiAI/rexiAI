@@ -18,7 +18,7 @@ describe('AC-020 pricing', () => {
     vi.unstubAllGlobals()
   })
 
-  it('AC-020-14: public pricing shows desde $1,200 + desde $600/mes', async () => {
+  it('AC-020-14: public pricing shows from $1,200 / from $600 (EN) and desde 1.200 € / 600 €/mes (ES)', async () => {
     const enPage = await renderLanding({ locale: 'en' })
     const enPricing = section(enPage.container, 'pricing')
     expect(enPricing.textContent).toContain('from $1,200')
@@ -27,13 +27,13 @@ describe('AC-020 pricing', () => {
     localStorage.setItem('rexi-locale', 'es')
     const esPage = await renderLanding()
     const esPricing = section(esPage.container, 'pricing')
-    expect(esPricing.textContent).toContain('desde $1,200')
-    expect(esPricing.textContent).toContain('desde $600/mes')
+    expect(esPricing.textContent).toContain('desde 1.200\u00A0€')
+    expect(esPricing.textContent).toContain('desde 600\u00A0€/mes')
 
-    for (const page of [enPricing, esPricing]) {
-      expect(page.textContent).toContain('$1,200')
-      expect(page.textContent).toContain('$600')
-    }
+    expect(enPricing.textContent).toContain('$1,200')
+    expect(enPricing.textContent).toContain('$600')
+    expect(esPricing.textContent).toContain('1.200\u00A0€')
+    expect(esPricing.textContent).toContain('600\u00A0€')
   })
 
   it('AC-020-15: no hourly/EUR text, no milestone line; first call free stays', async () => {
@@ -41,16 +41,16 @@ describe('AC-020 pricing', () => {
     const dictionaries = JSON.stringify({ es, en })
     expect(dictionaries).not.toContain('30 EUR')
     expect(dictionaries).not.toMatch(/\bEUR\b/)
-    expect(dictionaries).not.toContain('€')
+    expect(JSON.stringify(en)).not.toContain('€')
     expect(dictionaries).not.toContain('por hora')
     expect(dictionaries).not.toContain('per hour')
     expect(dictionaries).not.toContain(MILESTONE_ES)
 
     // The landing-rendered booking copy lost the hourly text and the ladder.
     for (const locale of ['en', 'es'] as const) {
-      expect(es.booking.narrativePaid).not.toMatch(/EUR|€|por hora|per hour/i)
+      expect(es.booking.narrativePaid).not.toMatch(/EUR|por hora|per hour/i)
       expect(en.booking.narrativePaid).not.toMatch(/EUR|€|por hora|per hour/i)
-      expect(es.booking.priceLine).not.toMatch(/EUR|€|por hora|per hour/i)
+      expect(es.booking.priceLine).not.toMatch(/EUR|por hora|per hour/i)
       expect(en.booking.priceLine).not.toMatch(/EUR|€|por hora|per hour/i)
       expect(es.booking.priceLine).not.toContain(HOURLY_LADDER)
       expect(en.booking.priceLine).not.toContain(HOURLY_LADDER)
@@ -63,7 +63,7 @@ describe('AC-020 pricing', () => {
 
       expect(landingText).not.toContain('30 EUR')
       expect(landing).not.toMatch(/\beur\b/)
-      expect(landingText).not.toContain('€')
+      if (locale === 'en') expect(landingText).not.toContain('€')
       expect(landing).not.toContain('por hora')
       expect(landing).not.toContain('per hour')
       expect(landingText).not.toContain(HOURLY_LADDER)

@@ -164,6 +164,14 @@ async function openPage(url) {
 
   const page = {
     evaluate: (expression) => evaluate(cdp, sessionId, expression),
+    setViewport: async (width) => {
+      await cdp.send(
+        'Emulation.setDeviceMetricsOverride',
+        { width, height: 900, deviceScaleFactor: 1, mobile: false },
+        sessionId
+      )
+      await sleep(300)
+    },
     waitFor: (expression, label, timeoutMs) => waitFor(page, expression, label, timeoutMs),
     close: async () => {
       cdp.close()
@@ -194,6 +202,21 @@ const PROBE = {
   offerCount: `document.querySelectorAll('#services .offer-card').length`,
   faqPairs: `document.querySelectorAll('#faq .faq__item').length`,
   navBookingLabel: `document.querySelector('nav a[href="#booking"]')?.textContent || ''`,
+  // Per example text element: every rendered line box must start at the same x.
+  exampleTextLefts: `(() => {
+    var texts = Array.from(document.querySelectorAll('#services .example-row__text'))
+    var multi = 0
+    var misaligned = 0
+    texts.forEach(function (el) {
+      var range = document.createRange()
+      range.selectNodeContents(el)
+      var lefts = Array.from(range.getClientRects()).map(function (r) { return Math.round(r.left) })
+      var first = lefts[0]
+      if (new Set(lefts).size > 1 || lefts.some(function (l) { return Math.abs(l - first) > 1 })) misaligned++
+      if (range.getClientRects().length > 1) multi++
+    })
+    return { rows: document.querySelectorAll('#services .example-row').length, texts: texts.length, multi: multi, misaligned: misaligned }
+  })()`,
   aboutBio: `document.querySelector('#about .about__bio')?.textContent || ''`,
 }
 
@@ -250,13 +273,31 @@ async function journey(page) {
   const title = await page.evaluate(PROBE.documentTitle)
   assert(!title.includes('Salamanca'), `AC-020-24: Salamanca is absent from the title ("${title}")`)
 
-  // AC-020-25: the two public figures present, no hourly figure, no SaaS.
-  assert(documentText.includes('$1,200'), 'AC-020-25: $1,200 appears on the landing')
-  assert(documentText.includes('$600'), 'AC-020-25: $600 appears on the landing')
+  // AC-020-25: the two public figures present (ES in euros, NBSP before the
+  // symbol), no hourly figure, no SaaS. The EN dollar forms are asserted after
+  // the locale switch below.
+  assert(documentText.includes('1.200\u00A0€'), 'AC-020-25: 1.200 € appears on the ES landing')
+  assert(documentText.includes('600\u00A0€'), 'AC-020-25: 600 € appears on the ES landing')
+  assert(!documentText.includes('$'), 'AC-020-25: no dollar sign on the ES landing')
   assert(!documentText.includes('30 EUR'), 'AC-020-25: no "30 EUR" text on the landing')
   assert(!/\bEUR\b/.test(documentText), 'AC-020-25: no EUR text on the landing')
-  assert(!documentText.includes('€'), 'AC-020-25: no euro sign on the landing')
   assert(!/saas/i.test(documentText), 'AC-020-25: no "SaaS" text on the landing')
+
+  // AC-022-01: wrapped example text starts at the same x as its first line,
+  // on desktop and on a phone-width viewport.
+  for (const width of [1280, 390]) {
+    await page.setViewport(width)
+    const lefts = await page.evaluate(PROBE.exampleTextLefts)
+    assert(
+      lefts.rows === 4,
+      `AC-022-01: four example rows render at ${width}px (got ${lefts.rows})`
+    )
+    assert(
+      lefts.misaligned === 0,
+      `AC-022-01: wrapped example lines share one left x at ${width}px (${JSON.stringify(lefts)})`
+    )
+  }
+  await page.setViewport(1280)
 
   // AC-020-26: bio (Valladolid), WhatsApp href, FAQ, nav `Hablemos`.
   const bio = await page.evaluate(PROBE.aboutBio)
@@ -306,6 +347,11 @@ async function journey(page) {
     `AC-020-27: the English headline is "${EN_HEADLINE}" (got "${enHeadline}")`
   )
   assert(enTitle !== title, 'AC-020-27: the document title changes with the locale')
+
+  const enText = await page.evaluate(PROBE.documentText)
+  assert(enText.includes('from $1,200'), 'AC-020-25: EN landing shows from $1,200')
+  assert(enText.includes('from $600/month'), 'AC-020-25: EN landing shows from $600/month')
+  assert(!enText.includes('€'), 'AC-020-25: no euro sign on the EN landing')
 
   assert(await page.evaluate(SWITCH_TO_ES), 'AC-020-27: the ES switcher is present')
   await page.waitFor(
