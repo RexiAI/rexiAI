@@ -62,12 +62,12 @@ export const es = {
     title: 'Precio claro',
     setup: {
       label: 'Puesta en marcha',
-      figure: 'desde $1,200',
+      figure: 'desde 1.200 €',
       note: 'Diseño, construcción y entrega de tu app.',
     },
     monthly: {
       label: 'Hosting, mantenimiento y cambios',
-      figure: 'desde $600/mes',
+      figure: 'desde 600 €/mes',
       note: 'La app sigue funcionando y yo la mantengo al día.',
     },
     note: 'El precio final depende del proyecto y lo cerramos en la primera llamada, que es gratis. No pagas nada antes de verlo claro.',
@@ -108,7 +108,7 @@ export const es = {
         id: 'maintenance-cost',
         question: '¿Cuánto cuesta el mantenimiento?',
         answer:
-          'El mantenimiento va dentro de la cuota mensual desde $600/mes: hosting, copias de seguridad y los cambios pequeños que vayas necesitando. Si un mes no necesitas cambios, la cuota sigue cubriendo que todo funcione. Te lo dejo por escrito antes de empezar.',
+          'El mantenimiento va dentro de la cuota mensual desde 600 €/mes: hosting, copias de seguridad y los cambios pequeños que vayas necesitando. Si un mes no necesitas cambios, la cuota sigue cubriendo que todo funcione. Te lo dejo por escrito antes de empezar.',
       },
       {
         id: 'what-if-it-breaks',
@@ -135,7 +135,7 @@ export const es = {
     narrativeFree:
       'La primera hora es gratis. Describes el proceso que te está comiendo la semana; te vas con un plan de una página y un precio fijo para la construcción. Sin cargo, sin compromiso, sin presentación.',
     narrativePaid:
-      'Primera llamada gratis. Después acordamos el proyecto: puesta en marcha desde $1,200 y mantenimiento desde $600/mes.',
+      'Primera llamada gratis. Después acordamos el proyecto: puesta en marcha desde 1.200 € y mantenimiento desde 600 €/mes.',
     stepsFree: ['Elige un hueco', 'Cuéntame qué está roto', 'Recibe el plan y el precio'],
     stepsPaid: ['Elige un hueco', 'Elige tu bloque', 'Paga de forma segura con Stripe'],
     priceLine: 'Tú eliges cuánto dura la sesión.',
