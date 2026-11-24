@@ -96,19 +96,28 @@ describe('AC-004 npm script', () => {
     expect(s).toContain('.standards/scripts/run-mutation.sh')
     for (const bad of ['stryker run', '--all', '--budget']) expect(s).not.toContain(bad)
   })
-  it('AC-004-02 args forward to the wrapper (skip exit 2 on clean tree)', () => {
+  // CI checks out without submodules, so the wrapper may be absent there; skip visibly.
+  const wrapperPath = resolve('.standards/scripts/run-mutation.sh')
+  it('AC-004-02 args forward to the wrapper (skip exit 2 on clean tree)', (ctx) => {
+    expect(pkg.scripts.mutation).toContain('.standards/scripts/run-mutation.sh')
+    if (!existsSync(wrapperPath)) ctx.skip()
     // Scratch repo with a clean tree: the real tree carries uncommitted spec changes.
     const dir = mkdtempSync(join(tmpdir(), 'mut-'))
-    const git = (...a: string[]) => execFileSync('git', a, { cwd: dir })
+    const git = (...a: string[]) =>
+      execFileSync(
+        'git',
+        ['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', ...a],
+        { cwd: dir }
+      )
     git('init', '-q')
     copyFileSync('stryker.config.json', join(dir, 'stryker.config.json'))
     git('add', '.')
-    git('-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'x')
-    const wrapper = resolve('.standards/scripts/run-mutation.sh')
-    expect(pkg.scripts.mutation).toContain('.standards/scripts/run-mutation.sh')
-    const r = spawnSync('bash', [wrapper, '--base', 'HEAD'], { cwd: dir, encoding: 'utf8' })
+    git('commit', '-qm', 'x')
+    const r = spawnSync('bash', [wrapperPath, '--base', 'HEAD'], { cwd: dir, encoding: 'utf8' })
     rmSync(dir, { recursive: true, force: true })
-    expect(r.stdout).toContain("no changed files against 'HEAD' — nothing to mutate (skip)")
+    expect(`${r.stdout}${r.stderr}`).toContain(
+      "no changed files against 'HEAD' — nothing to mutate (skip)"
+    )
     expect(r.status).toBe(2)
   }, 60000)
 })
@@ -155,8 +164,16 @@ describe('AC-006 manual CI job', () => {
     expect(w.toLowerCase()).not.toContain('vercel')
   })
   it('AC-006-05 existing CI untouched', () => {
-    const diff = execFileSync('git', ['diff', 'main', '--', '.github/workflows/ci.yml']).toString()
-    expect(diff).toBe('')
+    // Shallow CI checkouts have no local main: try refs that may exist, else check content.
+    const base = ['origin/main', 'main'].find(
+      (ref) => spawnSync('git', ['rev-parse', '--verify', '-q', `${ref}^{commit}`]).status === 0
+    )
+    if (base) {
+      const diff = execFileSync('git', ['diff', base, '--', '.github/workflows/ci.yml']).toString()
+      expect(diff).toBe('')
+    }
+    const ci = read('.github/workflows/ci.yml')
+    expect(ci).not.toMatch(/stryker|npm run mutation/i)
     expect(existsSync('.github/workflows/mutation.yml')).toBe(true)
   })
 })
