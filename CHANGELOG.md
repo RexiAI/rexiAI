@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/RexiAI/rexiAI/compare/v1.14.0...v1.15.0) (2026-11-24)
+
+
+### Features
+
+* **landing:** euro prices, receptionist example, wrap fix, script complexity (spec 022) ([#119](https://github.com/RexiAI/rexiAI/issues/119)) ([4a1237c](https://github.com/RexiAI/rexiAI/commit/4a1237c114cca5b49da3bbaedf5723c9d805fc5a))
+
 # [1.14.0](https://github.com/RexiAI/rexiAI/compare/v1.13.1...v1.14.0) (2026-11-24)
 
 
