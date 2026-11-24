@@ -120,3 +120,47 @@ Environment  jsdom was created 107 times · 99.53s total, 66% of tracked time
              create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
              learn more: https://vitest.dev/guide/improving-performance#test-environments
 
+
+## Post-PR CI check — round 1 (phase 2)
+
+Verifier: post-PR CI check, **round 1, phase 2** (SPEC_LOOP_COUNT=1, SPEC_PHASE1_RETRIES=0, SPEC_PHASE2_RETRIES=0). PR https://github.com/RexiAI/rexiAI/pull/118, head `a37f69699b5ee598b3f03737f666976227a0b41f`. `mutation.yml` is workflow_dispatch-only and did not run on the PR (expected).
+
+## Evidence: post-PR CI checks
+
+command: gh pr checks 118 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-11-24T14:27:02Z
+
+| Check | Workflow | bucket | Result |
+|---|---|---|---|
+| Unit Tests | CI | fail | FAIL |
+| Lint & Format | CI | pass | PASS |
+| Build | CI | pass | PASS |
+| Docker Build & Push | CI | skipping | SKIPPED (depends on failed job) |
+| Vercel | — | pass | PASS |
+| Vercel Preview Comments | — | pass | PASS |
+
+Failing check IDs (`gh api repos/RexiAI/rexiAI/commits/a37f696.../check-runs`, conclusion == failure): `Unit Tests 138515168249`
+
+## Evidence: post-PR CI failure log
+
+command: gh run view 45413982165 --log-failed
+exit: 0
+at: 2026-11-24T14:27:30Z
+
+```
+FAIL src/__tests__/AC-021-stryker-mutation.test.ts > AC-004 npm script > AC-004-02 args forward to the wrapper (skip exit 2 on clean tree)
+AssertionError: expected '' to contain 'no changed files against \'HEAD\' — n…'
+FAIL src/__tests__/AC-021-stryker-mutation.test.ts > AC-006 manual CI job > AC-006-05 existing CI untouched
+Error: Command failed: git diff main -- .github/workflows/ci.yml
+Serialized Error: { status: 128, ... }
+Test Files  1 failed | 106 passed (107)
+     Tests  2 failed | 674 passed | 2 skipped (678)
+##[error]Process completed with exit code 1.
+```
+
+Diagnosis: both failures are in the spec's own acceptance tests and pass locally (stage-4 suite green) but depend on the local git environment. AC-006-05 runs `git diff main` — CI's `actions/checkout` is shallow and has no local `main` ref (git exit 128). AC-004-02 expects the wrapper's "no changed files against 'HEAD'" message and receives empty output in the CI checkout (environment-dependent git/wrapper invocation). Routing: **behavior → Coder** (make the tests environment-independent, e.g. compare against `origin/main` with fetch/skip-when-absent or a non-git assertion; do not weaken assertions or thresholds).
+
+## Post-PR CI verdict — round 1: FAIL
+
+Failing: `Unit Tests` (138515168249). Phase-2 budget used: 1 of 3. Pipeline stops this round; orchestrator routes fix to Coder, PR Opener re-pushes, Verifier re-checks only `Unit Tests`.
