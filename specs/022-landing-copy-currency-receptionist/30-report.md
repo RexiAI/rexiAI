@@ -34,3 +34,5 @@ Test-run hash: 23d77ae7bfcd7cd3f67c11a329f14c4b5ab46f505d9fa8c562c2758a1c2c455d
 - Mutation testing never ran, so test strength for Services.tsx and the refactored scripts/*.mjs is unmeasured.
 - The real-service paths of the refactored scripts are untested: live Jitsi/PulseAudio recording bot, M365 consent, billing chain against real services, dev API server. Only the env-gated AC-006 test touches them, and it was skipped. See the "Remaining risk" section of 25-verification.md.
 - The 222 design-principles WARNs and the AC-006 skip are pre-existing and flagged to the Architect.
+
+PR: https://github.com/RexiAI/rexiAI/pull/119 (6 task commits + 1 docs commit)
