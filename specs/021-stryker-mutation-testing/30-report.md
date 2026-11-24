@@ -52,3 +52,6 @@ Check: `.standards/scripts/test-run-reuse.sh --check 25-verification.md` → exi
 
 ## Remediation record
 none — Verifier attempt 1, phase 1 (SPEC_PHASE1_RETRIES=0, SPEC_PHASE2_RETRIES=0); no BLOCK occurred.
+
+PR: https://github.com/RexiAI/rexiAI/pull/118
+Commits: 7 (6 task/test commits + 1 PR-record commit)
