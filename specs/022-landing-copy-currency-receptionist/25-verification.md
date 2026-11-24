@@ -766,3 +766,32 @@ Environment  jsdom was created 117 times · 103.81s total, 65% of tracked time
              create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
              learn more: https://vitest.dev/guide/improving-performance#test-environments
 
+
+## Post-PR CI check — round 1, phase 2
+
+PR: https://github.com/RexiAI/rexiAI/pull/119 — head SHA `1dd4a900b75aa0b32983a2f080f5b30846a93ebf` (matches local HEAD). Pending checks polled to terminal with `gh pr checks 119 --watch --interval 20` (exit 0).
+
+## Evidence: post-PR CI check
+
+command: gh pr checks 119 --json name,state,bucket,workflow,link
+exit: 0
+at: 2026-11-24T15:54:52Z
+
+[{"bucket":"skipping","link":"https://github.com/RexiAI/rexiAI/actions/runs/45430693814/job/138575206785","name":"Docker Build & Push","state":"SKIPPED","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/github","name":"Vercel Preview Comments","state":"SUCCESS","workflow":""},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/45430693814/job/138574872320","name":"Lint & Format","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/45430693814/job/138574872014","name":"Build","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://github.com/RexiAI/rexiAI/actions/runs/45430693814/job/138574871976","name":"Unit Tests","state":"SUCCESS","workflow":"CI"},{"bucket":"pass","link":"https://vercel.com/danielbueno76-4270s-projects/rexi-ai/8kBTXCxAQaVCJ5wem9WxMLKgwCw2","name":"Vercel","state":"SUCCESS","workflow":""}]
+
+| Check | Bucket | Result |
+|---|---|---|
+| Lint & Format (CI) | pass | PASS |
+| Build (CI) | pass | PASS |
+| Unit Tests (CI) | pass | PASS |
+| Vercel | pass | PASS |
+| Vercel Preview Comments | pass | PASS |
+| Docker Build & Push (CI) | skipping | SKIPPED — not a pass, not a fail (job conditional, push-to-main only) |
+
+Failing check IDs: none. Last log excerpt: n/a (no `conclusion == "failure"` runs). Routing: none required.
+
+PR body vs `.github/PULL_REQUEST_TEMPLATE.md` (report only, not edited): template headings `What changed / Why / How to verify / Dependencies / Checklist`; PR body has `What changed / Why / How to verify / Honest notes` — **missing `## Dependencies` and `## Checklist`**; extra `## Honest notes`.
+
+## Verdict — post-PR CI round 1, phase 2: **PASS**
+
+Phase-2 budget used: 0 of 3.
