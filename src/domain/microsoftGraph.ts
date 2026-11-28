@@ -117,7 +117,7 @@ function collectBusy(
 
 function mergeBusySlots(intervals: CalendarSlot[]): CalendarSlot[] {
   if (intervals.length === 0) return intervals
-  const sorted = [...intervals].sort((a, b) => a.start.getTime() - b.start.getTime())
+  const sorted = intervals.toSorted((a, b) => a.start.getTime() - b.start.getTime())
   const merged: CalendarSlot[] = [{ ...sorted[0]! }]
   for (const next of sorted.slice(1)) {
     const last = merged[merged.length - 1]!
