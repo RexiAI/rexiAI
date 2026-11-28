@@ -20,10 +20,8 @@ function load(): Promise<SiteConfig> {
   if (cached) return Promise.resolve(cached)
   if (!inflight) {
     // A hung /api/config must not leave the booking card pending forever. The
-    // abort falls through to the fail-safe paid mode with `ready: true`.
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 3000)
-    inflight = fetch('/api/config', { signal: controller.signal })
+    // timeout falls through to the fail-safe paid mode with `ready: true`.
+    inflight = fetch('/api/config', { signal: AbortSignal.timeout(3000) })
       .then((r) => (r.ok ? r.json() : DEFAULT))
       .then((j: { billingEnabled?: unknown }) => {
         cached = { billingEnabled: j?.billingEnabled !== false, ready: true }
@@ -33,7 +31,6 @@ function load(): Promise<SiteConfig> {
         cached = { billingEnabled: true, ready: true }
         return cached
       })
-      .finally(() => clearTimeout(timer))
   }
   return inflight
 }
